@@ -24,10 +24,21 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 const DIST = 'dist';
 const BUDGET_BYTES = 15 * 1024;
 
-/** Entry points a browser fetches: module scripts and preloaded modules. */
+/**
+ * Entry points a browser fetches.
+ *
+ * The last two matter more than they look. Astro does NOT reference a hydrated
+ * island with a `<script src>` — it emits `<astro-island component-url="…"
+ * renderer-url="…">` and fetches those at hydration time. A budget check that
+ * only looks at script tags therefore reports an island-bearing page as costing
+ * the same as a static one, which is worse than having no check at all: it
+ * reports a comfortable pass while the real payload goes unmeasured.
+ */
 const ENTRY_PATTERNS = [
   /<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/g,
   /<link[^>]+rel=["']modulepreload["'][^>]+href=["']([^"']+)["']/g,
+  /<astro-island[^>]+component-url=["']([^"']+)["']/g,
+  /<astro-island[^>]+renderer-url=["']([^"']+)["']/g,
 ];
 
 /** Static imports inside bundled ESM: `from"./x.js"`, `import"./x.js"`. */

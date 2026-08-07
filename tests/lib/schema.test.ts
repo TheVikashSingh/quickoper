@@ -1,74 +1,63 @@
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
-import { parseParams, urlNumber } from '../../src/lib/schema';
+import { generatedData, sourceRef } from '../../src/lib/schema';
 
 /**
- * URL parameters are attacker-controlled input (CLAUDE.md rule 11).
+ * Build-time schemas.
  *
- * The failure mode these tests guard against is not a crash — it is a
- * calculator that silently computes a plausible-looking WRONG answer from
- * malformed input. `Number('')` is 0. `Number('  12  ')` is 12. Either would
- * produce a confident, wrong, shareable result.
+ * These never reach a browser — they validate generated data files so a
+ * malformed figure fails the build rather than reaching production
+ * (CLAUDE.md rule 7). The URL-parameter tests that used to live here moved to
+ * params.test.ts when client-side parsing was rewritten without Zod.
  */
 
-describe('urlNumber', () => {
-  const rate = urlNumber(0, 25);
+const validSource = {
+  label: 'Bank of England Bank Rate',
+  url: 'https://www.bankofengland.co.uk/boeapps/database/Bank-Rate.asp',
+  retrieved: '2026-08-07',
+};
 
-  it('accepts integers and decimals within range', () => {
-    expect(rate.parse('5')).toBe(5);
-    expect(rate.parse('5.25')).toBe(5.25);
-    expect(rate.parse('0')).toBe(0);
-    expect(rate.parse('25')).toBe(25);
+describe('sourceRef', () => {
+  it('accepts a fully cited source', () => {
+    const parsed = sourceRef.parse(validSource);
+    expect(parsed.label).toBe('Bank of England Bank Rate');
+    expect(parsed.retrieved).toBeInstanceOf(Date);
   });
 
-  it('rejects the empty string rather than coercing it to zero', () => {
-    // Number('') === 0. That is the bug this exists to prevent.
-    expect(rate.safeParse('').success).toBe(false);
+  it('rejects a source with no retrieval date', () => {
+    // An undated figure is the failure the freshness claim exists to prevent.
+    const { retrieved: _omitted, ...undated } = validSource;
+    expect(sourceRef.safeParse(undated).success).toBe(false);
   });
 
-  it('rejects values outside the declared range', () => {
-    expect(rate.safeParse('-1').success).toBe(false);
-    expect(rate.safeParse('25.01').success).toBe(false);
+  it('rejects a placeholder URL', () => {
+    expect(sourceRef.safeParse({ ...validSource, url: 'TODO' }).success).toBe(false);
+    expect(sourceRef.safeParse({ ...validSource, url: '' }).success).toBe(false);
   });
 
-  it('rejects non-numeric and exotic numeric input', () => {
-    for (const bad of ['abc', '5abc', 'Infinity', 'NaN', '1e5', '0x10', '5,000']) {
-      expect(rate.safeParse(bad).success, `expected "${bad}" to be rejected`).toBe(false);
-    }
-  });
-
-  it('trims surrounding whitespace but still rejects an all-whitespace value', () => {
-    // Trimming a padded number is benign and user-friendly. What must never
-    // happen is whitespace collapsing to a valid zero, so both are asserted.
-    expect(rate.parse('  12  ')).toBe(12);
-    expect(rate.safeParse('   ').success).toBe(false);
+  it('rejects a label too short to identify anything', () => {
+    expect(sourceRef.safeParse({ ...validSource, label: 'x' }).success).toBe(false);
   });
 });
 
-describe('parseParams', () => {
-  const schema = z.object({
-    p: urlNumber(1, 10_000_000),
-    r: urlNumber(0, 25),
-  });
-  const fallback = { p: 250_000, r: 5 };
-
-  it('returns parsed values when every parameter is valid', () => {
-    const params = new URLSearchParams('p=350000&r=5.2');
-    expect(parseParams(schema, params, fallback)).toEqual({ p: 350_000, r: 5.2 });
+describe('generatedData', () => {
+  it('accepts a generated file carrying its provenance', () => {
+    const parsed = generatedData.parse({
+      generatedAt: '2026-08-07T00:00:00Z',
+      sources: [validSource],
+    });
+    expect(parsed.sources).toHaveLength(1);
   });
 
-  it('falls back wholesale when any parameter is invalid', () => {
-    const params = new URLSearchParams('p=350000&r=notanumber');
-    expect(parseParams(schema, params, fallback)).toEqual(fallback);
+  it('rejects a generated file with no sources at all', () => {
+    // CLAUDE.md: never invent a rate, threshold or cap. A data file with an
+    // empty sources array is an invented figure with extra steps.
+    expect(
+      generatedData.safeParse({ generatedAt: '2026-08-07T00:00:00Z', sources: [] })
+        .success,
+    ).toBe(false);
   });
 
-  it('falls back on missing parameters rather than producing a partial result', () => {
-    expect(parseParams(schema, new URLSearchParams(''), fallback)).toEqual(fallback);
-  });
-
-  it('never throws, whatever it is given', () => {
-    const hostile = new URLSearchParams('p=<script>alert(1)</script>&r=%00');
-    expect(() => parseParams(schema, hostile, fallback)).not.toThrow();
-    expect(parseParams(schema, hostile, fallback)).toEqual(fallback);
+  it('rejects a generated file with no timestamp', () => {
+    expect(generatedData.safeParse({ sources: [validSource] }).success).toBe(false);
   });
 });

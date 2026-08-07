@@ -15,4 +15,7 @@ Allow: /
 # never submitted in the sitemap. Crawling them wastes budget on duplicates.
 Disallow: /*?*
 
+# Internal component reference. Not part of the site.
+Disallow: /dev/
+
 Sitemap: https://quickoper.com/sitemap-index.xml

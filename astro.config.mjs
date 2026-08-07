@@ -21,7 +21,10 @@ export default defineConfig({
     // is ~45KB gzipped and would exceed the entire 15KB budget on its own.
     preact({ compat: true }),
     mdx(),
-    sitemap(),
+    // /dev/* is internal reference material. It is noindex and unlinked, but it
+    // must also stay out of the sitemap — submitting a page we do not want
+    // indexed is a contradictory signal.
+    sitemap({ filter: (page) => !page.includes('/dev/') }),
   ],
 
   vite: {

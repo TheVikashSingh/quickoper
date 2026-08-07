@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { KitDemo } from '../../components/calculators/KitDemo';
+
+// Internal component reference. noindex, disallowed in robots.txt, excluded
+// from the sitemap, and linked from nowhere. It exists so the presentation kit
+// is exercised on a real page — which is the only way the per-page JavaScript
+// budget measures anything true.
+---
+
+<BaseLayout
+  title="Presentation kit — internal reference"
+  description="Internal component reference for the QuickOper presentation kit. Not a published page."
+  noindex={true}
+>
+  <h1 class="text-2xl font-semibold tracking-tight">Presentation kit</h1>
+
+  <p class="text-ink-soft mt-2 text-sm">
+    Internal reference. Fixed sample debts of $9,400; only the budget is adjustable.
+    Exercises <code>LineChart</code>, <code>ScheduleTable</code>, CSV export and URL state
+    against the real payoff engine. Change the budget and check the address bar.
+  </p>
+
+  <div class="mt-8">
+    <KitDemo client:load />
+  </div>
+</BaseLayout>
