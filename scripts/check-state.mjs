@@ -21,11 +21,15 @@
  *
  * WHAT IT DOES NOT CHECK, deliberately:
  *
- *   - The JS byte figures (17.92 KB worst page, 0.53 KB content pages). They
- *     are derivable, but only by importing check-js-budget's module-graph
- *     measurement, and destabilising the project's most safety-critical gate to
- *     police a doc is a bad trade. They were correct when last measured. Worth
- *     revisiting when tool 3 lands and moves them.
+ *   - The JS byte figures. They are derivable, but only by importing
+ *     check-js-budget's module-graph measurement, and destabilising the
+ *     project's most safety-critical gate to police a doc is a bad trade.
+ *
+ *     This gap has since cost something: D10 and the budget gate's own header
+ *     both quoted 0.18KB of headroom for two pull requests while the measured
+ *     figure was 0.08KB. Corrected in the pull request that added D28. Worth
+ *     closing properly — the cheap version is to assert STATE.md's row from
+ *     inside check-js-budget.mjs, where the number already exists.
  *   - The test count, which needs an actual test run rather than a look at
  *     dist/.
  *   - "Live?" and "CI gates", which are prose, not counts.

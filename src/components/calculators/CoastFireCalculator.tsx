@@ -7,6 +7,10 @@
  * PRIVACY (CLAUDE.md): every figure is computed in this browser. Nothing is
  * transmitted and nothing is written to storage. The shareable link carries the
  * numbers so a scenario can be reopened.
+ *
+ * Static prose arrives from the .astro page as slots rather than living in this
+ * file — see the header of DebtPayoffCalculator.tsx for why, and for the trap
+ * with hyphenated slot names.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
@@ -56,7 +60,25 @@ interface Row {
   coasting: boolean;
 }
 
-export function CoastFireCalculator(): JSX.Element {
+/**
+ * Static prose, rendered by the page. Optional only because `astro check`
+ * cannot see named slots as props — see DebtPayoffCalculator's Prose, and
+ * scripts/check-slots.mjs, which enforces what the type system cannot.
+ */
+export interface Prose {
+  /** "Everything is in today's money…" */
+  readonly privacy?: JSX.Element;
+  /** That the inputs are assumptions, not recommendations. */
+  readonly assumptions?: JSX.Element;
+  /** The two-step derivation and its formula. */
+  readonly method?: JSX.Element;
+  /** Why the figures are real rather than nominal. */
+  readonly realterms?: JSX.Element;
+  /** Where the name on the report does and does not go. */
+  readonly retention?: JSX.Element;
+}
+
+export function CoastFireCalculator(prose: Prose): JSX.Element {
   const [state, setState] = useUrlState<State>({
     decode: (search) => parseParams(PARAMS, search),
     encode: (value) => encodeParams(value),
@@ -136,9 +158,7 @@ export function CoastFireCalculator(): JSX.Element {
         <h2 id="you-heading" class="text-lg font-semibold">
           Where you are now
         </h2>
-        <p class="text-ink-soft mt-1 text-sm">
-          Everything is in today's money, and worked out in your browser.
-        </p>
+        <p class="text-ink-soft mt-1 text-sm">{prose.privacy}</p>
 
         <div class="mt-4 grid gap-3 sm:grid-cols-3">
           <Field
@@ -170,10 +190,7 @@ export function CoastFireCalculator(): JSX.Element {
         <h2 id="assume-heading" class="text-lg font-semibold">
           What you are assuming
         </h2>
-        <p class="text-ink-soft mt-1 text-sm">
-          These are your assumptions, not our recommendations. Change them and watch the
-          answer move.
-        </p>
+        <p class="text-ink-soft mt-1 text-sm">{prose.assumptions}</p>
 
         <div class="mt-4 grid gap-3 sm:grid-cols-4">
           <Field
@@ -230,6 +247,7 @@ export function CoastFireCalculator(): JSX.Element {
             state={state}
             name={preparedFor}
             onName={setPreparedFor}
+            prose={prose}
           />
         )
       )}
@@ -245,12 +263,14 @@ function Results({
   state,
   name,
   onName,
+  prose,
 }: {
   result: NonNullable<ReturnType<typeof calculateCoastFire>>;
   rows: Row[];
   state: State;
   name: string;
   onName: (value: string) => void;
+  prose: Prose;
 }): JSX.Element {
   const years = Math.round(state.r) - Math.round(state.a);
 
@@ -330,13 +350,9 @@ function Results({
           How this was calculated
         </summary>
         <div class="text-ink-soft mt-3 space-y-3 text-sm">
-          <p>Two steps, both from the compound interest formula.</p>
-          <p class="numeric bg-surface rounded-control p-3">
-            target = yearly spending ÷ withdrawal rate
-            <br />
-            coast number = target ÷ (1 + real return)
-            <sup>years to retirement</sup>
-          </p>
+          {/* Wrapped for the same reason as the debt payoff island: astro-slot
+              is `display: contents` and cannot take the space-y-3 margin. */}
+          <div>{prose.method}</div>
           <p>
             On your figures: {format(fromMajor(state.s), CURRENCY)} ÷ {state.w}% ={' '}
             <strong class="text-ink">{format(result.fireNumber, CURRENCY)}</strong>, the
@@ -351,11 +367,7 @@ function Results({
             the annual figure by twelve. A stated annual return compounds to that figure
             over the year, so dividing would overstate a long projection.
           </p>
-          <p>
-            Everything is in today's money — the return you enter is a <em>real</em>{' '}
-            return, after inflation — so the figures mean what they would mean if you
-            spent them now.
-          </p>
+          <p>{prose.realterms}</p>
         </div>
       </details>
 
@@ -389,9 +401,7 @@ function Results({
           onInput={(e) => onName((e.target as HTMLInputElement).value)}
           class="border-line-strong bg-surface rounded-control mt-1 w-56 border px-2 py-1.5 text-sm"
         />
-        <p class="text-ink-mute mt-1 text-xs">
-          Stays on this device. Never saved, never in the link.
-        </p>
+        <p class="text-ink-mute mt-1 text-xs">{prose.retention}</p>
       </div>
 
       <ScheduleTable

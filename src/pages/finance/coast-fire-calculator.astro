@@ -99,8 +99,49 @@ const structuredData = [
       own — without you adding another penny?
     </p>
 
+    {
+      /*
+      Static prose lives here rather than in the island — see the comment on the
+      debt payoff page, and the header of DebtPayoffCalculator.tsx. Slot names
+      must stay single words or they hydrate to undefined.
+    */
+    }
     <div class="mt-10">
-      <CoastFireCalculator client:load />
+      <CoastFireCalculator client:load>
+        <Fragment slot="privacy">
+          Everything is in today's money, and worked out in your browser.
+        </Fragment>
+
+        <Fragment slot="assumptions">
+          These are your assumptions, not our recommendations. Change them and watch the
+          answer move.
+        </Fragment>
+
+        {
+          /* Two blocks, so it carries its own spacing — see the note on the debt
+            payoff page about astro-slot and `display: contents`. */
+        }
+        <Fragment slot="method">
+          <div class="space-y-3">
+            <p>Two steps, both from the compound interest formula.</p>
+            <p class="numeric bg-surface rounded-control p-3">
+              target = yearly spending ÷ withdrawal rate
+              <br />
+              coast number = target ÷ (1 + real return)
+              <sup>years to retirement</sup>
+            </p>
+          </div>
+        </Fragment>
+
+        <Fragment slot="realterms">
+          Everything is in today's money — the return you enter is a <em>real</em> return, after
+          inflation — so the figures mean what they would mean if you spent them now.
+        </Fragment>
+
+        <Fragment slot="retention">
+          Stays on this device. Never saved, never in the link.
+        </Fragment>
+      </CoastFireCalculator>
     </div>
 
     <section class="prose-like text-ink-soft mt-16 space-y-4">

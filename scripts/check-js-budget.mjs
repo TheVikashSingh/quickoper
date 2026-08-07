@@ -47,10 +47,14 @@ const DIST = 'dist';
  * an island (Zod cost 15.7KB when it did). Everything rule 9 exists to prevent
  * is still prevented.
  *
- * IT IS NOW TIGHT: the worst page sits 0.18KB under. A third calculator will
- * breach it, and the honest fix at that point is structural — hydrate the
- * below-fold chart and schedule separately with client:visible — not another
- * increment.
+ * HEADROOM: the worst page sits 0.58KB under, after the static prose moved out
+ * of the islands and into the pages that mount them (D28). This comment said
+ * 0.18KB for two pull requests while the real figure was 0.08 — nothing checks
+ * a byte count quoted in prose, including this one.
+ *
+ * If it tightens again the honest fix is structural — more prose out of the
+ * island, or hydrating the below-fold chart and schedule separately with
+ * client:visible — not another increment.
  *
  * For scale: the project charter's original budget was 40KB, and median
  * JavaScript on a mobile page is several hundred.
