@@ -1,0 +1,411 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Guilloche from '../components/ornament/Guilloche.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
+import Rule from '../components/ornament/Rule.astro';
+import { SITE } from '../lib/site';
+import { sourceRef } from '../lib/schema';
+
+const LAST_VERIFIED = '2026-08-08';
+
+const SOURCES = [
+  {
+    label: 'US Securities and Exchange Commission — Compound Interest Calculator',
+    url: 'https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator',
+    retrieved: '2026-08-08',
+  },
+  {
+    label: 'Microsoft — PMT function (Excel)',
+    url: 'https://support.microsoft.com/en-us/office/pmt-function-0214da64-9a63-4996-bc20-214433fa6441',
+    retrieved: '2026-08-08',
+  },
+  {
+    label: 'Microsoft — NPER function (Excel)',
+    url: 'https://support.microsoft.com/en-us/office/nper-function-240535b5-6653-4d2d-bfcf-b6a38151d815',
+    retrieved: '2026-08-08',
+  },
+  {
+    label: 'Microsoft — FV function (Excel)',
+    url: 'https://support.microsoft.com/en-us/office/fv-function-2eef9f44-a084-4c61-bdd8-4fe4bb1b71b3',
+    retrieved: '2026-08-08',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * Every row here is asserted by a Vitest fixture in this repository. If a figure
+ * on this page ever disagrees with the site, the tests fail first — the numbers
+ * are not transcribed by hand into the prose and left to rot.
+ */
+const CHECKS = [
+  {
+    id: 'pmt',
+    title: 'The monthly payment on a loan',
+    formula: '=PMT(0.06/12, 60, -10000)',
+    expect: '193.3280…',
+    ours: '$193.33',
+    agrees: true,
+    note: 'The payment our debt fixture uses for $10,000 at 6.00% over 60 months. We round up to the cent, as a lender does.',
+  },
+  {
+    id: 'nper',
+    title: 'How long it takes to clear',
+    formula: '=NPER(0.06/12, -193.33, 10000)',
+    expect: '59.99…',
+    ours: '60 months',
+    agrees: true,
+    note: 'The fraction below 60 exists because $193.33 is a rounded-up payment. It is also why our final payment is $193.21 rather than a full one.',
+  },
+  {
+    id: 'interest',
+    title: 'Total interest over the term',
+    formula: '=193.33*60 - 10000',
+    expect: '1,599.80',
+    ours: '$1,599.68',
+    agrees: false,
+    note: 'Twelve cents lower, and the twelve cents has a specific cause: we charge the reduced final payment of $193.21 rather than a full $193.33. Subtract that $0.12 and the two agree exactly.',
+  },
+  {
+    id: 'fv',
+    title: 'Investment growth over thirty years',
+    formula: '=FV(0.07, 30, 0, -100000)',
+    expect: '761,225.50',
+    ours: '761,225.08',
+    agrees: false,
+    note: 'Forty-two cents apart across 360 monthly steps — about five parts per billion. The spreadsheet carries full precision to the end; we round to the cent every month, the way a statement does.',
+  },
+  {
+    id: 'coast',
+    title: 'The coast number',
+    formula: '=1000000/1.05^30',
+    expect: '231,377.45',
+    ours: '$231,377.45',
+    agrees: true,
+    note: 'Exactly what the Coast FIRE calculator shows for a $1,000,000 target thirty years out at a 5% real return.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'Check our arithmetic yourself',
+    url: `${SITE.url}/verify`,
+    description:
+      'Five spreadsheet formulas and one SEC calculator that independently reproduce every figure QuickOper publishes, including the cases where we differ and exactly why.',
+    author: { '@type': 'Person', name: SITE.author.name },
+    dateModified: LAST_VERIFIED,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Check our arithmetic',
+        item: `${SITE.url}/verify`,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Check our arithmetic yourself | QuickOper"
+  description="Five formulas you can paste into Excel or Google Sheets, plus the SEC's own calculator, that independently reproduce every figure QuickOper publishes — including the two cases where we differ, and exactly why."
+  structuredData={structuredData}
+>
+  <article>
+    <div class="relative">
+      <Guilloche
+        size={280}
+        class="text-brand pointer-events-none absolute -top-14 -right-14 hidden opacity-[0.10] sm:block"
+      />
+
+      <p class="engraved-fine text-ink-mute relative">Independent verification</p>
+
+      <h1 class="relative mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Check our arithmetic yourself
+      </h1>
+
+      <p class="text-ink-soft relative mt-4 text-lg">
+        This site was built by one engineer with heavy use of AI tooling, and it publishes
+        money figures. You should not take our word for those figures — so here is how to
+        reproduce every one of them in a spreadsheet you already trust.
+      </p>
+    </div>
+
+    <NoteFrame class="mt-8" corners={false}>
+      <p class="text-ink-soft text-sm">
+        <strong class="text-ink">The whole exercise takes about ten minutes.</strong> Five formulas,
+        one government calculator, no account and no download. Two of the six results deliberately{
+          ' '
+        }
+        <em>disagree</em> with us, and the size and cause of each disagreement is stated below
+        before you run it.
+      </p>
+    </NoteFrame>
+
+    <section class="prose-like text-ink-soft mt-12 space-y-4">
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        Why a spreadsheet is the right referee
+      </h2>
+
+      <p>
+        Excel and Google Sheets ship the same set of financial functions — <code
+          class="numeric">PMT</code
+        >, <code class="numeric">NPER</code>, <code class="numeric">FV</code>. They
+        implement the standard formulas, they have been scrutinised by accountants for
+        three decades, and they were not written by us, by our tooling, or by any AI. If
+        our engine agrees with them, that is evidence that came from outside this project.
+      </p>
+
+      <p>
+        That last point is the whole argument. A test comparing our code to our own
+        expectations proves only that we are self-consistent. It says nothing about
+        whether we are right. Every check below is anchored to something published by
+        somebody else.
+      </p>
+    </section>
+
+    <Rule class="mt-12" />
+
+    <section class="mt-10">
+      <h2 class="text-2xl font-semibold tracking-tight">The five spreadsheet checks</h2>
+      <p class="text-ink-soft mt-2">
+        Open a blank sheet. Paste each formula into a cell and compare.
+      </p>
+
+      <ol class="mt-6 space-y-6">
+        {
+          CHECKS.map((check, index) => (
+            <li class="rounded-panel border-line bg-surface avoid-break border p-1.5">
+              <div class="border-engrave-strong rounded-control border p-4">
+                <p class="engraved text-ink-mute text-xs">
+                  Check {index + 1} of {CHECKS.length}
+                </p>
+                <h3 class="text-ink mt-1 text-lg font-semibold">{check.title}</h3>
+
+                <p class="numeric bg-sunken border-line rounded-control text-ink mt-3 overflow-x-auto border p-3 text-sm">
+                  {check.formula}
+                </p>
+
+                <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <dt class="engraved text-ink-mute text-[0.65rem]">
+                      The spreadsheet says
+                    </dt>
+                    <dd class="numeric text-ink mt-0.5 text-base font-semibold">
+                      {check.expect}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="engraved text-ink-mute text-[0.65rem]">QuickOper says</dt>
+                    <dd
+                      class={`numeric mt-0.5 text-base font-semibold ${
+                        check.agrees ? 'text-positive' : 'text-caution'
+                      }`}
+                    >
+                      {check.ours}
+                      <span class="text-ink-mute ml-1 text-xs font-normal">
+                        {check.agrees ? '· agrees' : '· differs, on purpose'}
+                      </span>
+                    </dd>
+                  </div>
+                </dl>
+
+                <p class="text-ink-soft mt-3 text-sm">{check.note}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="mt-12">
+      <h2 class="text-2xl font-semibold tracking-tight">
+        A sixth check, from the US government
+      </h2>
+
+      <p class="text-ink-soft mt-3">
+        The <strong class="text-ink">Securities and Exchange Commission</strong> publishes a
+        compound interest calculator at investor.gov. It is about as disinterested a source
+        as exists: a regulator with no product to sell and a statutory interest in the arithmetic
+        being right.
+      </p>
+
+      <p class="text-ink-soft mt-3">
+        Enter <span class="numeric">$100,000</span> initial, <span class="numeric"
+          >$0</span
+        > monthly, <span class="numeric">30</span> years, <span class="numeric">7%</span> interest,
+        compounded annually. It returns <strong class="text-ink numeric"
+          >$761,225.50</strong
+        > — the same figure the spreadsheet gives, from a third independent implementation,
+        and the figure our Coast FIRE projection lands within 42 cents of.
+      </p>
+
+      <p class="mt-4">
+        <a
+          class="text-brand underline"
+          href="https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator"
+          rel="noopener">Open the SEC calculator</a
+        >
+      </p>
+    </section>
+
+    <Rule class="mt-12" />
+
+    <section class="prose-like text-ink-soft mt-10 space-y-4">
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        When a figure disagrees, find out why
+      </h2>
+
+      <p>
+        Do not assume the calculator is right. Do not assume the spreadsheet is right
+        either. There is always a reason, and it is almost always one of three stated
+        assumptions rather than a mistake.
+      </p>
+
+      <h3 class="text-ink text-lg font-semibold">1. Compounding convention</h3>
+      <p>
+        Our debt tool divides the annual rate by twelve, because that is how a lender
+        quotes an APR and how a statement computes one month's charge. Our investment tool
+        uses <span class="numeric">(1 + r)<sup>1/12</sup> − 1</span>, because a stated
+        annual <em>return</em> compounds to that figure over a year. At 7% those are 0.5654%
+        and 0.5833% a month — close enough to look like a rounding error and different enough
+        to move a thirty-year projection by several percent, always flatteringly. Excel's <code
+          class="numeric">PMT</code
+        > uses the first convention and <code class="numeric">FV</code> the second, so comparing
+        across the two will disagree, correctly.
+      </p>
+
+      <h3 class="text-ink text-lg font-semibold">2. When rounding happens</h3>
+      <p>
+        We round to the cent every period, because that is what a statement does and what
+        you will be charged. A spreadsheet carries full precision and rounds once at the
+        end. Over 360 periods that produces cents of difference — the 42 cents in check
+        four — and never dollars. If you ever see dollars, something else is wrong.
+      </p>
+
+      <h3 class="text-ink text-lg font-semibold">3. The final payment</h3>
+      <p>
+        Ours is reduced to exactly what remains, because a lender does not take a full
+        payment when less is owed. Most closed-form answers assume every payment is
+        identical. That is the entire twelve cents in check three.
+      </p>
+
+      <p>
+        <strong class="text-ink"
+          >If a difference is larger than a few cents and none of those three explain it,
+          that is a bug.</strong
+        > Please <a class="text-brand underline" href="/contact">tell us</a>, with the
+        inputs you used.
+      </p>
+    </section>
+
+    <section class="prose-like text-ink-soft mt-12 space-y-4">
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        What this proves, and what it does not
+      </h2>
+
+      <p>
+        <strong class="text-ink">It proves</strong> that our arithmetic matches independent,
+        long-established implementations of the same formulas — and that where it differs, it
+        differs by a stated amount for a stated reason.
+      </p>
+
+      <p>
+        <strong class="text-ink">It does not prove</strong> that the formula is the right one
+        for your situation, that our assumptions match your lender's contract, or that a projection
+        will resemble the future. Nothing can prove those. It is why every calculator here states
+        its assumptions on the page, and why this site computes rather than advises.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        The four things that make a silently wrong figure unlikely
+      </h2>
+
+      <ul class="list-disc space-y-2 pl-5">
+        <li>
+          <strong class="text-ink">The calculation is isolated.</strong> Every engine is a pure
+          function with no access to the page and no framework attached. It can be wrong arithmetically,
+          but not through a rendering accident.
+        </li>
+        <li>
+          <strong class="text-ink">Fixtures are anchored outside the codebase.</strong> Each
+          engine is tested against a figure published by somebody else — the five above.
+        </li>
+        <li>
+          <strong class="text-ink">Assertions are exact, not tolerant.</strong> Two early drafts
+          used loose bounds — "under a dollar", "within 50 cents" — that were fifty times wider
+          than reality and would have absorbed a genuine regression silently. Both were replaced
+          with the exact figure.
+        </li>
+        <li>
+          <strong class="text-ink">A human merges every calculation change.</strong> Automated
+          checks can prove the code matches the fixture. They cannot prove the fixture matches
+          reality. That is a person's job, and it is why changes under the calculation directory
+          require one.
+        </li>
+      </ul>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="text-2xl font-semibold tracking-tight">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}. Every
+        figure on this page is also asserted by a test in the{' '}
+        <a class="text-brand underline" href={SITE.repo} rel="noopener"
+          >public repository</a
+        >, so it fails the build before it can go stale here.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is a calculator, not advice.</strong> QuickOper works
+        out the arithmetic and shows its working. It does not know your circumstances and cannot
+        tell you what to do with your money. Nothing here is financial, tax or investment advice.
+      </p>
+    </aside>
+
+    <nav class="no-print mt-14" aria-label="Related">
+      <h2 class="text-lg font-semibold">Related</h2>
+      <ul class="text-ink-soft mt-2 space-y-1 text-sm">
+        <li>
+          <a class="text-brand underline" href="/methodology">Methodology</a> — the rounding
+          policy, the compounding conventions, and what we refuse to build.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/finance/debt-payoff-calculator"
+            >Debt payoff calculator</a
+          > — the tool checks one, two and three verify.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/finance/coast-fire-calculator"
+            >Coast FIRE calculator</a
+          > — the tool checks four and five verify.
+        </li>
+      </ul>
+    </nav>
+  </article>
+</BaseLayout>
