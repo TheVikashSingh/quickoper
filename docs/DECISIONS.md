@@ -145,9 +145,15 @@ It was 15KB until PR #8, picked from rough arithmetic before any of that had
 been measured. Two of those lines (the inline ones) were only discovered in
 PR #9 when the gate started counting inline scripts.
 
-**It is now tight — the worst page sits 0.18KB under.** A third calculator will
-breach it. The honest fix then is structural (hydrate the below-fold chart and
-schedule with `client:visible`), not another increment.
+**The worst page sits 0.58KB under**, after D28 moved static prose out of the
+islands. It was 0.08KB before that — and this entry said 0.18KB, as did the
+gate's own header comment, both stale by a tenth of a kilobyte for at least two
+pull requests. Nothing checks the JS figures quoted in the documentation; the
+page counts next to them are checked, which is why they are right (D27).
+
+The honest fix, if it tightens again, is structural — more prose out of the
+island, or hydrating the below-fold chart and schedule with `client:visible` —
+not another increment.
 
 Raising it again requires the same treatment: measure, record the components,
 state what it still forbids. It must always forbid React, any charting library
@@ -318,6 +324,60 @@ signal. `/404` and `/dev/*` are the only legitimate exceptions.
 This is the fifth time a check found something real by being asked to look
 (D18). It is also the second latent launch-blocker found by inspecting state
 rather than writing new code — the first was six 404s in the site navigation.
+
+### D28 — Static prose belongs to the page, not to the island
+
+A sentence inside a Preact component is paid for twice: once as HTML in the
+document, and once as the JavaScript able to re-render it. The second copy never
+does anything, because the sentence never changes.
+
+So the calculators now take their fixed prose from the `.astro` page as named
+slots. Measured, gzipped:
+
+| | Before | After |
+|---|---|---|
+| debt payoff island | 5.43 KB | **4.93 KB** |
+| coast fire island | 3.95 KB | **3.73 KB** |
+| worst page, total | 17.92 KB | **17.42 KB** |
+| spare against the 18KB budget | 0.08 KB | **0.58 KB** |
+
+0.72KB across the two islands, and headroom went from a rounding error to
+something tool 3 can be built inside. It is also faster: @astrojs/preact wraps
+slot content in `StaticHtml`, which sets `shouldComponentUpdate = () => false`,
+so that prose no longer re-renders on every keystroke.
+
+**It costs nothing in HTML.** Astro's island element re-reads rendered slots
+from the DOM (`querySelectorAll('astro-slot')`) and only emits a
+`<template data-astro-template>` copy for slots a conditional branch did not
+render. The prose is in the document once, as it was before.
+
+Three things about this that are not obvious, all found by reading the installed
+package or the running page rather than by reasoning:
+
+1. **Slot names must be single words.** `@astrojs/preact`'s server pass
+   camel-cases them (`slotName()` turns `how-it-works` into `howItWorks`); the
+   client hydration pass assigns `props[key]` from the raw template name. A
+   hyphenated slot renders at build and hydrates to `undefined` — the prose
+   vanishes the moment the island wakes up.
+
+2. **TypeScript cannot enforce that a page passes them.** `astro check` types a
+   framework component's children as `children`, not as named props, so
+   declaring the props required *fails* on a page that passes all six
+   correctly. They are therefore optional in the type and enforced in
+   `scripts/check-slots.mjs` against the built HTML — the same reasoning as
+   D24, where the defect only exists in the output.
+
+3. **`<astro-slot>` is `display: contents`.** A margin from `space-y-*` lands on
+   a box that generates no layout, so slot content sits flush against its
+   neighbours. Every gate passed; the browser showed 0px where there should
+   have been 12px. The fix is a real element on each side of the boundary: the
+   island wraps the slot in a plain `<div>` to take the outer gap, and the page
+   wraps its own content in `space-y-3` for the inner ones. Single-paragraph
+   slots avoid the problem entirely by keeping the `<p>` in the island and
+   passing only inline text.
+
+The third is the reason the working agreement says to open a browser. It would
+have shipped otherwise.
 
 ### D27 — "Pages" is two numbers, and only one of them is the build's
 

@@ -24,8 +24,8 @@ changes the answer to "what exists" or "what is next".
 | Pages built | 10 (9 substantive — `/404` is not) |
 | Working calculators | 2 |
 | Tests | 136 passing |
-| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts |
-| Worst-page JS | 17.92 KB of 18 KB (0.08 KB spare) |
+| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots |
+| Worst-page JS | 17.42 KB of 18 KB (0.58 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only) |
 
 ---
@@ -63,7 +63,8 @@ by page as it was under D25.
 **Gates** (`scripts/`) — `check-js-budget.mjs` (per-page module graph *and*
 inline scripts), `check-links.mjs` (every internal href resolves; indexability
 invariant), `check-spacing.mjs` (missing spaces in rendered prose),
-`check-state.mjs` (the counts in this file match the build).
+`check-state.mjs` (the counts in this file match the build),
+`check-slots.mjs` (every prose slot an island declares reaches its page).
 
 Every gate has been deliberately broken once to prove it exits non-zero. A gate
 that has never failed is not a gate.
@@ -83,7 +84,9 @@ Nothing in code depends on these, but launch does.
 2. **Cloudflare DNS migration.** The domain carries **live email** — MX, SPF,
    DMARC and three DKIM CNAMEs. Recreate every one in Cloudflare *before*
    switching nameservers, and test mail end-to-end as a gate before anything
-   else. Exact records are in the project charter §13.
+   else. Records and the full procedure: `docs/DNS.md`. That file used to say
+   "the project charter §13", which is not in this repository — the values are
+   now here, flagged as operator-supplied and unverified against the zone.
 
 3. **Search Console** verification and sitemap submission, once the domain
    resolves.

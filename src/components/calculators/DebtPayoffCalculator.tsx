@@ -7,6 +7,24 @@
  * PRIVACY (CLAUDE.md): every figure is computed in this browser. Nothing is
  * transmitted, and nothing is written to storage. Debt NAMES are never encoded
  * into the shareable URL — see lib/params.ts for why.
+ *
+ * WHY THE PROSE ARRIVES AS SLOTS (Prose props below):
+ * Every string literal in this file's JSX is in the client bundle, because the
+ * component has to be able to re-render it. Sentences that never change are
+ * therefore paid for twice: once as HTML in the document, once as JavaScript
+ * that could reproduce that HTML but never will. Passing them from the .astro
+ * page keeps them in the document only.
+ *
+ * They are also inert once there. @astrojs/preact wraps slot content in its
+ * StaticHtml component, which sets `shouldComponentUpdate = () => false`, so
+ * this prose is not re-rendered on every keystroke the way it used to be.
+ *
+ * SLOT NAMES MUST BE SINGLE WORDS. The server pass camel-cases them
+ * (`slotName()` in @astrojs/preact/dist/server.js turns `how-it-works` into
+ * `howItWorks`) but the client hydration pass in client.js assigns
+ * `props[key]` from the raw template name. A hyphenated slot therefore renders
+ * at build time and hydrates to `undefined`, blanking the prose the moment the
+ * island wakes up. Checked against the installed package, not from memory.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
@@ -89,7 +107,34 @@ function toDebt(entry: Entry): Debt {
   };
 }
 
-export function DebtPayoffCalculator(): JSX.Element {
+/**
+ * Static prose, rendered by the page and handed in as named slots.
+ *
+ * OPTIONAL BECAUSE THE TYPE SYSTEM CANNOT SEE SLOTS, NOT BECAUSE THEY ARE.
+ * Every member here is mandatory in practice — a missing one silently blanks a
+ * disclosure CLAUDE.md rule 8 requires. But `astro check` types a framework
+ * component's children as `children`, not as named props, so declaring these
+ * required fails typecheck on a page that passes all six correctly.
+ *
+ * The hole that leaves is closed where it is actually observable, in the built
+ * HTML: scripts/check-slots.mjs asserts every name below reaches the page.
+ */
+export interface Prose {
+  /** "Everything is worked out in your browser…" */
+  readonly privacy?: JSX.Element;
+  /** What avalanche and snowball target. */
+  readonly strategies?: JSX.Element;
+  /** The per-month formula and where the surplus goes. */
+  readonly method?: JSX.Element;
+  /** Monthly rounding, and why a statement will differ. */
+  readonly rounding?: JSX.Element;
+  /** Where the name on the report does and does not go. */
+  readonly retention?: JSX.Element;
+  /** Shown when the payment never clears the balance. */
+  readonly stalled?: JSX.Element;
+}
+
+export function DebtPayoffCalculator(prose: Prose): JSX.Element {
   const [state, setState] = useUrlState<State>({ decode, encode, initial: INITIAL });
   const [nextId, setNextId] = useState(STARTER.length + 1);
 
@@ -201,9 +246,7 @@ export function DebtPayoffCalculator(): JSX.Element {
         <h2 id="debts-heading" class="text-lg font-semibold">
           Your debts
         </h2>
-        <p class="text-ink-soft mt-1 text-sm">
-          Everything is worked out in your browser. Nothing you type is sent anywhere.
-        </p>
+        <p class="text-ink-soft mt-1 text-sm">{prose.privacy}</p>
 
         <div class="mt-4 space-y-3">
           {state.entries.map((entry, index) => (
@@ -330,6 +373,7 @@ export function DebtPayoffCalculator(): JSX.Element {
             onView={(v) => patch({ view: v })}
             name={preparedFor}
             onName={setPreparedFor}
+            prose={prose}
           />
         )
       )}
@@ -345,6 +389,7 @@ interface ResultsProps {
   onView: (view: View) => void;
   name: string;
   onName: (value: string) => void;
+  prose: Prose;
 }
 
 interface Row {
@@ -354,7 +399,14 @@ interface Row {
   remaining: Minor;
 }
 
-function Results({ comparison, view, onView, name, onName }: ResultsProps): JSX.Element {
+function Results({
+  comparison,
+  view,
+  onView,
+  name,
+  onName,
+  prose,
+}: ResultsProps): JSX.Element {
   const shown: PayoffResult = comparison[view];
 
   const rows: Row[] = shown.schedule.map((m) => ({
@@ -400,9 +452,7 @@ function Results({ comparison, view, onView, name, onName }: ResultsProps): JSX.
           role="alert"
           class="rounded-panel border-caution/40 bg-caution/5 border p-4 text-sm"
         >
-          At this payment the balance never clears — the interest charged each month is
-          more than the amount being paid, so the debt grows. The schedule below shows it
-          rising.
+          {prose.stalled}
         </p>
       ) : (
         <div class="grid gap-3 sm:grid-cols-3">
@@ -445,8 +495,7 @@ function Results({ comparison, view, onView, name, onName }: ResultsProps): JSX.
           ))}
         </div>
         <p class="text-ink-soft mt-2 text-sm">
-          Avalanche targets the highest rate first; snowball targets the smallest balance
-          first.{' '}
+          {prose.strategies}{' '}
           {comparison.interestDifferenceBetweenStrategies === 0 ? (
             <>
               On these figures they cost exactly the same — your smallest balance is also
@@ -488,21 +537,12 @@ function Results({ comparison, view, onView, name, onName }: ResultsProps): JSX.
           </summary>
 
           <div class="text-ink-soft mt-3 space-y-3 text-sm">
-            <p>
-              Each month, interest is charged on the balance you owed at the start of the
-              month, then your payment is applied:
-            </p>
-            <p class="numeric rounded-control bg-surface p-3">
-              interest = balance × (annual rate ÷ 12)
-              <br />
-              new balance = balance + interest − payment
-            </p>
-            <p>
-              Every debt gets its minimum. Whatever is left of your monthly total goes to
-              a single target debt — the highest rate under avalanche, the smallest
-              balance under snowball. When a debt clears, its minimum joins the surplus,
-              which is why the balance falls faster over time.
-            </p>
+            {/* A real element on this side of the boundary. <astro-slot> is
+                `display: contents`, so a margin applied to it by space-y-3 is
+                applied to a box that generates no layout — this div is what
+                actually takes the gap. The slot content brings its own internal
+                spacing; see the page. */}
+            <div>{prose.method}</div>
 
             <p class="text-ink font-medium">Month 1, in full:</p>
             <div class="overflow-x-auto">
@@ -538,12 +578,7 @@ function Results({ comparison, view, onView, name, onName }: ResultsProps): JSX.
               </table>
             </div>
 
-            <p>
-              Figures are rounded to the cent each month, the way a statement does it.
-              Credit card issuers charge interest daily on an average daily balance, which
-              shifts the total slightly depending on when in the month you pay — so treat
-              this as a close estimate rather than a lender quote.
-            </p>
+            <p>{prose.rounding}</p>
           </div>
         </details>
       )}
@@ -578,10 +613,7 @@ function Results({ comparison, view, onView, name, onName }: ResultsProps): JSX.
           onInput={(e) => onName((e.target as HTMLInputElement).value)}
           class="border-line-strong bg-surface rounded-control mt-1 w-56 border px-2 py-1.5 text-sm"
         />
-        <p class="text-ink-mute mt-1 text-xs">
-          Stays on this device. Never saved, never in the link. The PDF carries the full
-          schedule and a link back to these figures.
-        </p>
+        <p class="text-ink-mute mt-1 text-xs">{prose.retention}</p>
       </div>
 
       <ScheduleTable
