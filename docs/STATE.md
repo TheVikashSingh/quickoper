@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-08, after PR #16.
+**Updated:** 2026-08-08, after PR #17.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -25,7 +25,7 @@ changes the answer to "what exists" or "what is next".
 | Working calculators | 2 |
 | Tests | 136 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots |
-| Worst-page JS | 17.42 KB of 18 KB (0.58 KB spare) |
+| Worst-page JS | 17.48 KB of 18 KB (0.52 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only) |
 
 ---
@@ -58,7 +58,8 @@ headings), `Rosette.astro` (radial medallion, legible down to 28px),
 `LatheBand.astro` (tiled braided wave), `NoteFrame.astro` (double rule +
 corner rosettes), `Rule.astro`. Build-time SVG, zero JavaScript, `currentColor`.
 The banknote identity is applied site-wide through `BaseLayout` (D29), not page
-by page as it was under D25.
+by page as it was under D25. The masthead and footer are bands of dark ink with
+their own token set, ruled in brand (D30).
 
 **Gates** (`scripts/`) — `check-js-budget.mjs` (per-page module graph *and*
 inline scripts), `check-links.mjs` (every internal href resolves; indexability
