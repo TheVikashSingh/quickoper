@@ -22,7 +22,7 @@
  * everything regardless of what is on screen.
  */
 
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 
 export interface Column<Row> {
@@ -51,6 +51,16 @@ export function ScheduleTable<Row>({
   rowKey = (_row, index) => String(index),
 }: ScheduleTableProps<Row>): JSX.Element {
   const [expanded, setExpanded] = useState(false);
+
+  // A printed schedule must be complete. Collapsed rows are not in the DOM, so
+  // CSS alone cannot recover them — the expansion has to happen before the
+  // print snapshot is taken. `beforeprint` fires for Ctrl+P and for the
+  // Save-as-PDF button alike.
+  useEffect(() => {
+    const expand = () => setExpanded(true);
+    window.addEventListener('beforeprint', expand);
+    return () => window.removeEventListener('beforeprint', expand);
+  }, []);
 
   const truncated = rows.length > initialRows;
   const visible = expanded || !truncated ? rows : rows.slice(0, initialRows);

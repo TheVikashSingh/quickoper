@@ -1,13 +1,49 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { DebtPayoffCalculator } from '../../components/calculators/DebtPayoffCalculator';
+import { sourceRef } from '../../lib/schema';
 
-// NOT DONE per CLAUDE.md rule 7 — the 800+ word derivation, FAQ block and
-// sources are still missing, so this page stays noindex until they land in the
-// next pull request. Shipping the tool first keeps the diff reviewable; opening
-// it to search before the written content exists would be the AdSense-rejection
-// pattern the charter warns about.
-const CONTENT_PENDING = true;
+const AUTHOR = 'Vikash Singh';
+const LAST_VERIFIED = '2026-08-07';
+
+// Parsed, not just declared. A malformed or undated source fails the BUILD
+// rather than reaching production (CLAUDE.md rules 6 and 7). This is the same
+// schema that validates generated data files.
+const SOURCES = [
+  {
+    label: 'CFPB — How is my credit card interest calculated?',
+    url: 'https://www.consumerfinance.gov/ask-cfpb/how-is-my-credit-card-interest-calculated-en-51/',
+    retrieved: '2026-08-07',
+  },
+  {
+    label: 'Regulation Z, Appendix M1 — Repayment Disclosures',
+    url: 'https://www.consumerfinance.gov/rules-policy/regulations/1026/m1/',
+    retrieved: '2026-08-07',
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'Why does this not match the payoff date on my statement?',
+    a: 'Two reasons, both structural. Card issuers charge interest daily against an average daily balance, so the exact figure depends on which day of the month your payment lands — something no calculator can know. And the repayment estimate printed on your statement is itself an estimate: Regulation Z Appendix M1, which defines how issuers must produce it, permits a margin of error of two months. A difference of a few dollars, or a month either way, is expected.',
+  },
+  {
+    q: 'Does the avalanche method always cost less than snowball?',
+    a: 'In pure interest, yes — targeting the highest rate first is mathematically optimal, and this calculator will never show snowball costing less. But the size of the gap varies enormously with your figures, and it is often small. On the example above the difference between the two methods is $230, while either one saves $5,021 against paying only the minimums. Run your own numbers rather than assuming the gap is large.',
+  },
+  {
+    q: 'What happens if my minimum payment is less than the interest?',
+    a: 'The balance grows. The calculator detects this and says so plainly instead of showing an impossible payoff date — the schedule will show the balance rising and the principal column going negative, which is what negative amortisation looks like month by month.',
+  },
+  {
+    q: 'Is anything I type sent to your server?',
+    a: 'No, and there is no server to send it to. This is a static page; every figure is computed in your browser by JavaScript that has already been downloaded. The shareable link in your address bar carries balances, rates and minimum payments only — never the names you give your debts.',
+  },
+  {
+    q: 'Can I keep a copy of the schedule?',
+    a: 'Yes, two ways. Download spreadsheet (CSV) gives you every row for your own analysis. Save as PDF or print produces a document containing your debts, the summary figures, the chart and the complete month-by-month schedule, with a link back to the exact scenario so whoever you send it to can change the numbers themselves.',
+  },
+];
 
 const structuredData = [
   {
@@ -19,7 +55,8 @@ const structuredData = [
     url: 'https://quickoper.com/finance/debt-payoff-calculator',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     description:
-      'Compare the avalanche and snowball debt payoff methods against paying minimums. Full month-by-month schedule, chart and CSV export. Runs entirely in your browser.',
+      'Compare the avalanche and snowball debt payoff methods against paying minimums. Full month-by-month schedule, chart, CSV and PDF export. Runs entirely in your browser.',
+    author: { '@type': 'Person', name: AUTHOR },
   },
   {
     '@context': 'https://schema.org',
@@ -29,24 +66,26 @@ const structuredData = [
       {
         '@type': 'ListItem',
         position: 2,
-        name: 'Finance',
-        item: 'https://quickoper.com/finance',
-      },
-      {
-        '@type': 'ListItem',
-        position: 3,
         name: 'Debt payoff calculator',
         item: 'https://quickoper.com/finance/debt-payoff-calculator',
       },
     ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
   },
 ];
 ---
 
 <BaseLayout
   title="Debt payoff calculator — avalanche vs snowball | QuickOper"
-  description="Compare the avalanche and snowball methods against paying minimums. Full month-by-month schedule, chart and CSV export. Every figure is worked out in your browser — nothing you type is sent anywhere."
-  noindex={CONTENT_PENDING}
+  description="Compare the avalanche and snowball methods against paying minimums. Full month-by-month schedule, chart, CSV and PDF export. Every figure is worked out in your browser — nothing you type is sent anywhere."
   structuredData={structuredData}
 >
   <article>
@@ -61,9 +100,238 @@ const structuredData = [
       <DebtPayoffCalculator client:load />
     </div>
 
-    <!-- Rule 12: visible without expanding, on every calculator page. -->
+    <!-- ── Explanation (CLAUDE.md rule 7) ───────────────────────────────── -->
+
+    <section class="prose-like text-ink-soft mt-16 space-y-4">
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        How the payoff date is worked out
+      </h2>
+
+      <p>
+        Every month, two things happen to each debt, in this order: interest is added,
+        then your payment is taken off. The calculator repeats that until the balance
+        reaches zero, and the number of times it has to repeat is your payoff date. There
+        is no closed-form shortcut once several debts and a shifting surplus are involved,
+        which is why the answer comes from a month-by-month simulation rather than a
+        single formula.
+      </p>
+
+      <p>The interest added to one debt in one month is:</p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        interest = balance × (annual rate ÷ 12)
+      </p>
+
+      <p>
+        A $6,000 balance at 22.99% is charged 22.99% ÷ 12 = 1.9158% in a month, which is
+        $114.95. That figure is added to what you owe before any payment is applied, so
+        the payment has to clear the interest before it touches the principal. If you pay
+        $150 against that debt, $114.95 of it services the interest and only $35.05 comes
+        off the balance.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        Where the surplus goes
+      </h2>
+
+      <p>
+        Every debt receives its minimum payment. Whatever is left of your monthly total —
+        the surplus — goes to exactly one target debt. Which debt that is depends on the
+        method:
+      </p>
+
+      <ul class="list-disc space-y-1 pl-5">
+        <li>
+          <strong class="text-ink">Avalanche</strong> targets the highest interest rate, because
+          that is where each dollar cancels the most future interest.
+        </li>
+        <li>
+          <strong class="text-ink">Snowball</strong> targets the smallest balance, because that
+          is the debt that disappears soonest.
+        </li>
+      </ul>
+
+      <p>
+        When a debt clears, its minimum payment is freed. That money is not returned to
+        you — it joins the surplus and goes to the next target. This is the part people
+        underestimate. Each cleared debt permanently increases the amount attacking the
+        remaining ones, so the schedule accelerates rather than running at a constant
+        pace. It is also why both methods finish far sooner than the minimums-only
+        baseline, and often within a month or two of each other.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        A worked example you can check
+      </h2>
+
+      <p>
+        Take three debts totalling $9,400 — a $900 store card at 29.99%, a $6,000 credit
+        card at 22.99%, and a $2,500 personal loan at 6.99% — with minimum payments of
+        $30, $150 and $120, and $600 a month available.
+      </p>
+
+      <p>
+        In month one, interest is $22.49 on the store card, $114.95 on the credit card and
+        $14.56 on the loan: $152.00 in total. The minimums come to $300, leaving a $300
+        surplus. Under avalanche that surplus goes to the store card at 29.99%, which
+        therefore receives $330 against a balance of $900 plus $22.49 of interest.
+      </p>
+
+      <p>Repeating that for every month gives:</p>
+
+      <div class="not-prose overflow-x-auto">
+        <table class="border-line w-full border-collapse border text-sm">
+          <thead>
+            <tr class="bg-sunken">
+              <th class="border-line border p-2 text-left">Approach</th>
+              <th class="border-line border p-2 text-right">Months</th>
+              <th class="border-line border p-2 text-right">Interest paid</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border-line border p-2">Avalanche</td>
+              <td class="numeric border-line border p-2 text-right">19</td>
+              <td class="numeric border-line border p-2 text-right">$1,427.27</td>
+            </tr>
+            <tr>
+              <td class="border-line border p-2">Snowball</td>
+              <td class="numeric border-line border p-2 text-right">19</td>
+              <td class="numeric border-line border p-2 text-right">$1,657.92</td>
+            </tr>
+            <tr>
+              <td class="border-line border p-2">Minimum payments only</td>
+              <td class="numeric border-line border p-2 text-right">77</td>
+              <td class="numeric border-line border p-2 text-right">$6,448.64</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        The result worth noticing is not that avalanche wins. It is the size of the two
+        gaps. Choosing avalanche over snowball saves <strong class="text-ink"
+          >$230.65</strong
+        >. Choosing either one over paying the minimums saves
+        <strong class="text-ink">$5,021.37</strong> and finishes
+        <strong class="text-ink">58 months</strong> sooner. The decision that moves the number
+        by a factor of twenty is how much you pay, not which order you pay it in.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        Where these figures will differ from your statement
+      </h2>
+
+      <p>
+        This calculator charges interest once a month against the balance you owed at the
+        start of it. Real card issuers charge daily, against an average daily balance, so
+        the exact total depends on which day of the month your payment arrives — something
+        the calculator cannot know and does not ask. Paying earlier in the cycle costs
+        slightly less than this model predicts; paying later costs slightly more.
+      </p>
+
+      <p>
+        For scale: the repayment estimate that appears on your own statement is produced
+        under Regulation Z Appendix M1, and that regulation explicitly permits it to be
+        <strong class="text-ink">two months out</strong>. It makes the same simplifying
+        assumptions this calculator does — no new spending, a constant payment, no grace
+        period. So the figure printed by your card issuer is an estimate on the same
+        footing as this one, not a precise quote.
+      </p>
+
+      <p>Four things will pull the real number away from the modelled one:</p>
+
+      <ul class="list-disc space-y-1 pl-5">
+        <li>
+          <strong class="text-ink">New spending.</strong> The model assumes you add nothing.
+          Every purchase resets the arithmetic.
+        </li>
+        <li>
+          <strong class="text-ink">Variable rates.</strong> The rate you enter is held constant
+          for the whole schedule. Most card rates track a base rate and move.
+        </li>
+        <li>
+          <strong class="text-ink">Promotional and deferred-interest periods.</strong> A 0%
+          balance transfer that expires mid-schedule is not modelled.
+        </li>
+        <li>
+          <strong class="text-ink">Fees.</strong> Annual fees, late fees and balance transfer
+          fees are not included.
+        </li>
+      </ul>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        How we check the arithmetic
+      </h2>
+
+      <p>
+        The calculation lives in a pure function with no interface attached to it, and it
+        is tested against a figure that exists outside this site. A $10,000 loan at 6.00%
+        over 60 months has a published monthly payment of $193.33, from the standard loan
+        formula every lender and amortisation table uses. Fed that payment, the engine
+        here clears the balance in exactly 60 months and reports $1,599.68 of interest —
+        matching the closed-form figure to the cent.
+      </p>
+
+      <p>
+        Rounding is done the way a statement does it: to the cent, every month, rather
+        than accumulated at full precision and rounded once at the end. The final payment
+        is reduced to exactly what is left rather than taking the full amount, so the
+        schedule never overshoots. The tests are public and you are welcome to read them.
+      </p>
+    </section>
+
+    <!-- ── FAQ ──────────────────────────────────────────────────────────── -->
+
+    <section class="mt-14" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="text-2xl font-semibold tracking-tight">
+        Common questions
+      </h2>
+      <dl class="mt-4 space-y-5">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <!-- ── Sources and freshness ────────────────────────────────────────── -->
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="text-2xl font-semibold tracking-tight">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          The monthly payment cross-check uses the standard loan payment formula, P = B·i
+          ÷ (1 − (1 + i)<sup>−n</sup>), which is independently derivable and quoted
+          identically by every amortisation table.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {AUTHOR}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <!-- ── Disclaimer: visible without expanding (rule 12) ──────────────── -->
+
     <aside
-      class="rounded-panel border-line bg-sunken text-ink-soft mt-12 border p-4 text-sm"
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
       aria-label="Disclaimer"
     >
       <p>
@@ -77,5 +345,16 @@ const structuredData = [
         Treat the result as a close estimate, not a lender quote.
       </p>
     </aside>
+
+    <!-- ── Related (rule 7) ─────────────────────────────────────────────── -->
+
+    <nav class="no-print mt-14" aria-label="Related tools">
+      <h2 class="text-lg font-semibold">Related</h2>
+      <p class="text-ink-mute mt-2 text-sm">
+        More calculators are being added one at a time, each with its working shown and
+        its arithmetic tested against published figures.
+        <a class="text-brand underline" href="/">See what is live</a>.
+      </p>
+    </nav>
   </article>
 </BaseLayout>
