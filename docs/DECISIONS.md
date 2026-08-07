@@ -239,6 +239,62 @@ page reachable within two clicks" and "no placeholder pages" are explicit
 AdSense criteria, and a site whose own footer does not work undercuts the single
 claim it makes about carefulness.
 
+### D21 — Emailing reports is rejected, not deferred
+
+Requested by the operator and then withdrawn, correctly. The site's proposition
+is that nothing you type leaves your device; emailing a report requires
+transmitting the figures, which breaks it literally rather than technically.
+
+Recorded so it is not re-proposed as "just a small endpoint": Cloudflare Workers
+**cannot send mail** — V8 isolates block raw TCP so SMTP is impossible, and
+Email Routing is inbound-only. It would need a third-party API, a key that
+cannot live in client code, a second DKIM setup alongside Hostinger's, and abuse
+protection, because an unprotected send endpoint is a spam relay that would
+poison the domain's reputation including `hello@`.
+
+If "keep a copy" is wanted again, the answer already exists: **Save as PDF or
+print**. Zero bytes, transmits nothing, better document than a generated
+attachment.
+
+### D22 — The name on a printed report is local-only
+
+A name field titles the PDF. It is deliberately **not** in the URL and **not**
+persisted — same reasoning as D14. A name in a shared link identifies whoever
+shared it, which is the exact harm D14 avoids for lender names. It lives in
+component state and dies with the tab.
+
+### D23 — Deduplicating UI *across* islands can cost bytes rather than save them
+
+`Stat` was byte-identical in both calculators. Extracting it to a shared
+component made the debt payoff page **worse**: 18.01KB → 18.05KB. Moving code
+into the shared chunk trades one well-compressed stream for two poorly-compressed
+ones — the same phenomenon that made the first calculator heavier when the
+second was added.
+
+Reverted. **Measure before deduplicating across island boundaries.** The usual
+instinct is wrong here. Deduplication *within* a single island is still free.
+
+The 0.01KB breach was instead resolved by tightening prose written in the same
+pull request — editing my own verbose copy, not cutting a feature to fit.
+
+### D24 — Prose spacing is a build-time gate
+
+Astro trims the newline between prose and an inline element, so
+
+```
+we keep anyway:
+<strong>if verifying…</strong>
+```
+
+renders as `anyway:if verifying`. **49 instances shipped to live pages**, found
+by a human reading the site — the worst possible way to find anything.
+
+The defect is invisible in the source and invisible in review; it exists only in
+the built HTML, so that is where `scripts/check-spacing.mjs` looks. Fix with an
+explicit `{' '}`. Mark deliberate adjacency with `data-tight`
+(`Quick<span data-tight>Oper</span>` is one word in two colours). `<sup>` and
+`<sub>` are exempt because `1.05<sup>30</sup>` is correct.
+
 ### D20 — Build order, and the jurisdiction decision
 
 Tools 1 and 2 (debt payoff, Coast FIRE) are **jurisdiction-agnostic on purpose**,

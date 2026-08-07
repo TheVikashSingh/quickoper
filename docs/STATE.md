@@ -1,12 +1,13 @@
 # Project state
 
-**Updated:** 2026-08-07, after PR #9.
+**Updated:** 2026-08-07, after PR #11.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
 
 If you are a new session: read `CLAUDE.md` first (the rules), then
 `docs/DECISIONS.md` (why the rules are what they are), then this.
+`docs/VERIFICATION.md` is how the operator independently checks the arithmetic.
 
 ---
 
@@ -18,8 +19,8 @@ If you are a new session: read `CLAUDE.md` first (the rules), then
 | Pages built | 11 |
 | Working calculators | 2 |
 | Tests | 136 passing |
-| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links |
-| Worst-page JS | 17.82 KB of 18 KB (0.18 KB spare) |
+| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links · prose spacing |
+| Worst-page JS | 17.92 KB of 18 KB (0.08 KB spare) |
 
 ---
 
@@ -109,14 +110,18 @@ everything downstream, and that clock does not start until the domain resolves.
 
 ## Open questions
 
-- **Emailing a report to a visitor.** Requested, not built. It breaks the
-  "nothing leaves your device" claim unless scoped to an explicit action, and an
-  unprotected send endpoint is a spam relay that would poison the domain's mail
-  reputation — including `hello@`. The cheap first version is to email a
-  *scenario link* rather than a PDF attachment: no PDF library, no attachment
-  size limits, and it doubles as list capture. Needs a decision before building.
+- **Illustration.** The pages are text-only and read as bland. Inline SVG in the
+  ledger idiom (engraved rules, a guilloché rosette, section ornaments) costs
+  zero JavaScript and no network requests, themes via `currentColor`, and would
+  give the pages visual rhythm. Not started; requested by the operator.
+- **Surfacing `docs/VERIFICATION.md` publicly.** It currently exists for the
+  operator. A public "check our arithmetic in your own spreadsheet" page would
+  be a genuine trust asset and fits the methodology pitch exactly.
 - **Whether the money identity should distinguish calculator pages** from trust
   pages. Currently site-wide (D3).
+
+**Closed:** emailing reports to visitors. Rejected on privacy grounds by the
+operator — see D21. Do not re-propose.
 
 ---
 

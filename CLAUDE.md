@@ -13,6 +13,9 @@ Three files carry everything a new session needs. Read them in order:
    attempted and are recorded as superseded.
 3. **`docs/STATE.md`** — what exists today, what is next, what is blocked on the
    operator.
+4. **`docs/VERIFICATION.md`** — how to check every published figure against Excel,
+   Google Sheets and the SEC's own calculator. Point anyone worried about an
+   AI-written codebase at this rather than reassuring them.
 
 These are the handoff. A session that has read them needs no other context, and
 the git history plus pull request bodies carry the detail if a specific decision

@@ -116,10 +116,10 @@ const structuredData = [
     </h2>
 
     <p>
-      Computers store decimal fractions approximately. In JavaScript,
-      <code class="numeric">0.1 + 0.2</code> is
-      <code class="numeric">0.30000000000000004</code>, and
-      <code class="numeric">1.005 × 100</code> is
+      Computers store decimal fractions approximately. In JavaScript,{' '}
+      <code class="numeric">0.1 + 0.2</code> is{' '}
+      <code class="numeric">0.30000000000000004</code>, and{' '}
+      <code class="numeric">1.005 × 100</code> is{' '}
       <code class="numeric">100.49999999999999</code> — so the obvious way to round $1.005 to
       the cent gives $1.00 instead of $1.01. That single defect is responsible for a large share
       of the one-cent discrepancies people notice in financial software.
@@ -127,7 +127,7 @@ const structuredData = [
 
     <p>
       Every amount here is stored as a whole number of cents or pence, never as a decimal.
-      Where a fraction is unavoidable — interest is
+      Where a fraction is unavoidable — interest is{' '}
       <code class="numeric">balance × rate ÷ 12</code>, which rarely lands on a whole cent
       — the rounding is explicit and tested at the boundary in both directions.
     </p>
@@ -159,7 +159,7 @@ const structuredData = [
     </h2>
 
     <p>
-      There is a rule here that costs us traffic and we keep anyway:
+      There is a rule here that costs us traffic and we keep anyway:{' '}
       <strong class="text-ink">
         if verifying an answer needs expertise we do not have, we do not build the tool.
       </strong>
@@ -176,9 +176,11 @@ const structuredData = [
     <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Read the tests</h2>
 
     <p>
-      The source and every test are public at
+      The source and every test are public at{' '}
       <a class="text-brand underline" href={SITE.repo} rel="noopener">{SITE.repo}</a>. The
-      calculation modules are under <code>src/lib/calc/</code> and their fixtures under
+      calculation modules are under <code>src/lib/calc/</code> and their fixtures under{
+        ' '
+      }
       <code>tests/calc/</code>, with the source of each expected value cited in a comment
       directly above it.
     </p>
@@ -200,7 +202,7 @@ const structuredData = [
     <p>
       Verified arithmetic is not financial advice, and we are careful not to blur the two.
       QuickOper works out what the numbers do. It does not know your circumstances and
-      does not tell you what to do about them. See
+      does not tell you what to do about them. See{' '}
       <a class="text-brand underline" href="/about">about</a> for what that means in practice.
     </p>
 

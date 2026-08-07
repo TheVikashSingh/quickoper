@@ -63,6 +63,11 @@ export function CoastFireCalculator(): JSX.Element {
     initial: parseParams(PARAMS, ''),
   });
 
+  // Never in the URL and never persisted, for the same reason lender names are
+  // not (see lib/params.ts): a name in a shared link identifies whoever shared
+  // it. It exists only to title the printed document.
+  const [preparedFor, setPreparedFor] = useState('');
+
   const [printedAt, setPrintedAt] = useState<{ url: string; date: string } | null>(null);
   useEffect(() => {
     const capture = () => {
@@ -117,8 +122,8 @@ export function CoastFireCalculator(): JSX.Element {
           <div style="border-bottom:2px solid #000;padding-bottom:6pt;margin-bottom:10pt">
             <strong style="font-size:13pt">QuickOper — Coast FIRE projection</strong>
             <div style="font-size:8pt;margin-top:3pt">
-              Prepared {printedAt.date} · in today's money · worked out in the browser,
-              nothing transmitted
+              {preparedFor.trim() !== '' && <>For {preparedFor.trim()} · </>}
+              {printedAt.date} · in today's money · worked out in the browser
             </div>
             <div style="font-size:7.5pt;word-break:break-all;margin-top:2pt">
               Reopen and change these figures: {printedAt.url}
@@ -219,7 +224,13 @@ export function CoastFireCalculator(): JSX.Element {
         </p>
       ) : (
         outcome.result !== null && (
-          <Results result={outcome.result} rows={rows} state={state} />
+          <Results
+            result={outcome.result}
+            rows={rows}
+            state={state}
+            name={preparedFor}
+            onName={setPreparedFor}
+          />
         )
       )}
     </div>
@@ -232,10 +243,14 @@ function Results({
   result,
   rows,
   state,
+  name,
+  onName,
 }: {
   result: NonNullable<ReturnType<typeof calculateCoastFire>>;
   rows: Row[];
   state: State;
+  name: string;
+  onName: (value: string) => void;
 }): JSX.Element {
   const years = Math.round(state.r) - Math.round(state.a);
 
@@ -363,6 +378,20 @@ function Results({
             Save as PDF or print
           </button>
         </div>
+        <label for="prepared-for" class="text-ink-mute mt-3 block text-xs font-medium">
+          Name on the report (optional)
+        </label>
+        <input
+          id="prepared-for"
+          type="text"
+          value={name}
+          maxLength={60}
+          onInput={(e) => onName((e.target as HTMLInputElement).value)}
+          class="border-line-strong bg-surface rounded-control mt-1 w-56 border px-2 py-1.5 text-sm"
+        />
+        <p class="text-ink-mute mt-1 text-xs">
+          Stays on this device. Never saved, never in the link.
+        </p>
       </div>
 
       <ScheduleTable
