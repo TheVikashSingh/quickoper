@@ -1,0 +1,17 @@
+# Cloudflare Workers static assets.
+#
+# Not deployed yet. Weeks 1-3 run locally; previews land on *.workers.dev; the
+# custom domain is attached at week 4-5 once there are real pages to index
+# (charter §13). This file exists so that step is configuration, not work.
+#
+# HARD CONSTRAINT (CLAUDE.md, backend policy): never add a KV, D1, R2 or
+# Durable Object binding. Those are what would make this genuinely
+# Cloudflare-only. The site must stay deployable anywhere as a static directory.
+
+name = "quickoper"
+compatibility_date = "2026-08-07"
+
+[assets]
+directory = "./dist"
+# 404.html is served for unmatched paths; everything else is a static file.
+not_found_handling = "404-page"

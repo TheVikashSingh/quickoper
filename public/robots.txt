@@ -1,0 +1,18 @@
+# QuickOper
+#
+# AI crawlers are explicitly ALLOWED. Retrieval systems weight structure and
+# specificity far more than backlink profile, which is the one axis on which a
+# new domain is not automatically last. Blocking them would forfeit the single
+# best channel available to this site.
+#
+# Pre-launch, individual pages carry <meta name="robots" content="noindex">.
+# Crawling must stay permitted for that directive to be seen at all.
+
+User-agent: *
+Allow: /
+
+# Shared calculator permalinks are canonicalised to the clean tool URL and are
+# never submitted in the sitemap. Crawling them wastes budget on duplicates.
+Disallow: /*?*
+
+Sitemap: https://quickoper.com/sitemap-index.xml

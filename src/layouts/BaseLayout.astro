@@ -1,0 +1,110 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Omit to derive from the current URL. */
+  canonical?: string | undefined;
+  /** Set true until the site is ready to be indexed (see charter §13). */
+  noindex?: boolean | undefined;
+  /** Extra JSON-LD nodes for the page (WebApplication, BreadcrumbList, ...). */
+  structuredData?: Record<string, unknown>[] | undefined;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  noindex = false,
+  structuredData = [],
+} = Astro.props;
+
+const canonicalUrl = canonical ?? new URL(Astro.url.pathname, Astro.site).href;
+
+// Organization and Person are site-wide E-E-A-T signals, not decoration.
+// The expertise claimed here is computational, not advisory — stated honestly.
+const organization = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'QuickOper',
+  url: 'https://quickoper.com',
+  description:
+    'Verified-calculation tools for personal money decisions. Every calculation runs in the browser; nothing is transmitted.',
+};
+
+const graph = [organization, ...structuredData];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content="QuickOper" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    {
+      graph.map((node) => (
+        <script type="application/ld+json" set:html={JSON.stringify(node)} is:inline />
+      ))
+    }
+  </head>
+
+  <body class="bg-canvas text-ink min-h-dvh antialiased">
+    <a
+      href="#main"
+      class="focus:rounded-control focus:bg-brand sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:text-white"
+    >
+      Skip to content
+    </a>
+
+    <header class="border-line border-b">
+      <nav
+        class="mx-auto flex max-w-3xl items-center justify-between px-4 py-4"
+        aria-label="Primary"
+      >
+        <a href="/" class="text-lg font-semibold tracking-tight">
+          Quick<span class="text-brand">Oper</span>
+        </a>
+        <ul class="text-ink-soft flex gap-5 text-sm">
+          <li><a class="hover:text-ink" href="/finance">Calculators</a></li>
+          <li><a class="hover:text-ink" href="/methodology">Methodology</a></li>
+          <li><a class="hover:text-ink" href="/about">About</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main id="main" class="mx-auto max-w-3xl px-4 py-10">
+      <slot />
+    </main>
+
+    <footer class="border-line mt-16 border-t">
+      <div class="text-ink-mute mx-auto max-w-3xl px-4 py-8 text-sm">
+        <p class="mb-3">
+          QuickOper computes; it does not advise. Nothing here is financial, tax or
+          investment advice. Every calculation runs entirely in your browser — nothing you
+          type is transmitted or stored.
+        </p>
+        <ul class="flex flex-wrap gap-x-5 gap-y-1">
+          <li><a class="hover:text-ink" href="/methodology">How we verify</a></li>
+          <li><a class="hover:text-ink" href="/privacy">Privacy</a></li>
+          <li><a class="hover:text-ink" href="/terms">Terms</a></li>
+          <li><a class="hover:text-ink" href="/contact">Contact</a></li>
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>

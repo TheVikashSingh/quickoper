@@ -1,0 +1,29 @@
+# QuickOper
+
+> Verified-calculation tools for personal money decisions. Every calculation runs
+> entirely in the visitor's browser; no input is transmitted, logged or stored.
+
+QuickOper computes, it does not advise. Each tool performs deterministic
+arithmetic and publishes its formula, its intermediate values, a full
+period-by-period schedule, and the fixture tests proving its output matches a
+real published third-party figure.
+
+Nothing on this site is financial, tax or investment advice. The expertise
+claimed is computational, not advisory.
+
+## Tools
+
+No calculators are published yet. The first ships shortly; this file is
+maintained alongside them and lists, for each tool: what it computes, its inputs,
+its jurisdiction, and its methodology URL.
+
+## Verification
+
+- [Methodology](https://quickoper.com/methodology): formulas, assumptions and the
+  source of every test fixture.
+- Source and tests: https://github.com/TheVikashSingh/quickoper
+
+## Contact
+
+- [About](https://quickoper.com/about)
+- [Contact](https://quickoper.com/contact)

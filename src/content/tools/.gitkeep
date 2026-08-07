@@ -1,0 +1,4 @@
+# Tool pages (MDX). One entry per calculator.
+# Frontmatter must satisfy the `tools` collection in src/content.config.ts:
+# lastVerified, sources[], author, calculator, jurisdiction, cluster, faq, related.
+# An undated page fails the build. That is deliberate.
