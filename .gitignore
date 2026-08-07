@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.astro/
+.output/
+
+# environment — never commit secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# cloudflare
+.wrangler/
+
+# test artefacts
+coverage/
+test-results/
+playwright-report/
+.nyc_output/
+
+# logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# editor / os
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# local agent overrides — machine-specific, never shared
+.claude/settings.local.json

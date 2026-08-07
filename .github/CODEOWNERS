@@ -1,0 +1,16 @@
+# Anything touching a published number requires a human merge.
+#
+# CI can prove the code matches the fixture. It cannot prove the fixture matches reality.
+# A confidently, consistently, testably wrong figure passes every automated gate — and is
+# the one failure mode this project treats as fatal.
+#
+# Everything not listed here auto-merges once CI is green.
+
+/src/lib/calc/      @TheVikashSingh
+/src/data/          @TheVikashSingh
+/tests/calc/        @TheVikashSingh
+
+# Governance and safety rails
+/CLAUDE.md          @TheVikashSingh
+/.github/           @TheVikashSingh
+/wrangler.toml      @TheVikashSingh
