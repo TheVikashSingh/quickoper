@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-07, after PR #12.
+**Updated:** 2026-08-07, after PR #13.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -21,7 +21,7 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **No.** Nothing is deployed. The domain does not resolve to this site. |
-| Pages built | 11 |
+| Pages built | 10 (9 substantive — `/404` is not) |
 | Working calculators | 2 |
 | Tests | 136 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing |
@@ -39,7 +39,7 @@ changes the answer to "what exists" or "what is next".
 - `/finance/coast-fire-calculator` — coast number, year-by-year projection,
   three-series chart, CSV, printable PDF, shareable URL.
 
-Both complete under rule 7, and both carry an optional name for the printed
+Both complete under rule 8, and both carry an optional name for the printed
 report (local-only — never in the URL, never persisted).
 
 **Content and trust**
@@ -83,7 +83,8 @@ Nothing in code depends on these, but launch does.
 3. **Search Console** verification and sitemap submission, once the domain
    resolves.
 
-4. **Run `docs/VERIFICATION.md`** — six spreadsheet checks, ten minutes. Do this
+4. **Run `docs/VERIFICATION.md`** — five spreadsheet checks and one at
+   investor.gov, ten minutes. Do this
    before launch so "an AI wrote this" becomes a documented verification rather
    than a worry.
 
@@ -99,7 +100,8 @@ Ordered. Nothing here is started.
    island into the `.astro` page (real saving, better architecture); or revisit
    the number with the same discipline as D10. Do **not** deduplicate components
    across islands — that has been measured twice and makes it worse (D23).
-2. **Supporting content** to reach 15+ pages for AdSense. Four more needed.
+2. **Supporting content** to reach 15+ pages for AdSense. Six more needed —
+   the build produces 10 pages, of which 9 are substantive (`/404` is not).
 3. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression that only
    manual measurement caught. Needs Playwright and a headless run.
 4. **Affiliate plumbing** (`/go/*`) before there is anything to put in it.
@@ -112,7 +114,7 @@ Ordered. Nothing here is started.
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **11** — four to go |
+| 15+ substantive pages | **9** — six to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |
