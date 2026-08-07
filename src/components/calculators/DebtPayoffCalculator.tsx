@@ -9,7 +9,7 @@
  * into the shareable URL — see lib/params.ts for why.
  */
 
-import { useCallback, useMemo, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 
 import {
@@ -93,6 +93,30 @@ export function DebtPayoffCalculator(): JSX.Element {
   const [state, setState] = useUrlState<State>({ decode, encode, initial: INITIAL });
   const [nextId, setNextId] = useState(STARTER.length + 1);
 
+  // Captured at print time rather than on every keystroke: the URL is written
+  // debounced, so reading it here guarantees the printed link matches the
+  // figures on the page.
+  const [printedAt, setPrintedAt] = useState<{ url: string; date: string } | null>(null);
+  useEffect(() => {
+    const capture = () => {
+      setPrintedAt({
+        url: window.location.href,
+        date: new Date().toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+      });
+      // The print stylesheet also un-hides disclosure content, but browsers
+      // implement that UA override inconsistently — Chrome has moved the
+      // mechanism more than once. Setting `open` is unambiguous, and a
+      // half-empty PDF missing the workings would be worse than useless.
+      for (const details of document.querySelectorAll('details')) details.open = true;
+    };
+    window.addEventListener('beforeprint', capture);
+    return () => window.removeEventListener('beforeprint', capture);
+  }, []);
+
   const patch = useCallback(
     (changes: Partial<State>) => setState({ ...state, ...changes }),
     [state, setState],
@@ -122,7 +146,54 @@ export function DebtPayoffCalculator(): JSX.Element {
 
   return (
     <div class="space-y-8">
-      <section aria-labelledby="debts-heading">
+      {/* Paper-only masthead. Whoever receives this PDF gets the date it was
+          produced and a link that reopens the exact scenario. */}
+      <div class="print-only avoid-break">
+        <div style="border-bottom:2px solid #000;padding-bottom:6pt;margin-bottom:10pt">
+          <strong style="font-size:13pt">QuickOper — debt payoff schedule</strong>
+          <div style="font-size:8pt;margin-top:3pt">
+            Prepared {printedAt?.date ?? ''} · every figure worked out in the browser,
+            nothing transmitted
+          </div>
+          {printedAt !== null && (
+            <div style="font-size:7.5pt;word-break:break-all;margin-top:2pt">
+              Reopen and change these figures: {printedAt.url}
+            </div>
+          )}
+        </div>
+
+        <h2 style="font-size:11pt;margin:0 0 4pt">The debts in this scenario</h2>
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Debt</th>
+              <th style="text-align:right">Balance</th>
+              <th style="text-align:right">Rate</th>
+              <th style="text-align:right">Minimum</th>
+            </tr>
+          </thead>
+          <tbody>
+            {state.entries.map((e) => (
+              <tr key={e.id}>
+                <td style="text-align:left">{e.name}</td>
+                <td style="text-align:right">{format(fromMajor(e.balance), CURRENCY)}</td>
+                <td style="text-align:right">{e.rate.toFixed(2)}%</td>
+                <td style="text-align:right">{format(fromMajor(e.minimum), CURRENCY)}</td>
+              </tr>
+            ))}
+            <tr>
+              <td style="text-align:left">
+                <strong>Paying each month</strong>
+              </td>
+              <td colSpan={3} style="text-align:right">
+                <strong>{format(fromMajor(state.budget), CURRENCY)}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <section aria-labelledby="debts-heading" class="no-print">
         <h2 id="debts-heading" class="text-lg font-semibold">
           Your debts
         </h2>
@@ -214,7 +285,7 @@ export function DebtPayoffCalculator(): JSX.Element {
         </button>
       </section>
 
-      <section aria-labelledby="budget-heading">
+      <section aria-labelledby="budget-heading" class="no-print">
         <h2 id="budget-heading" class="text-lg font-semibold">
           What you can pay each month
         </h2>
@@ -469,16 +540,30 @@ function Results({ comparison, view, onView }: ResultsProps): JSX.Element {
         </details>
       )}
 
-      <div>
-        <button
-          type="button"
-          onClick={() =>
-            downloadCsv(`quickoper-${view}-schedule.csv`, toCsv(rows, csvColumns))
-          }
-          class="rounded-control border-line-strong hover:bg-sunken border px-3 py-1.5 text-sm font-medium"
-        >
-          Download full schedule (CSV)
-        </button>
+      <div class="no-print">
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              downloadCsv(`quickoper-${view}-schedule.csv`, toCsv(rows, csvColumns))
+            }
+            class="rounded-control border-line-strong hover:bg-sunken border px-3 py-1.5 text-sm font-medium"
+          >
+            Download spreadsheet (CSV)
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            class="rounded-control border-line-strong hover:bg-sunken border px-3 py-1.5 text-sm font-medium"
+          >
+            Save as PDF or print
+          </button>
+        </div>
+        <p class="text-ink-mute mt-2 text-xs">
+          The PDF carries your debts, the summary, the chart and the complete
+          month-by-month schedule — plus a link back to these exact figures, so whoever
+          you send it to can change them.
+        </p>
       </div>
 
       <ScheduleTable

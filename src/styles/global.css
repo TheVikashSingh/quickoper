@@ -112,4 +112,124 @@
     font-family: var(--font-numeric);
     font-variant-numeric: tabular-nums;
   }
+
+  /* Shown only when printing. See the @media print block below. */
+  .print-only {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Print / Save as PDF.
+
+   This is the "download it as a document" feature, and it is deliberately CSS
+   rather than a PDF library: jsPDF and pdf-lib are ~90KB and ~140KB gzipped
+   against a 15KB per-page budget, so they were never available. The browser's
+   own print pipeline is better anyway — selectable text, real typography, and
+   the chart prints as VECTOR rather than a blurry raster.
+
+   The printed document is designed, not merely allowed to happen: interactive
+   chrome is dropped, the debts become a clean table instead of input boxes,
+   disclosures are forced open, the schedule prints in full, and the scenario
+   URL is included so whoever receives the PDF can open it and change the
+   numbers themselves.
+   --------------------------------------------------------------------------- */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm 16mm;
+  }
+
+  /* Print on white with black ink regardless of the reader's theme. */
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10pt;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Interactive chrome has no meaning on paper. */
+  header,
+  footer,
+  button,
+  input,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* A closed <details> hides its content; a printed document must not. */
+  details > *:not(summary) {
+    display: block !important;
+  }
+
+  details {
+    border: 0 !important;
+    background: none !important;
+    padding: 0 !important;
+  }
+
+  details > summary {
+    font-weight: 600;
+    list-style: none;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Long schedules span pages: repeat the header, never split a row. */
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  figure,
+  svg,
+  .avoid-break {
+    break-inside: avoid;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid #ccc !important;
+    padding: 2pt 4pt !important;
+  }
+
+  h1 {
+    font-size: 16pt;
+  }
+
+  h2 {
+    font-size: 12pt;
+    break-after: avoid;
+  }
+
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  /* Panels become plain sections; screen decoration wastes ink. */
+  .rounded-panel {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+  }
 }
