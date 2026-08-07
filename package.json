@@ -17,7 +17,8 @@
     "budget": "node scripts/check-js-budget.mjs",
     "links": "node scripts/check-links.mjs",
     "spacing": "node scripts/check-spacing.mjs",
-    "verify": "npm run typecheck && npm run test && npm run build && npm run budget && npm run links && npm run spacing",
+    "state": "node scripts/check-state.mjs",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run budget && npm run links && npm run spacing && npm run state",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

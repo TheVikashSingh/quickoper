@@ -57,6 +57,12 @@ jobs:
       - name: Prose spacing
         run: npm run spacing
 
+      # STATE.md claimed 11 pages for two PRs while the build made 10. It was
+      # the only number in that table not printed by a gate, and the only one
+      # that was wrong.
+      - name: STATE.md matches the build
+        run: npm run state
+
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-latest
