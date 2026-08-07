@@ -1,0 +1,171 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../lib/site';
+
+// A named author with a real biography is an expertise signal, and an honest
+// one is worth more than an inflated one. The claim made here is COMPUTATIONAL,
+// not advisory — that is the only claim this project can defend, and stating it
+// plainly is a differentiator rather than an admission.
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    url: `${SITE.url}/about`,
+    mainEntity: {
+      '@type': 'Person',
+      name: SITE.author.name,
+      url: `${SITE.url}/about`,
+      sameAs: [SITE.author.github],
+      knowsAbout: ['Numerical accuracy', 'Amortisation', 'Web performance'],
+    },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      { '@type': 'ListItem', position: 2, name: 'About', item: `${SITE.url}/about` },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="About QuickOper and who writes it"
+  description="QuickOper is built by Vikash Singh, a software engineer. We are not financial advisers — we are engineers who do the arithmetic correctly and publish our tests. Here is exactly what that means."
+  structuredData={structuredData}
+>
+  <article class="text-ink-soft space-y-4">
+    <h1 class="text-ink text-3xl font-semibold tracking-tight">About QuickOper</h1>
+
+    <p class="text-lg">
+      QuickOper makes money calculators that show their working, prove their arithmetic,
+      and never send anything you type to a server.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Who writes this</h2>
+
+    <p>
+      QuickOper is built and maintained by
+      <strong class="text-ink">{SITE.author.name}</strong>, a software engineer.
+      Everything on the site — the calculations, the tests, the writing — is his work, and
+      the source is public at
+      <a class="text-brand underline" href={SITE.repo} rel="noopener">GitHub</a>.
+    </p>
+
+    <div class="border-line bg-sunken rounded-panel border p-4">
+      <p class="text-ink font-semibold">
+        We are not financial advisers, and this is not financial advice.
+      </p>
+      <p class="mt-2">
+        Nobody here holds a financial qualification. That is stated at the top rather than
+        buried in a footer, because it changes what you should and should not use this
+        site for.
+      </p>
+    </div>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      What we are actually claiming to be good at
+    </h2>
+
+    <p>
+      There is a real difference between <em>advice</em> and <em>arithmetic</em>, and
+      QuickOper only does the second.
+    </p>
+
+    <p>
+      Telling you whether to clear your credit card before topping up your pension is
+      advice. It depends on your job security, your tax position, your family, your
+      temperament and your plans, and it needs a qualified person who knows all of that.
+      We will never do it.
+    </p>
+
+    <p>
+      Working out that adding $200 a month to a particular balance removes four years and
+      $3,140 of interest, and showing you every month of the schedule that gets there —
+      that is arithmetic. It is verifiable, it is checkable against published figures, and
+      it is something a careful engineer can get exactly right.
+    </p>
+
+    <p>
+      So the expertise being claimed here is <strong class="text-ink"
+        >computational</strong
+      >, not advisory: that the numbers are correct, the method is disclosed, and the
+      tests are public. <a class="text-brand underline" href="/methodology"
+        >How we verify our numbers</a
+      >
+      sets out precisely how that is checked, including a worked example you can repeat.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Why the site exists
+    </h2>
+
+    <p>
+      Most free calculators give you a single number and no way to check it. You cannot
+      see the formula, you cannot see the months in between, you cannot tell whether the
+      assumptions match your situation, and you certainly cannot verify the result. If the
+      answer is wrong you have no way of knowing.
+    </p>
+
+    <p>
+      Meanwhile the tools that do show detail usually want your email address first, and
+      send your figures to a server on the way.
+    </p>
+
+    <p>QuickOper is the opposite of both. Every tool gives you:</p>
+
+    <ul class="list-disc space-y-1 pl-5">
+      <li>the formula, and the intermediate values it produced;</li>
+      <li>every period of the schedule, not just the total;</li>
+      <li>the assumptions, and where they stop matching reality;</li>
+      <li>the result as a spreadsheet or a printable document you can keep;</li>
+      <li>no sign-up, no email, no tracking of what you typed.</li>
+    </ul>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Nothing you type leaves your device
+    </h2>
+
+    <p>
+      This is a structural fact, not a promise we are asking you to take on faith.
+      QuickOper is a static site with no backend and no database. The calculators are
+      JavaScript running in your browser, on your machine. There is no server that could
+      receive your balances, because there is no server at all.
+    </p>
+
+    <p>
+      Shareable links carry the numbers so a scenario can be reopened — but never the
+      names you give your debts. See <a class="text-brand underline" href="/privacy"
+        >privacy</a
+      >.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Corrections</h2>
+
+    <p>
+      If a figure here disagrees with your lender or an official worked example, that is
+      worth knowing and we want to hear about it. Corrections are made openly, with the
+      change and its date recorded on the affected page. Email
+      <a class="text-brand underline" href={`mailto:${SITE.email}`}>{SITE.email}</a> or open
+      an issue on <a class="text-brand underline" href={SITE.repo} rel="noopener"
+        >GitHub</a
+      >.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      How this is paid for
+    </h2>
+
+    <p>
+      Nothing on QuickOper is behind a payment or a sign-up. In future the site may carry
+      advertising, or links to products where we would be paid a commission. When that
+      happens it will be labelled clearly on the page it appears on, and it will never
+      change which answer a calculator gives you — the arithmetic does not know or care
+      what is being advertised beside it.
+    </p>
+
+    <p class="text-ink-mute pt-4 text-sm">Last updated {SITE.legalLastUpdated}.</p>
+  </article>
+</BaseLayout>

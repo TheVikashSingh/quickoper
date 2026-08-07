@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../lib/site';
+
+// No contact FORM, deliberately. A form needs somewhere to post to, and the
+// options are a backend (which this site does not have) or a third-party
+// embed that would load tracking scripts onto a page whose whole claim is that
+// it loads none. An address and a public issue tracker are honest and work.
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    url: `${SITE.url}/contact`,
+    mainEntity: {
+      '@type': 'Organization',
+      name: SITE.name,
+      email: SITE.email,
+      url: SITE.url,
+    },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      { '@type': 'ListItem', position: 2, name: 'Contact', item: `${SITE.url}/contact` },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Contact QuickOper"
+  description="Get in touch about a figure that looks wrong, a correction, an embed request, or anything else. Email or the public issue tracker."
+  structuredData={structuredData}
+>
+  <article class="text-ink-soft space-y-4">
+    <h1 class="text-ink text-3xl font-semibold tracking-tight">Contact</h1>
+
+    <p class="text-lg">
+      A real person reads these. Replies usually take a few days rather than a few
+      minutes.
+    </p>
+
+    <div class="border-line bg-surface rounded-panel border p-5">
+      <p class="text-ink-mute text-xs font-medium tracking-wide uppercase">Email</p>
+      <p class="mt-1 text-xl font-semibold">
+        <a class="text-brand underline" href={`mailto:${SITE.email}`}>{SITE.email}</a>
+      </p>
+    </div>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      If a number looks wrong
+    </h2>
+
+    <p>
+      This is the message we most want to receive. If a figure here disagrees with your
+      lender, your statement or an official worked example, please tell us — it is the
+      most useful thing anyone sends us, and we would rather hear it from you than not
+      hear it at all.
+    </p>
+
+    <p>To let us reproduce it quickly, include whatever you can of:</p>
+
+    <ul class="list-disc space-y-1 pl-5">
+      <li>
+        <strong class="text-ink">the link from your address bar</strong> — it carries the figures
+        you entered, and never the names you gave them, so it is safe to send;
+      </li>
+      <li>the figure you expected, and where it came from;</li>
+      <li>your browser and device, if the problem looks like a display issue.</li>
+    </ul>
+
+    <p>
+      Corrections are made openly. When we change a calculation, the change and its date
+      are recorded on the affected page.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Bugs and code</h2>
+
+    <p>
+      The source is public. Technical issues are often best raised on
+      <a class="text-brand underline" href={`${SITE.repo}/issues`} rel="noopener"
+        >the issue tracker</a
+      >, where the discussion is visible to everyone and the fix can be tracked.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Embedding a calculator
+    </h2>
+
+    <p>
+      If you write about personal finance and want to embed one of these tools on your own
+      page, get in touch — we are happy to help and it costs nothing.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      What we cannot help with
+    </h2>
+
+    <p>
+      We cannot advise on your personal financial situation, recommend a product or
+      lender, or tell you what to do about a debt. Nobody here is qualified to, and
+      answering anyway would be worse than declining. See <a
+        class="text-brand underline"
+        href="/about">about</a
+      >
+      for where that line sits and why.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Why there is no form
+    </h2>
+
+    <p>
+      A contact form has to post somewhere. That means either a server — which this site
+      deliberately does not have — or a third-party embed that would load tracking scripts
+      onto pages whose whole claim is that they load none. An email address is less
+      fashionable and more honest.
+    </p>
+  </article>
+</BaseLayout>

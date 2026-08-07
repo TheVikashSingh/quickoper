@@ -46,6 +46,11 @@ jobs:
       - name: JavaScript byte budget
         run: npm run budget
 
+      # Six site-wide navigation links were 404s for three PRs because nothing
+      # was checking. Now something is.
+      - name: Internal links
+        run: npm run links
+
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-latest

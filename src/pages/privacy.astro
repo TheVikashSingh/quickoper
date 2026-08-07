@@ -1,0 +1,190 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../lib/site';
+
+// Written to describe what is TRUE TODAY, not a boilerplate policy for a site
+// that collects things this one does not. The advertising and analytics
+// sections are clearly marked as future state; when either goes live they move
+// into the present tense and the date is bumped. Claiming to use advertising
+// cookies before any exist would be a false statement in a legal document.
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      { '@type': 'ListItem', position: 2, name: 'Privacy', item: `${SITE.url}/privacy` },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Privacy policy | QuickOper"
+  description="QuickOper is a static site with no backend. Calculator inputs never leave your device, there is no account, and nothing you type is transmitted, logged or stored."
+  structuredData={structuredData}
+>
+  <article class="text-ink-soft space-y-4">
+    <h1 class="text-ink text-3xl font-semibold tracking-tight">Privacy policy</h1>
+
+    <p class="text-ink-mute text-sm">Last updated {SITE.legalLastUpdated}.</p>
+
+    <div class="border-line bg-sunken rounded-panel border p-4">
+      <p class="text-ink font-semibold">The short version</p>
+      <p class="mt-2">
+        Nothing you type into a calculator ever leaves your device. There is no account,
+        no sign-up, and at present no cookies and no analytics of any kind.
+      </p>
+    </div>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      What happens to what you type
+    </h2>
+
+    <p>
+      Nothing. QuickOper is a static site: the pages are files, and the calculators are
+      JavaScript that runs on your own machine after the page has loaded. Your balances,
+      rates and payments are processed entirely in your browser's memory.
+    </p>
+
+    <p>
+      This is not a policy commitment we could quietly break — it is how the site is
+      built. There is no server-side application and no database, so there is nothing that
+      could receive your figures even if we wanted it to. The source is public at
+      <a class="text-brand underline" href={SITE.repo} rel="noopener">GitHub</a> if you would
+      like to check.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Shareable links</h2>
+
+    <p>
+      When you change a calculator's inputs, the web address updates so you can bookmark
+      the result or send it to someone. That address is built and read in your browser; it
+      is not transmitted to us.
+    </p>
+
+    <p>
+      <strong class="text-ink">The link carries figures, never names.</strong> Balances, interest
+      rates and minimum payments are encoded; the labels you give your debts are not. A link
+      you paste into a forum, a screenshot or an email therefore shows the numbers and never
+      who you owe money to. This is deliberate.
+    </p>
+
+    <p>
+      Anyone you send the link to can see the figures in it, so treat it as you would any
+      other message containing personal detail.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Downloads and printing
+    </h2>
+
+    <p>
+      Spreadsheet exports and printable documents are generated in your browser from data
+      already on your screen. Nothing is uploaded in order to produce them, and we never
+      see the file.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Cookies and local storage
+    </h2>
+
+    <p>
+      QuickOper currently sets <strong class="text-ink">no cookies</strong> and writes nothing
+      to your browser's storage. If that changes, this page will say so before it happens and
+      the date above will be updated.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Server logs</h2>
+
+    <p>
+      The site is served by Cloudflare, which processes standard request information —
+      including your IP address — in order to deliver pages and protect against attack.
+      That is a normal function of any web host, and it applies to the request for the
+      page, not to anything you enter into a calculator. Cloudflare acts as our hosting
+      provider and handles that data under its own terms.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Analytics and advertising — not yet in use
+    </h2>
+
+    <div class="border-line rounded-panel border border-dashed p-4">
+      <p>
+        <strong class="text-ink">
+          Neither of the following is live today. This section describes what we intend to
+          introduce, so the change is not a surprise.
+        </strong>
+        When either is switched on, this page will be updated and this notice removed.
+      </p>
+    </div>
+
+    <p class="pt-2">
+      <strong class="text-ink">Analytics.</strong> We plan to measure how many people visit
+      which pages, using a cookieless method that does not identify individuals or follow them
+      between sites. Calculator inputs will never be included in any measurement — an event
+      may record that a calculation was completed, never what was calculated.
+    </p>
+
+    <p>
+      <strong class="text-ink">Advertising.</strong> The site may later carry advertising supplied
+      by <strong class="text-ink">Google</strong>, including through Google AdSense.
+      Google and its partners use cookies and similar technologies to serve and measure
+      adverts, and may use information about your visits to this and other sites to show
+      adverts relevant to you.
+    </p>
+
+    <ul class="list-disc space-y-1 pl-5">
+      <li>
+        Google's use of advertising cookies is described in its
+        <a
+          class="text-brand underline"
+          href="https://policies.google.com/technologies/ads"
+          rel="noopener">advertising policies</a
+        >.
+      </li>
+      <li>
+        You can opt out of personalised advertising in
+        <a
+          class="text-brand underline"
+          href="https://myadcenter.google.com/"
+          rel="noopener">Google's ad settings</a
+        >.
+      </li>
+      <li>
+        Visitors in the UK and EU will be asked for consent before any advertising or
+        measurement cookie is set, through a certified consent tool.
+      </li>
+      <li>
+        Advertising will never influence what a calculator returns. The arithmetic does
+        not know what is on the page beside it.
+      </li>
+    </ul>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Children</h2>
+
+    <p>
+      QuickOper is intended for adults and is not directed at children under 13. We do not
+      knowingly collect information from anyone, of any age.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Your rights</h2>
+
+    <p>
+      Data protection law gives you rights to access, correct and erase personal data held
+      about you. In practice we hold none: there are no accounts, no mailing list and no
+      stored calculator inputs. If you have emailed us, we hold that correspondence and
+      will delete it on request.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Contact</h2>
+
+    <p>
+      Questions about this policy: <a
+        class="text-brand underline"
+        href={`mailto:${SITE.email}`}>{SITE.email}</a
+      >, or see <a class="text-brand underline" href="/contact">contact</a>.
+    </p>
+  </article>
+</BaseLayout>
