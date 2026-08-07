@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-07, after PR #14.
+**Updated:** 2026-08-08, after PR #16.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -53,8 +53,12 @@ Pure, no DOM, no framework. Fixtures anchored to published figures (D7).
 **Shared UI** — `LineChart.tsx` (hand-rolled reactive SVG), `ScheduleTable.tsx`,
 `lib/csv.ts`, `lib/params.ts`, `lib/url-state.ts`.
 
-**Ornament** (`src/components/ornament/`) — `Guilloche.astro`, `Rule.astro`.
-Build-time SVG, zero JavaScript, `currentColor`.
+**Ornament** (`src/components/ornament/`) — `Guilloche.astro` (lens, behind
+headings), `Rosette.astro` (radial medallion, legible down to 28px),
+`LatheBand.astro` (tiled braided wave), `NoteFrame.astro` (double rule +
+corner rosettes), `Rule.astro`. Build-time SVG, zero JavaScript, `currentColor`.
+The banknote identity is applied site-wide through `BaseLayout` (D29), not page
+by page as it was under D25.
 
 **Gates** (`scripts/`) — `check-js-budget.mjs` (per-page module graph *and*
 inline scripts), `check-links.mjs` (every internal href resolves; indexability
@@ -93,21 +97,39 @@ Nothing in code depends on these, but launch does.
 
 ## Next
 
-Ordered. Nothing here is started.
+Ordered, and the order changed on 2026-08-08. **Content now outranks tool 3.**
+Nothing monetises until AdSense clears, and that needs 15 substantive pages:
+the build produces 10 pages, of which 9 are substantive, so six more needed.
+Content pages ship 0.53KB and need no budget work at all. Tool 3 is one page and
+a pile of engineering.
 
-1. **Mortgage overpayment calculator.** Tool 3, and the first with market
-   exposure — see D20. **This will breach the JS budget** (0.08 KB spare). The
-   options, in order of preference: move static disclosure prose out of the
-   island into the `.astro` page (real saving, better architecture); or revisit
-   the number with the same discipline as D10. Do **not** deduplicate components
-   across islands — that has been measured twice and makes it worse (D23).
-2. **Supporting content** to reach 15+ pages for AdSense. Six more needed —
-   the build produces 10 pages, of which 9 are substantive (`/404` is not).
-3. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression that only
-   manual measurement caught. Needs Playwright and a headless run.
-4. **Affiliate plumbing** (`/go/*`) before there is anything to put in it.
-5. **Surface `docs/VERIFICATION.md` publicly.** A "check our arithmetic in your
-   own spreadsheet" page is a genuine trust asset and fits the methodology pitch.
+1. **`/verify` — the public version of `docs/VERIFICATION.md`.** "Check our
+   arithmetic in your own spreadsheet", with the `PMT`/`NPER`/`FV` formulas the
+   reader can paste, our figure beside the spreadsheet's, and the *reasons* they
+   differ by cents. Highest-trust asset on the site and essentially nobody else
+   in the vertical publishes one. **Agreed with the operator; start here.**
+2. **Five more content pages**, each a derivation tied to a tool that already
+   exists, not filler to hit a threshold:
+   - how credit card interest is actually calculated (CFPB, daily periodic rate)
+   - why a payoff date differs from the one on a statement (Reg Z Appendix M1
+     and its two-month tolerance)
+   - real vs nominal returns — why `(1+r)^(1/12)` and not `r/12` (D6)
+   - where the 4% rule comes from (Bengen 1994, Trinity 1998) and what it does
+     not say
+   - what a coast number is and is not
+
+   Each needs the thing CLAUDE.md demands and a model cannot fake: a worked
+   example with real numbers, or a documented comparison against a named
+   competitor. That is a handful of sessions, not one.
+3. **Mortgage overpayment calculator.** Tool 3, first with market exposure (D20).
+   Build its prose in slots from the first commit (D28). The risk is the
+   **shared chunk**, which grows for every calculator page at once, not this
+   page's own island. Do **not** deduplicate across islands (D23).
+4. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression and D29
+   measured by hand again. Needs Playwright and a headless run — and it must
+   resolve colours through a canvas, because `getComputedStyle` returns
+   `oklch()` and parsing those three numbers as RGB silently reports nonsense.
+5. **Affiliate plumbing** (`/go/*`) before there is anything to put in it.
 
 ---
 
@@ -131,10 +153,21 @@ downstream, and that clock does not start until the domain resolves.
 
 ## Open questions
 
-- **Whether the money identity should distinguish calculator pages** from trust
-  pages. Currently site-wide (D3).
-- **Whether the ornament should appear on more pages.** Currently the homepage
-  and methodology only, deliberately sparing.
+- **How far the banknote treatment should reach inside a calculator.** D29 took
+  it site-wide through the layout, and reframed the homepage as the face of a
+  note. The islands themselves are still plain — deliberately, to avoid a
+  conflict with the open PR that moves their prose into slots. Framing the
+  result panels and the schedule is the obvious next step.
+- **Whether `/finance`, `/about` and the trust pages want their own frame**, or
+  whether the masthead and paper carry enough on their own.
+
+**Closed:**
+
+- Whether the identity should distinguish calculator pages from trust pages. It
+  should not — every page here is a finance page (D3), and D29 applies it
+  through the layout for exactly that reason.
+- Whether the ornament should appear on more pages. Yes; D25's two-page scope
+  was too quiet and is superseded by D29.
 
 **Closed — do not re-propose:**
 

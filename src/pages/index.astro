@@ -2,6 +2,8 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 import Guilloche from '../components/ornament/Guilloche.astro';
+import LatheBand from '../components/ornament/LatheBand.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
 import Rule from '../components/ornament/Rule.astro';
 ---
 
@@ -9,49 +11,67 @@ import Rule from '../components/ornament/Rule.astro';
   title="QuickOper — calculators that show their working"
   description="Verified-calculation tools for personal money decisions. Every calculation runs in your browser, shows its formula, and exports a full schedule. Nothing you type leaves your device."
 >
-  <div class="relative">
-    {
-      /* Sits behind the headline, clipped and faint. Decorative, aria-hidden,
-        and zero JavaScript — it renders at build time. */
-    }
-    <Guilloche
-      size={300}
-      class="text-brand pointer-events-none absolute -top-16 -right-16 hidden opacity-[0.10] sm:block"
-    />
+  {
+    /* The hero is laid out as the face of a note: ruled twice, rosettes struck
+      into the corners, an engraved line above the title and lathe work below
+      it. All build-time SVG and CSS — this page still ships 0.53KB. */
+  }
+  <NoteFrame class="mt-2">
+    <div class="relative overflow-hidden">
+      {/* Behind the headline, clipped and faint. Decorative, aria-hidden. */}
+      <Guilloche
+        size={300}
+        class="text-brand pointer-events-none absolute -top-20 -right-20 hidden opacity-[0.10] sm:block"
+      />
 
-    <h1 class="relative text-3xl font-semibold tracking-tight sm:text-4xl">
-      Calculators that show their working.
-    </h1>
+      <p class="engraved-fine text-ink-mute relative">Verified calculation</p>
 
-    <p class="text-ink-soft relative mt-4 text-lg">
-      Money tools that give you the whole schedule, not just a number — and prove the
-      arithmetic against real published figures.
-    </p>
-  </div>
+      <h1 class="relative mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Calculators that show their working.
+      </h1>
 
-  <div class="mt-10 grid gap-4 sm:grid-cols-3">
-    <div class="rounded-panel border-line bg-surface shadow-panel border p-4">
-      <h2 class="text-sm font-semibold">Verified arithmetic</h2>
-      <p class="text-ink-soft mt-1 text-sm">
-        Every calculation is a separately-tested pure function, checked against a real
-        published schedule. The tests are public.
+      <LatheBand height={9} class="text-engrave-strong relative mt-4 max-w-xs" />
+
+      <p class="text-ink-soft relative mt-4 text-lg">
+        Money tools that give you the whole schedule, not just a number — and prove the
+        arithmetic against real published figures.
       </p>
     </div>
+  </NoteFrame>
 
-    <div class="rounded-panel border-line bg-surface shadow-panel border p-4">
-      <h2 class="text-sm font-semibold">Nothing is transmitted</h2>
-      <p class="text-ink-soft mt-1 text-sm">
-        Static site, no backend, no accounts. Your numbers never leave your device — there
-        is no server to send them to.
-      </p>
+  {
+    /* Double-ruled like the frame, but without corner rosettes — four medallions
+      on a card this small is fussy rather than formal. */
+  }
+  <div class="mt-8 grid gap-4 sm:grid-cols-3">
+    <div class="rounded-panel border-line bg-surface shadow-panel border p-1.5">
+      <div class="border-engrave-strong rounded-control border p-3">
+        <h2 class="engraved text-ink text-xs">Verified arithmetic</h2>
+        <p class="text-ink-soft mt-2 text-sm">
+          Every calculation is a separately-tested pure function, checked against a real
+          published schedule. The tests are public.
+        </p>
+      </div>
     </div>
 
-    <div class="rounded-panel border-line bg-surface shadow-panel border p-4">
-      <h2 class="text-sm font-semibold">The whole schedule</h2>
-      <p class="text-ink-soft mt-1 text-sm">
-        Formula, intermediate values, every period, a chart, and a CSV you can take with
-        you.
-      </p>
+    <div class="rounded-panel border-line bg-surface shadow-panel border p-1.5">
+      <div class="border-engrave-strong rounded-control border p-3">
+        <h2 class="engraved text-ink text-xs">Nothing is transmitted</h2>
+        <p class="text-ink-soft mt-2 text-sm">
+          Static site, no backend, no accounts. Your numbers never leave your device —
+          there is no server to send them to.
+        </p>
+      </div>
+    </div>
+
+    <div class="rounded-panel border-line bg-surface shadow-panel border p-1.5">
+      <div class="border-engrave-strong rounded-control border p-3">
+        <h2 class="engraved text-ink text-xs">The whole schedule</h2>
+        <p class="text-ink-soft mt-2 text-sm">
+          Formula, intermediate values, every period, a chart, and a CSV you can take with
+          you.
+        </p>
+      </div>
     </div>
   </div>
 
