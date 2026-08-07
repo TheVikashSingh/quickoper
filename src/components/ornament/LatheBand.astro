@@ -1,0 +1,62 @@
+---
+/**
+ * Lathe band — the running scrollwork along the top and bottom edge of a note.
+ *
+ * Two sine chains at opposing phase, so where one crests the other troughs and
+ * the pair braid. That interference is the whole visual trick of engine-turned
+ * borders: a single wave reads as decoration from a website, two read as
+ * security printing.
+ *
+ * Drawn once into an SVG `<pattern>` and tiled, so the cost is fixed however
+ * wide it renders — one 24px tile covers a 320px phone and a 2560px monitor for
+ * the same bytes. Same instinct as D25: buy the idiom, not the mathematics.
+ *
+ * `.astro`, zero JavaScript, `currentColor`, `aria-hidden`.
+ *
+ * NO viewBox ON THE OUTER SVG, deliberately. With one, the single tile would be
+ * scaled to the element's width instead of repeating across it — the pattern
+ * would stretch into one lazy wave. Without it, user units are CSS pixels and
+ * `patternUnits="userSpaceOnUse"` tiles the way it should.
+ */
+interface Props {
+  /** Band height in px. The wave scales to it. */
+  readonly height?: number;
+  readonly class?: string;
+}
+
+const { height = 12, class: className = '' } = Astro.props;
+
+/**
+ * A pattern is referenced by id, and two bands sharing one would make the
+ * second point at the first's definition — which looks fine until the first is
+ * removed. A build-time counter keeps them distinct AND keeps the output
+ * reproducible; `Math.random()` would churn the built HTML on every build for
+ * no reason.
+ */
+const g = globalThis as { __latheId?: number };
+g.__latheId = (g.__latheId ?? 0) + 1;
+const id = `lathe-${g.__latheId}`;
+
+const tile = height * 2;
+const mid = height / 2;
+const amp = height * 0.32;
+const wave = (sign: number) =>
+  `M0 ${mid} Q ${tile / 4} ${mid + sign * amp} ${tile / 2} ${mid} T ${tile} ${mid}`;
+---
+
+<div class={className} aria-hidden="true">
+  <svg width="100%" height={height} focusable="false" role="presentation">
+    <defs>
+      <pattern id={id} width={tile} height={height} patternUnits="userSpaceOnUse">
+        <path d={wave(-1)} fill="none" stroke="currentColor" stroke-width="0.75"></path>
+        <path
+          d={wave(1)}
+          fill="none"
+          stroke="currentColor"
+          stroke-width="0.75"
+          opacity="0.7"></path>
+      </pattern>
+    </defs>
+    <rect width="100%" height={height} fill={`url(#${id})`}></rect>
+  </svg>
+</div>

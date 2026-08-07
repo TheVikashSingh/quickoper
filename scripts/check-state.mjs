@@ -165,7 +165,11 @@ const claims = [
   },
   {
     where: 'Next — how many more content pages are needed',
-    re: /for AdSense\. (\w+) more needed/,
+    // Loosened from `for AdSense\. (\w+) more needed` when the Next section was
+    // rewritten and the sentence moved. Tie the pattern to the claim, not to
+    // the sentence around it — a check that fails on a rephrase trains people
+    // to edit the check.
+    re: /(\w+) more needed/,
     expect: [gapWord],
   },
   {

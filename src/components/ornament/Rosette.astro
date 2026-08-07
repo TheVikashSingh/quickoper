@@ -1,0 +1,70 @@
+---
+/**
+ * Guilloché rosette — the radial medallion stamped into the corners of
+ * banknotes, share certificates and bond coupons.
+ *
+ * Distinct from `Guilloche.astro`, which draws a *lens* — a bundle of wide
+ * ellipses that reads as a woven oval behind a heading. This is the other half
+ * of the idiom: petals struck around a centre, which is what survives being
+ * shrunk to 40px in a corner. The lens turns into a blob at that size; this
+ * stays legible, which is the whole reason both exist.
+ *
+ * Cost is one number per element, as in D25 — the petals are ellipses under a
+ * rotate transform, not a plotted epitrochoid. A true parametric rosette needs
+ * several hundred coordinates and gzips to well over a kilobyte; at 40px nobody
+ * can tell, and this is ornament, not information.
+ *
+ * `.astro`, so it renders at build time and ships ZERO JavaScript. Stroked in
+ * `currentColor`, so it inherits the theme without knowing one exists.
+ * `aria-hidden` — a screen reader gains nothing from a flourish.
+ */
+interface Props {
+  /** Viewport size in px. The rosette scales to fill it. */
+  readonly size?: number;
+  /** Petals struck around the centre. Sixteen reads well from 32px up. */
+  readonly petals?: number;
+  readonly class?: string;
+}
+
+const { size = 48, petals = 16, class: className = '' } = Astro.props;
+
+const c = size / 2;
+const angles = Array.from({ length: petals }, (_, i) => (i * 360) / petals);
+
+// Petals reach to just inside the outer ring, so the ring reads as a rim rather
+// than a line the petals collide with.
+const petal = { rx: c * 0.17, ry: c * 0.62, cy: c * 0.34 };
+---
+
+<svg
+  viewBox={`0 0 ${size} ${size}`}
+  width={size}
+  height={size}
+  class={className}
+  aria-hidden="true"
+  focusable="false"
+>
+  <g fill="none" stroke="currentColor" stroke-width="0.5">
+    <circle cx={c} cy={c} r={c * 0.95}></circle>
+    <circle cx={c} cy={c} r={c * 0.86} opacity="0.6"></circle>
+  </g>
+
+  <g fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.85">
+    {
+      angles.map((a) => (
+        <ellipse
+          cx={c}
+          cy={petal.cy + petal.ry}
+          rx={petal.rx}
+          ry={petal.ry}
+          transform={`rotate(${a.toFixed(1)} ${c} ${c})`}
+        />
+      ))
+    }
+  </g>
+
+  <g fill="none" stroke="currentColor" stroke-width="0.5">
+    <circle cx={c} cy={c} r={c * 0.28} opacity="0.7"></circle>
+  </g>
+  <circle cx={c} cy={c} r={c * 0.1} fill="currentColor" opacity="0.55"></circle>
+</svg>

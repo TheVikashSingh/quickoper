@@ -67,6 +67,14 @@
   --radius-control: 0.3rem;
   --radius-panel: 0.4rem;
   --shadow-panel: 0 1px 2px oklch(30% 0.02 160 / 0.06);
+
+  /* ── Engraving ────────────────────────────────────────────────────────────
+     The ink used for guilloché, lathe work and rules. Deliberately a separate
+     token from --color-line: a hairline between table rows and an engine-turned
+     background want to move independently, and the engraving must be able to go
+     very faint without dragging the table borders with it. */
+  --color-engrave: oklch(42% 0.105 158 / 0.05);
+  --color-engrave-strong: oklch(42% 0.105 158 / 0.22);
 }
 
 /* ---------------------------------------------------------------------------
@@ -100,6 +108,11 @@
     --color-negative: oklch(70% 0.16 25);
 
     --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.4);
+
+    /* Engraving on a dark note reads as light ink, and needs a little more
+       presence to survive the darker field. */
+    --color-engrave: oklch(74% 0.135 158 / 0.055);
+    --color-engrave-strong: oklch(74% 0.135 158 / 0.24);
   }
 }
 
@@ -124,6 +137,9 @@
   --color-negative: oklch(70% 0.16 25);
 
   --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.4);
+
+  --color-engrave: oklch(74% 0.135 158 / 0.055);
+  --color-engrave-strong: oklch(74% 0.135 158 / 0.24);
 }
 
 @layer base {
@@ -156,8 +172,27 @@
     }
   }
 
+  /* ── Engine-turned paper ──────────────────────────────────────────────────
+     Two sets of hairlines crossing at ±58° produce the fine diamond lattice
+     that security printing calls engine-turning. Real guilloché comes off a
+     geometric lathe; this is the same idea reduced to what CSS can do for
+     nothing.
+
+     GRADIENTS, NOT AN SVG DATA URI, for two reasons. A data URI would have to
+     hardcode its stroke colour, which breaks the theme — every token here has
+     to be able to move. And it costs bytes in the stylesheet that this costs
+     in a few declarations.
+
+     It is deliberately at the threshold of visibility: --color-engrave is 5%
+     alpha. Text never sits directly on it — panels are opaque --color-surface,
+     so the reading surface stays clean paper and the texture is the field
+     around it. That is how a note is actually laid out, and it is why this
+     does not touch contrast anywhere it is measured. */
   body {
     background-color: var(--color-canvas);
+    background-image:
+      repeating-linear-gradient(58deg, var(--color-engrave) 0 1px, transparent 1px 9px),
+      repeating-linear-gradient(-58deg, var(--color-engrave) 0 1px, transparent 1px 9px);
     color: var(--color-ink);
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
@@ -170,6 +205,29 @@
   h3 {
     font-family: var(--font-display);
     letter-spacing: -0.011em;
+  }
+
+  /* ── Engraved lettering ───────────────────────────────────────────────────
+     The institutional voice on a note: serif, full caps, widely letterspaced,
+     set small. It is what distinguishes a certificate from a dashboard, and it
+     costs nothing because the face is already a system serif.
+
+     Used for the wordmark, section eyebrows and panel labels — never for
+     running prose, which is unreadable in spaced caps. */
+  .engraved {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 600;
+  }
+
+  /* Same voice, quieter — for the small print a note carries around its edges. */
+  .engraved-fine {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 0.625rem;
+    line-height: 1.4;
   }
 
   /* Accessibility is not optional. Focus must always be visible. */

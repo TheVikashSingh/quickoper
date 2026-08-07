@@ -1,0 +1,59 @@
+---
+/**
+ * The engraved frame a banknote is laid out inside: a heavy outer rule, a
+ * hairline inset from it, and a rosette struck into each corner.
+ *
+ * The double rule is the part that does the work. One border reads as a card;
+ * two, unevenly weighted with a gap between them, reads as intaglio — it is the
+ * same reason a certificate is bordered twice and a dashboard panel is not.
+ *
+ * Content sits on `--color-surface`, opaque, so the engine-turned body texture
+ * stays *around* the reading surface rather than under it. That is how a note
+ * is actually laid out, and it is what keeps text contrast measurable.
+ *
+ * `.astro`, zero JavaScript. Everything here is a Tailwind utility over a
+ * theme token — no hardcoded colour, size or spacing (CLAUDE.md style rules).
+ */
+import Rosette from './Rosette.astro';
+
+interface Props {
+  /** Corner rosettes. Off for small or repeated panels, where four medallions
+   *  is fussy rather than formal. */
+  readonly corners?: boolean;
+  readonly class?: string;
+}
+
+const { corners = true, class: className = '' } = Astro.props;
+
+const CORNERS = [
+  '-top-3 -left-3',
+  '-top-3 -right-3',
+  '-bottom-3 -left-3',
+  '-bottom-3 -right-3',
+];
+---
+
+<div class={`relative ${className}`}>
+  <div class="border-line-strong bg-surface rounded-panel border">
+    <div class="border-engrave-strong rounded-control m-1.5 border p-4 sm:m-2 sm:p-6">
+      <slot />
+    </div>
+  </div>
+
+  {
+    corners && (
+      <div
+        class="text-engrave-strong pointer-events-none absolute inset-0"
+        aria-hidden="true"
+      >
+        {CORNERS.map((position) => (
+          <Rosette
+            size={28}
+            petals={12}
+            class={`bg-canvas absolute rounded-full ${position}`}
+          />
+        ))}
+      </div>
+    )
+  }
+</div>

@@ -264,6 +264,51 @@ why an image library or an icon set was never considered. Stroked in
 Used sparingly: faint behind two page headings, and as a section rule. The site
 is a serious tool and ornament that draws attention to itself would undercut it.
 
+### D29 — The note, not the ledger: how far the identity goes
+
+D3 chose the ledger — warm paper, green-black ink, one banknote accent — and D25
+added guilloché to two page headings. That was too quiet. The operator's verdict
+on the live site was "bland and boring", and it was right: the identity existed
+in the tokens and almost nowhere on the screen. A calculator page carried none of
+it at all, because D25 scoped the ornament to `/` and `/methodology`.
+
+So the reference moves from *ledger* to *banknote*, and it is applied
+site-wide through the layout rather than page by page. Four pieces:
+
+- **Engine-turned paper.** Two sets of hairlines crossing at ±58°, as
+  `repeating-linear-gradient`, at 5% alpha. Gradients rather than an SVG data
+  URI because a data URI would have to hardcode its stroke colour and could not
+  follow the theme. Text never sits on it — panels are opaque `--color-surface`
+  — so it costs nothing in contrast.
+- **`LatheBand.astro`** — two sine chains in opposing phase, braided. Tiled from
+  a single 24px `<pattern>`, so one tile covers any viewport for fixed bytes.
+- **`Rosette.astro`** — a radial medallion, the counterpart to `Guilloche.astro`.
+  Both exist because they fail differently: the lens bundle turns into a blob
+  below about 80px, the rosette stays legible at 28px in a corner.
+- **`NoteFrame.astro`** — heavy outer rule, hairline inset, rosette in each
+  corner. The double rule is what does the work; one border reads as a card, two
+  unevenly weighted read as intaglio.
+
+Plus `.engraved` and `.engraved-fine`: serif, full caps, wide letterspacing. The
+institutional voice, and free, because the face is already a system serif (D3).
+
+**Deliberately banknote-*idiom*, not US currency.** Guilloché, lathe work and
+struck rosettes are the general vocabulary of security printing — share
+certificates, passports, bond coupons. No Treasury or Federal Reserve seal, no
+portrait, no denomination, no reproduction of any real note. That is the right
+call on its own terms: a site that computes rather than advises should not open
+by imitating government paper.
+
+**Still zero JavaScript.** Every ornament is `.astro`, rendered at build. Content
+pages remain at 0.53KB — the inline theme script and nothing else.
+
+**Contrast measured, not eyeballed**, because PR #9 shipped a 4.15:1 regression
+that only measurement caught. Every text/background pair on the homepage, both
+themes, resolved through a canvas (`getComputedStyle` returns `oklch()` in
+Chrome, and parsing those three numbers as RGB gives plausible nonsense — the
+first attempt at this check reported 1.29:1 for every element on the page). The
+tightest real figure is `.engraved-fine` at **4.95:1** dark, **5.39:1** light.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
