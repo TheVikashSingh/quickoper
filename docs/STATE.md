@@ -83,7 +83,8 @@ Nothing in code depends on these, but launch does.
 3. **Search Console** verification and sitemap submission, once the domain
    resolves.
 
-4. **Run `docs/VERIFICATION.md`** — six spreadsheet checks, ten minutes. Do this
+4. **Run `docs/VERIFICATION.md`** — five spreadsheet checks and one at
+   investor.gov, ten minutes. Do this
    before launch so "an AI wrote this" becomes a documented verification rather
    than a worry.
 
