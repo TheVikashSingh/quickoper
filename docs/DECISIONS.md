@@ -239,6 +239,41 @@ page reachable within two clicks" and "no placeholder pages" are explicit
 AdSense criteria, and a site whose own footer does not work undercuts the single
 claim it makes about carefulness.
 
+### D25 — Ornament is inline SVG in the ledger idiom, generated at build
+
+The pages were text-only and read as bland. The identity (D3) already points
+somewhere specific: guilloché — the engine-turned pattern engraved on banknotes,
+passports and share certificates.
+
+`components/ornament/Guilloche.astro` draws it as **rotated ellipses**, not a
+plotted hypotrochoid. A real parametric curve needs a few hundred coordinates
+and gzips to about 1.5KB; twenty-eight rotated ellipses read the same at a
+glance and cost a fraction, because each is one number in a transform.
+
+`.astro`, so it renders at build time and ships **zero JavaScript** — this is
+why an image library or an icon set was never considered. Stroked in
+`currentColor`, so it inherits the theme without knowing one exists.
+`aria-hidden`, because it carries nothing a reader would miss.
+
+Used sparingly: faint behind two page headings, and as a section rule. The site
+is a serious tool and ornament that draws attention to itself would undercut it.
+
+### D26 — Indexability is an invariant, and it is checked
+
+**The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
+the site had two pages and the calculator was unfinished; nothing ever removed
+it. At launch, the single most important page would have been silently invisible
+to Google, and the failure mode is silence — no error, no warning, just no
+traffic ever.
+
+`scripts/check-links.mjs` now asserts: a page is either **in the sitemap and
+indexable**, or **noindex and out of it**. Anything else is a contradictory
+signal. `/404` and `/dev/*` are the only legitimate exceptions.
+
+This is the fifth time a check found something real by being asked to look
+(D18). It is also the second latent launch-blocker found by inspecting state
+rather than writing new code — the first was six 404s in the site navigation.
+
 ### D21 — Emailing reports is rejected, not deferred
 
 Requested by the operator and then withdrawn, correctly. The site's proposition

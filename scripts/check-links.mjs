@@ -100,6 +100,58 @@ for (const page of pages) {
   }
 }
 
+// ── Indexability ─────────────────────────────────────────────────────────────
+//
+// The homepage shipped with `noindex` for six pull requests. It was set in PR #5
+// when the site had two pages, and nothing ever removed it — so at launch the
+// single most important page would have been silently invisible to Google.
+//
+// The invariant: a page is either in the sitemap and indexable, or noindex and
+// out of it. Anything else is a contradictory signal, and the failure mode is
+// silence rather than an error.
+
+const sitemapPath = join(DIST, 'sitemap-0.xml');
+const sitemapXml = (await exists(sitemapPath)) ? await readFile(sitemapPath, 'utf8') : '';
+const submitted = new Set(
+  [...sitemapXml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, url]) =>
+    (url ?? '').replace(/^https?:\/\/[^/]+/, '').replace(/\/$/, ''),
+  ),
+);
+
+const contradictions = [];
+
+for (const page of pages) {
+  const html = await readFile(page, 'utf8');
+  const route = ('/' + relative(DIST, page).split(sep).join('/'))
+    .replace(/index\.html$/, '')
+    .replace(/\/$/, '');
+
+  const isNoindex = /name=["']robots["'][^>]*noindex/.test(html);
+  const inSitemap = submitted.has(route);
+
+  if (isNoindex && inSitemap) {
+    contradictions.push(`${route || '/'} is noindex but IS in the sitemap`);
+  }
+  // 404 is correctly noindex and correctly absent. Anything else that is
+  // noindex and absent is a page nobody will ever find.
+  if (
+    isNoindex &&
+    !inSitemap &&
+    !page.endsWith('404.html') &&
+    !route.startsWith('/dev')
+  ) {
+    contradictions.push(`${route || '/'} is noindex — it will never be indexed`);
+  }
+}
+
+if (contradictions.length > 0) {
+  console.error(`FAIL: ${contradictions.length} indexability problem(s):\n`);
+  for (const c of contradictions) console.error(`    ${c}`);
+  console.error('');
+  console.error('  A page is either in the sitemap and indexable, or noindex and out.');
+  process.exit(1);
+}
+
 if (broken.length > 0) {
   console.error(`FAIL: ${broken.length} internal link(s) point at nothing:\n`);
   for (const link of broken)
