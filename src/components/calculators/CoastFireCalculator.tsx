@@ -378,14 +378,14 @@ function Results({
             onClick={() =>
               downloadCsv('quickoper-coast-fire.csv', toCsv(rows, csvColumns))
             }
-            class="rounded-control border-line-strong hover:bg-sunken border px-3 py-1.5 text-sm font-medium"
+            class="rounded-control border-brand bg-brand hover:bg-brand-hover text-canvas border px-3 py-1.5 text-sm font-medium"
           >
             Download spreadsheet (CSV)
           </button>
           <button
             type="button"
             onClick={() => window.print()}
-            class="rounded-control border-line-strong hover:bg-sunken border px-3 py-1.5 text-sm font-medium"
+            class="rounded-control border-line-strong bg-sunken hover:bg-brand-soft hover:border-brand border px-3 py-1.5 text-sm font-medium"
           >
             Save as PDF or print
           </button>

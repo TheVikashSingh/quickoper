@@ -111,7 +111,7 @@ export function ScheduleTable<Row>({
           type="button"
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
-          class="rounded-control border-line text-brand hover:bg-sunken mt-2 border px-3 py-1.5 text-sm font-medium"
+          class="rounded-control border-line-strong bg-sunken hover:bg-brand-soft hover:border-brand text-brand mt-2 border px-3 py-1.5 text-sm font-medium"
         >
           {expanded
             ? `Show first ${initialRows} rows`

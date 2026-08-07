@@ -105,8 +105,8 @@ const graph = [organization, ...structuredData];
       inline theme script and nothing else.
     */
     }
-    <header class="border-line bg-surface border-b">
-      <LatheBand height={10} class="text-engrave-strong border-line border-b" />
+    <header class="bg-masthead text-masthead-ink border-brand border-b-2">
+      <LatheBand height={10} class="text-masthead-line" />
 
       <nav
         class="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3.5"
@@ -116,29 +116,33 @@ const graph = [organization, ...structuredData];
           <Rosette
             size={26}
             petals={14}
-            class="text-brand hidden shrink-0 opacity-70 sm:block"
+            class="text-masthead-accent hidden shrink-0 opacity-80 sm:block"
           />
           {
             /* One word in two colours. data-tight tells the spacing checker
               this adjacency is deliberate. */
           }
-          <span class="engraved text-ink text-base sm:text-lg">
-            Quick<span class="text-brand" data-tight>Oper</span>
+          <span class="engraved text-masthead-ink text-base sm:text-lg">
+            Quick<span class="text-masthead-accent" data-tight>Oper</span>
           </span>
         </a>
 
-        <ul class="text-ink-soft ml-auto flex items-center gap-5 text-sm">
-          <li><a class="hover:text-ink" href="/finance">Calculators</a></li>
+        <ul class="text-masthead-mute ml-auto flex items-center gap-5 text-sm">
           <li>
-            <a class="hover:text-ink hidden sm:inline" href="/methodology">Methodology</a>
+            <a class="hover:text-masthead-ink" href="/finance">Calculators</a>
           </li>
-          <li><a class="hover:text-ink" href="/about">About</a></li>
+          <li>
+            <a class="hover:text-masthead-ink hidden sm:inline" href="/methodology">
+              Methodology
+            </a>
+          </li>
+          <li><a class="hover:text-masthead-ink" href="/about">About</a></li>
         </ul>
 
         <button
           id="theme-toggle"
           type="button"
-          class="border-line hover:border-line-strong hover:bg-sunken text-ink-soft rounded-control -mr-1 border p-1.5"
+          class="border-masthead-line hover:border-masthead-accent hover:text-masthead-ink text-masthead-mute rounded-control -mr-1 border p-1.5"
           aria-label="Switch theme"
           aria-pressed="false"
         >
@@ -180,24 +184,25 @@ const graph = [organization, ...structuredData];
       <slot />
     </main>
 
-    <footer class="border-line bg-surface mt-16 border-t">
-      <LatheBand height={10} class="text-engrave-strong border-line border-b" />
+    {/* The band closes the note at the foot as it opened it at the head. */}
+    <footer class="bg-masthead text-masthead-mute border-brand mt-16 border-t-2">
+      <LatheBand height={10} class="text-masthead-line" />
 
-      <div class="text-ink-mute mx-auto max-w-3xl px-4 py-8 text-sm">
+      <div class="mx-auto max-w-3xl px-4 py-8 text-sm">
         {
           /* The line a note carries under its scrollwork. Engraved caps, set
             small — it states what the site is, in the voice of the thing it
             is imitating, without imitating anything specific. */
         }
-        <p class="engraved-fine text-ink-mute mb-4 flex items-center gap-3">
+        <p class="engraved-fine text-masthead-mute mb-4 flex items-center gap-3">
           {
             /* Decorative rules either side. Flex `gap-3` does the spacing, so a
             literal space here would be meaningless — data-tight tells the
             spacing checker the adjacency is deliberate (D24). */
           }
-          <span class="bg-line-strong h-px flex-1 opacity-60" data-tight></span>
+          <span class="bg-masthead-line h-px flex-1" data-tight></span>
           Computed, not advised
-          <span class="bg-line-strong h-px flex-1 opacity-60" data-tight></span>
+          <span class="bg-masthead-line h-px flex-1" data-tight></span>
         </p>
         <p class="mb-3">
           QuickOper computes; it does not advise. Nothing here is financial, tax or
@@ -205,10 +210,12 @@ const graph = [organization, ...structuredData];
           type is transmitted or stored.
         </p>
         <ul class="flex flex-wrap gap-x-5 gap-y-1">
-          <li><a class="hover:text-ink" href="/methodology">How we verify</a></li>
-          <li><a class="hover:text-ink" href="/privacy">Privacy</a></li>
-          <li><a class="hover:text-ink" href="/terms">Terms</a></li>
-          <li><a class="hover:text-ink" href="/contact">Contact</a></li>
+          <li>
+            <a class="hover:text-masthead-ink" href="/methodology">How we verify</a>
+          </li>
+          <li><a class="hover:text-masthead-ink" href="/privacy">Privacy</a></li>
+          <li><a class="hover:text-masthead-ink" href="/terms">Terms</a></li>
+          <li><a class="hover:text-masthead-ink" href="/contact">Contact</a></li>
         </ul>
       </div>
     </footer>

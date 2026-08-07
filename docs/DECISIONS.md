@@ -309,6 +309,55 @@ Chrome, and parsing those three numbers as RGB gives plausible nonsense — the
 first attempt at this check reported 1.29:1 for every element on the page). The
 tightest real figure is `.engraved-fine` at **4.95:1** dark, **5.39:1** light.
 
+### D30 — The masthead is a band of ink, and `--color-line-strong` was failing
+
+Two complaints from the operator, both correct, both measurable:
+
+**"No contrast between the header and the background."** The masthead was
+`--color-surface` on `--color-canvas` — two shades of cream a hairline apart. It
+is now a **band of dark ink** with its own token set (`--color-masthead*`),
+because text on it can never take `--color-ink`. Dark in the light theme, darker
+still in the dark one, so it separates in both directions rather than inverting.
+
+Two dark fields cannot reach 3:1 against each other — in the dark theme the band
+measured **1.06:1** against the canvas, and no amount of nudging fixes that. So
+the **boundary** carries it instead: a 2px `--color-brand` rule. Brand inverts
+with the theme, so that rule is **7.48:1** in light and **8.79:1** in dark. WCAG
+1.4.11 asks for a distinguishable boundary, not a distinguishable field.
+
+**"A lot of buttons have no contrast with the background."** Also right, and it
+was a *token* defect rather than anything to do with the buttons:
+
+| | Was | Now |
+|---|---|---|
+| `--color-line-strong` on surface, light | **1.92:1** | 3.65:1 |
+| `--color-line-strong` on surface, dark | **2.04:1** | 4.05:1 |
+| Primary button text, dark | **2.18:1** | 8.79:1 |
+
+Every control on the site takes that token, so every control was failing WCAG
+1.4.11's 3:1 for the boundary of a UI component. Fixing the token fixed all of
+them at once — which is the argument for tokens, and the reason a component may
+never hardcode a colour.
+
+The dark-theme primary button failed differently: `--color-brand` is a *light*
+green in dark, and `text-white` on it is 2.18:1. It is now `text-canvas`, which
+inverts with the theme — near-white on dark green in light, near-black on light
+green in dark. One class, correct in both, no theme-conditional markup.
+
+Controls are also now **filled rather than outlined**, with the primary action
+solid brand. An outline button on a textured field reads as a label, not a
+control.
+
+**Cost: 0.06KB** on the worst page (17.42 → 17.48, 0.52 spare) — longer class
+strings in the islands. Recorded rather than waved through, because that is the
+budget being spent on something.
+
+This is the third contrast defect found by measuring and the third that every
+automated gate passed. Contrast checking in CI is Next item 4, and it must
+resolve colours through a canvas: `getComputedStyle` returns `oklch()` in
+Chrome, and the first version of this check reported 1.29:1 for every element on
+the page because it parsed those three numbers as RGB.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

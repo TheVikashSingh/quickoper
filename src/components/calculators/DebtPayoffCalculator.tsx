@@ -298,7 +298,7 @@ export function DebtPayoffCalculator(prose: Prose): JSX.Element {
                   onClick={() =>
                     patch({ entries: state.entries.filter((e) => e.id !== entry.id) })
                   }
-                  class="rounded-control border-line hover:bg-sunken w-full border px-2 py-2 text-sm disabled:opacity-40"
+                  class="rounded-control border-line-strong bg-sunken hover:border-negative hover:text-negative w-full border px-2 py-2 text-sm disabled:opacity-40"
                   aria-label={`Remove ${entry.name}`}
                 >
                   Remove
@@ -326,7 +326,7 @@ export function DebtPayoffCalculator(prose: Prose): JSX.Element {
             });
             setNextId(nextId + 1);
           }}
-          class="rounded-control border-line-strong hover:bg-sunken mt-3 border px-3 py-1.5 text-sm font-medium disabled:opacity-40"
+          class="rounded-control border-line-strong bg-sunken hover:bg-brand-soft hover:border-brand mt-3 border px-3 py-1.5 text-sm font-medium disabled:opacity-40"
         >
           Add a debt
         </button>
@@ -478,7 +478,7 @@ function Results({
         <div
           role="group"
           aria-label="Payoff strategy"
-          class="rounded-control border-line inline-flex border"
+          class="rounded-control border-line-strong bg-sunken inline-flex border"
         >
           {VIEWS.map((v) => (
             <button
@@ -590,14 +590,14 @@ function Results({
             onClick={() =>
               downloadCsv(`quickoper-${view}-schedule.csv`, toCsv(rows, csvColumns))
             }
-            class="rounded-control border-line-strong hover:bg-sunken border px-3 py-1.5 text-sm font-medium"
+            class="rounded-control border-brand bg-brand hover:bg-brand-hover text-canvas border px-3 py-1.5 text-sm font-medium"
           >
             Download spreadsheet (CSV)
           </button>
           <button
             type="button"
             onClick={() => window.print()}
-            class="rounded-control border-line-strong hover:bg-sunken border px-3 py-1.5 text-sm font-medium"
+            class="rounded-control border-line-strong bg-sunken hover:bg-brand-soft hover:border-brand border px-3 py-1.5 text-sm font-medium"
           >
             Save as PDF or print
           </button>
