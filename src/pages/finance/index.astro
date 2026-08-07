@@ -1,0 +1,107 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../lib/site';
+
+// The cluster hub. Hub-and-spoke internal linking is the main mechanism a new
+// site has for concentrating topical relevance: every tool links up to here,
+// and this page links back down to every tool.
+//
+// One entry today. Adding a tool is one line, and the "in progress" list is
+// honest about what is coming rather than shipping empty stub pages for it —
+// empty categories are an explicit AdSense rejection reason.
+
+const TOOLS = [
+  {
+    href: '/finance/debt-payoff-calculator',
+    title: 'Debt payoff — avalanche vs snowball',
+    summary:
+      'Compare both methods against paying only the minimums. Full month-by-month schedule, chart, spreadsheet and printable PDF.',
+    detail: 'Works in any currency. No jurisdiction rules involved.',
+  },
+];
+
+const IN_PROGRESS = [
+  'Compound growth and savings targets',
+  'Mortgage overpayment and early payoff',
+  'Freelance and contractor rate',
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    url: `${SITE.url}/finance`,
+    name: 'Money calculators',
+    hasPart: TOOLS.map((tool) => ({
+      '@type': 'WebApplication',
+      name: tool.title,
+      applicationCategory: 'FinanceApplication',
+      url: `${SITE.url}${tool.href}`,
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Calculators',
+        item: `${SITE.url}/finance`,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Money calculators that show their working | QuickOper"
+  description="Free money calculators that give you the whole schedule, prove their arithmetic against published figures, and never send anything you type to a server."
+  structuredData={structuredData}
+>
+  <h1 class="text-3xl font-semibold tracking-tight">Money calculators</h1>
+
+  <p class="text-ink-soft mt-3 text-lg">
+    Each one gives you the formula, every period of the schedule, and a result you can
+    export or print. Every calculation runs in your browser.
+  </p>
+
+  <ul class="mt-8 space-y-4">
+    {
+      TOOLS.map((tool) => (
+        <li>
+          <a
+            href={tool.href}
+            class="rounded-panel border-line bg-surface hover:border-line-strong block border p-5"
+          >
+            <span class="text-brand text-lg font-semibold">{tool.title}</span>
+            <span class="text-ink-soft mt-1 block text-sm">{tool.summary}</span>
+            <span class="text-ink-mute mt-2 block text-xs">{tool.detail}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+
+  <section class="mt-12">
+    <h2 class="text-lg font-semibold">Being built</h2>
+    <p class="text-ink-soft mt-2 text-sm">
+      Tools are added one at a time, each with its arithmetic tested against a published
+      figure before it ships. Nothing appears here until it is finished and checked.
+    </p>
+    <ul class="text-ink-mute mt-3 list-disc space-y-1 pl-5 text-sm">
+      {IN_PROGRESS.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section class="border-line mt-12 border-t pt-6">
+    <h2 class="text-lg font-semibold">How to know these numbers are right</h2>
+    <p class="text-ink-soft mt-2 text-sm">
+      Every calculation is a tested function checked against published third-party
+      figures, and the tests are public. The
+      <a class="text-brand underline" href="/methodology">methodology page</a> sets out the
+      rounding policy, the verification approach, and a worked example you can repeat yourself.
+    </p>
+  </section>
+</BaseLayout>

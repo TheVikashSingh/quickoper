@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// wrangler.toml sets `not_found_handling = "404-page"`, which serves this file
+// for any unmatched path. Without it Cloudflare returns a bare platform error.
+---
+
+<BaseLayout
+  title="Page not found | QuickOper"
+  description="That page does not exist. Here is where the calculators are."
+  noindex={true}
+>
+  <h1 class="text-3xl font-semibold tracking-tight">That page does not exist</h1>
+
+  <p class="text-ink-soft mt-3 text-lg">
+    The address may be mistyped, or the page may have moved.
+  </p>
+
+  <ul class="mt-8 space-y-3">
+    <li>
+      <a
+        href="/finance"
+        class="rounded-panel border-line bg-surface hover:border-line-strong block border p-4"
+      >
+        <span class="text-brand font-medium">All calculators</span>
+        <span class="text-ink-soft mt-1 block text-sm">
+          Every tool on the site, with what each one works out.
+        </span>
+      </a>
+    </li>
+    <li>
+      <a
+        href="/methodology"
+        class="rounded-panel border-line bg-surface hover:border-line-strong block border p-4"
+      >
+        <span class="text-brand font-medium">How we verify our numbers</span>
+        <span class="text-ink-soft mt-1 block text-sm">
+          The formulas, the rounding policy, and the tests.
+        </span>
+      </a>
+    </li>
+  </ul>
+
+  <p class="text-ink-mute mt-8 text-sm">
+    If you followed a link here from somewhere on this site, that is a bug and we would
+    like to know — <a class="text-brand underline" href="/contact">tell us</a>.
+  </p>
+</BaseLayout>

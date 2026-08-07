@@ -1,0 +1,146 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../lib/site';
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      { '@type': 'ListItem', position: 2, name: 'Terms', item: `${SITE.url}/terms` },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Terms of use | QuickOper"
+  description="Terms of use for QuickOper. The calculators are informational estimates, not financial advice, and are provided without warranty."
+  structuredData={structuredData}
+>
+  <article class="text-ink-soft space-y-4">
+    <h1 class="text-ink text-3xl font-semibold tracking-tight">Terms of use</h1>
+
+    <p class="text-ink-mute text-sm">Last updated {SITE.legalLastUpdated}.</p>
+
+    <p>
+      By using {SITE.name} you agree to these terms. They are short, and written to be read
+      rather than skipped.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      This is information, not advice
+    </h2>
+
+    <p>
+      The calculators produce <strong class="text-ink"
+        >estimates for general information</strong
+      >. Nothing on this site is financial, investment, tax, legal or accounting advice,
+      and using it does not create a professional relationship of any kind.
+    </p>
+
+    <p>
+      Nobody at {SITE.name} is a qualified financial adviser. We do not know your circumstances,
+      and the calculators do not ask about them. For a decision that matters, speak to someone
+      qualified who does.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      What the numbers are, and are not
+    </h2>
+
+    <p>
+      We work hard to get the arithmetic right and publish exactly how it is checked on
+      the
+      <a class="text-brand underline" href="/methodology">methodology page</a>. Even so,
+      every result rests on assumptions stated on the page that produced it. Real
+      agreements involve daily interest, fees, promotional periods, variable rates and new
+      spending that a calculator cannot know about.
+    </p>
+
+    <p>
+      A result from this site is therefore <strong class="text-ink"
+        >not a quote, an offer, or a statement of what any lender will actually charge you</strong
+      >. Always check the figures against your own agreement and statements.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">No warranty</h2>
+
+    <p>
+      The site is provided "as is" and "as available", without warranties of any kind,
+      express or implied, including as to accuracy, fitness for a particular purpose or
+      uninterrupted availability.
+    </p>
+
+    <p>
+      To the fullest extent permitted by law, {SITE.name} and its author are not liable for
+      any loss or damage arising from use of, or reliance on, this site — including financial
+      loss resulting from a decision informed by a calculation here. Nothing in these terms
+      excludes liability that cannot lawfully be excluded.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Errors, and telling us about them
+    </h2>
+
+    <p>
+      If you believe a figure is wrong, please
+      <a class="text-brand underline" href="/contact">tell us</a>. We correct errors
+      openly and record the change and its date on the affected page. Reporting one is
+      welcome and is the most useful thing you can send us.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Using the site and its content
+    </h2>
+
+    <p>
+      You may use the calculators freely, for personal or commercial purposes. Please do
+      not:
+    </p>
+
+    <ul class="list-disc space-y-1 pl-5">
+      <li>republish the written explanations as your own;</li>
+      <li>present results from this site as professional financial advice;</li>
+      <li>attempt to disrupt the site or the people using it.</li>
+    </ul>
+
+    <p>
+      The written content and design are the author's. The source code is public at
+      <a class="text-brand underline" href={SITE.repo} rel="noopener">GitHub</a> so the arithmetic
+      can be inspected and verified; publishing it there is not a grant of a licence to redistribute
+      it.
+    </p>
+
+    <p>
+      Linking to any page here is welcome and needs no permission. If you would like to
+      embed a calculator, <a class="text-brand underline" href="/contact">get in touch</a
+      >.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      Advertising and links to other sites
+    </h2>
+
+    <p>
+      The site may carry advertising, or links to products or services where we would be
+      paid a commission. Any such link will be labelled where it appears. We are not
+      responsible for the content, products or privacy practices of any site we link to,
+      and a link is not an endorsement.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Changes</h2>
+
+    <p>
+      These terms may change. The date at the top shows when they last did, and continuing
+      to use the site after a change means you accept it.
+    </p>
+
+    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Contact</h2>
+
+    <p>
+      <a class="text-brand underline" href={`mailto:${SITE.email}`}>{SITE.email}</a>
+    </p>
+  </article>
+</BaseLayout>
