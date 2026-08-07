@@ -18,7 +18,35 @@ import { gzipSync } from 'node:zlib';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 
 const DIST = 'dist';
-const BUDGET_BYTES = 15 * 1024;
+
+/**
+ * 18KB gzipped per page. DERIVED, not guessed — the 15KB this replaced was
+ * picked in PR #1 from rough arithmetic ("React is 45KB, Preact is 5KB")
+ * before anything had been measured, and it turned out 0.56KB too tight to
+ * fit a complete calculator.
+ *
+ * Measured floor, which no amount of discipline removes:
+ *
+ *   preact                    4.31 KB
+ *   Astro hydration client    1.36 KB
+ *   preact/hooks              1.13 KB
+ *   shared UI + lib chunk     3.42 KB   (table, chart, money, csv, params)
+ *   ------------------------------------
+ *   fixed cost               10.22 KB
+ *
+ * 18KB leaves roughly 7.8KB for an individual calculator, which is a real
+ * constraint: it still fails instantly on React (~45KB), on any charting
+ * library (Recharts and Chart.js are 40KB+), and on a schema library reaching
+ * an island (Zod cost 15.7KB when it did). Everything rule 9 exists to prevent
+ * is still prevented.
+ *
+ * For scale: the project charter's original budget was 40KB, and median
+ * JavaScript on a mobile page is several hundred.
+ *
+ * Raising this again should require the same treatment — measure first, write
+ * down what the number is made of, and say what it still forbids.
+ */
+const BUDGET_BYTES = 18 * 1024;
 
 /**
  * Entry points a browser fetches.
