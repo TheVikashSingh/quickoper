@@ -319,6 +319,27 @@ export const clampAtZero = (a: Minor): Minor => (a < 0 ? ZERO : a);
 // ── Formatting ───────────────────────────────────────────────────────────────
 
 /**
+ * Formatters are memoised, and not as a micro-optimisation.
+ *
+ * `new Intl.NumberFormat(...)` is one of the more expensive constructors on the
+ * platform — it resolves locale data every time. A 600-row schedule with four
+ * money columns calls the formatter 2,400 times per render, and constructing a
+ * fresh one for each is the difference between a schedule that expands
+ * instantly and one that visibly stalls. The cache is bounded by the number of
+ * distinct locale/currency pairs, which is one or two.
+ */
+const formatters = new Map<string, Intl.NumberFormat>();
+
+function formatter(key: string, locale: string, options: Intl.NumberFormatOptions) {
+  let cached = formatters.get(key);
+  if (cached === undefined) {
+    cached = new Intl.NumberFormat(locale, options);
+    formatters.set(key, cached);
+  }
+  return cached;
+}
+
+/**
  * Format for display. Uses Intl, so no currency-symbol table is maintained here
  * and every locale is handled by the platform.
  */
@@ -328,7 +349,7 @@ export function format(
   locale = 'en-US',
   scaleFactor = 100,
 ): string {
-  return new Intl.NumberFormat(locale, {
+  return formatter(`c|${locale}|${currency}`, locale, {
     style: 'currency',
     currency,
   }).format(amount / scaleFactor);
@@ -336,7 +357,7 @@ export function format(
 
 /** Format without the currency symbol, for dense schedule tables. */
 export function formatPlain(amount: Minor, locale = 'en-US', scaleFactor = 100): string {
-  return new Intl.NumberFormat(locale, {
+  return formatter(`p|${locale}`, locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount / scaleFactor);

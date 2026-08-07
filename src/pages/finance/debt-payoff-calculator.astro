@@ -1,0 +1,81 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { DebtPayoffCalculator } from '../../components/calculators/DebtPayoffCalculator';
+
+// NOT DONE per CLAUDE.md rule 7 — the 800+ word derivation, FAQ block and
+// sources are still missing, so this page stays noindex until they land in the
+// next pull request. Shipping the tool first keeps the diff reviewable; opening
+// it to search before the written content exists would be the AdSense-rejection
+// pattern the charter warns about.
+const CONTENT_PENDING = true;
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Debt payoff calculator — avalanche vs snowball',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Any',
+    url: 'https://quickoper.com/finance/debt-payoff-calculator',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'Compare the avalanche and snowball debt payoff methods against paying minimums. Full month-by-month schedule, chart and CSV export. Runs entirely in your browser.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://quickoper.com/' },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Finance',
+        item: 'https://quickoper.com/finance',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Debt payoff calculator',
+        item: 'https://quickoper.com/finance/debt-payoff-calculator',
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Debt payoff calculator — avalanche vs snowball | QuickOper"
+  description="Compare the avalanche and snowball methods against paying minimums. Full month-by-month schedule, chart and CSV export. Every figure is worked out in your browser — nothing you type is sent anywhere."
+  noindex={CONTENT_PENDING}
+  structuredData={structuredData}
+>
+  <article>
+    <h1 class="text-3xl font-semibold tracking-tight">Debt payoff calculator</h1>
+
+    <p class="text-ink-soft mt-3 text-lg">
+      See what the avalanche and snowball methods actually cost you, month by month,
+      against doing nothing but the minimums.
+    </p>
+
+    <div class="mt-10">
+      <DebtPayoffCalculator client:load />
+    </div>
+
+    <!-- Rule 12: visible without expanding, on every calculator page. -->
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft mt-12 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is a calculator, not advice.</strong> QuickOper works
+        out the arithmetic and shows its working. It does not know your circumstances and cannot
+        tell you what to do with your money. Nothing here is financial, tax or investment advice.
+      </p>
+      <p class="mt-2">
+        Interest is modelled monthly on the opening balance. Card issuers charge interest
+        daily against an average daily balance, so your statement will differ slightly.
+        Treat the result as a close estimate, not a lender quote.
+      </p>
+    </aside>
+  </article>
+</BaseLayout>

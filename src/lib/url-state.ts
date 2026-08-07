@@ -10,15 +10,14 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
-import {
-  defaults,
-  encodeParams,
-  parseParams,
-  type ParamSpec,
-  type ParamValues,
-} from './params';
 
-export interface UseUrlStateOptions {
+export interface UseUrlStateOptions<T> {
+  /** Build state from `window.location.search`. Must never throw. */
+  readonly decode: (search: string) => T;
+  /** Serialise to a query string, without the leading `?`. */
+  readonly encode: (value: T) => string;
+  /** The scenario shown before the URL is read, and on any parse failure. */
+  readonly initial: T;
   /**
    * Milliseconds to wait before writing. A number field fires on every
    * keystroke; without this the History API is hammered and Safari throttles it.
@@ -32,31 +31,37 @@ export interface UseUrlStateOptions {
  * Reads once on mount, so a shared link restores. Writes back debounced via
  * `replaceState`, so the back button still leaves the page rather than stepping
  * through every keystroke.
+ *
+ * Generic over the state shape rather than tied to a flat record of numbers:
+ * a debt list is neither flat nor uniformly numeric, and pushing that into a
+ * schema abstraction cost more than it saved.
  */
-export function useUrlState<S extends ParamSpec>(
-  spec: S,
-  options: UseUrlStateOptions = {},
-): [ParamValues<S>, (next: ParamValues<S>) => void] {
-  const { debounceMs = 300 } = options;
-
-  // The island prerenders without a window, so the first render must be the
-  // default scenario. The URL is read in the effect below.
-  const [state, setState] = useState<ParamValues<S>>(() => defaults(spec));
+export function useUrlState<T>({
+  decode,
+  encode,
+  initial,
+  debounceMs = 300,
+}: UseUrlStateOptions<T>): [T, (next: T) => void] {
+  // The island prerenders without a window, so the first render is always the
+  // initial scenario. The URL is read in the effect below. This is why a shared
+  // link shows defaults for one frame — the HTML is static and cached, so it
+  // must be identical for every visitor.
+  const [state, setState] = useState<T>(initial);
 
   useEffect(() => {
-    setState(parseParams(spec, window.location.search));
+    setState(decode(window.location.search));
     // Mount only. Re-reading the URL later would fight the user's typing.
   }, []);
 
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const update = useCallback(
-    (next: ParamValues<S>) => {
+    (next: T) => {
       setState(next);
 
       if (timer.current !== undefined) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
-        const query = encodeParams(next as Record<string, number>);
+        const query = encode(next);
         window.history.replaceState(
           null,
           '',
@@ -64,7 +69,7 @@ export function useUrlState<S extends ParamSpec>(
         );
       }, debounceMs);
     },
-    [debounceMs],
+    [encode, debounceMs],
   );
 
   useEffect(

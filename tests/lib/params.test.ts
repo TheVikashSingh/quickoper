@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  MAX_DEBTS,
   defaults,
+  encodeDebts,
   encodeParams,
+  parseDebts,
+  parseEnum,
   parseNumber,
   parseParams,
   type ParamSpec,
@@ -137,6 +141,84 @@ describe('parseParams', () => {
     parseParams(SPEC, '?__proto__[polluted]=1&b=350000&r=5.2&y=30');
     expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
     expect(Object.prototype).not.toHaveProperty('polluted');
+  });
+});
+
+describe('parseEnum', () => {
+  const views = ['avalanche', 'snowball'] as const;
+
+  it('accepts a known value and rejects anything else', () => {
+    expect(parseEnum('snowball', views, 'avalanche')).toBe('snowball');
+    expect(parseEnum('mortgage', views, 'avalanche')).toBe('avalanche');
+    expect(parseEnum(null, views, 'avalanche')).toBe('avalanche');
+    expect(parseEnum('', views, 'avalanche')).toBe('avalanche');
+  });
+
+  it('is not fooled by prototype properties', () => {
+    // `includes` on a real array, not an `in` check — 'toString' must not pass.
+    expect(parseEnum('toString', views, 'avalanche')).toBe('avalanche');
+    expect(parseEnum('constructor', views, 'avalanche')).toBe('avalanche');
+  });
+});
+
+describe('debt list encoding', () => {
+  const debts = [
+    { balance: 900, rate: 29.99, minimum: 30 },
+    { balance: 6000, rate: 22.99, minimum: 150 },
+  ];
+
+  it('round-trips a scenario', () => {
+    const encoded = encodeDebts(debts);
+    expect(encoded).toBe('900-29.99-30,6000-22.99-150');
+    expect(parseDebts(encoded)).toEqual(debts);
+  });
+
+  it('never encodes debt names', () => {
+    // Deliberate privacy property: a URL pasted into a forum or a screenshot
+    // reveals the figures and never who the money is owed to.
+    const named = debts.map((d, i) => ({ ...d, name: `Barclaycard ${i}` }));
+    const encoded = encodeDebts(named);
+    expect(encoded).not.toContain('Barclaycard');
+    expect(encoded).toBe('900-29.99-30,6000-22.99-150');
+  });
+
+  it('rejects a malformed list wholesale rather than partially recovering it', () => {
+    // A half-recovered debt list computes a confident answer about debts the
+    // user does not have.
+    for (const bad of [
+      '900-29.99',
+      '900-29.99-30-extra',
+      'abc-29.99-30',
+      '900--30',
+      '900-29.99-30,broken',
+      '',
+      '   ',
+      '0-10-5',
+      '900-999-30',
+    ]) {
+      expect(parseDebts(bad), bad).toBeNull();
+    }
+    expect(parseDebts(null)).toBeNull();
+  });
+
+  it('refuses a list longer than the cap', () => {
+    // Bounds the work a crafted URL can make a browser do.
+    const many = Array.from({ length: MAX_DEBTS + 1 }, () => ({
+      balance: 100,
+      rate: 10,
+      minimum: 5,
+    }));
+    expect(parseDebts(encodeDebts(many.slice(0, MAX_DEBTS)))).toHaveLength(MAX_DEBTS);
+    expect(parseDebts(many.map(() => '100-10-5').join(','))).toBeNull();
+  });
+
+  it('truncates rather than throwing when handed too many to encode', () => {
+    const many = Array.from({ length: MAX_DEBTS + 5 }, () => ({
+      balance: 100,
+      rate: 10,
+      minimum: 5,
+    }));
+    expect(parseDebts(encodeDebts(many))).toHaveLength(MAX_DEBTS);
   });
 });
 

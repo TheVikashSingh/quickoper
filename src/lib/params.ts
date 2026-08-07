@@ -95,3 +95,80 @@ export function encodeParams(state: Readonly<Record<string, number>>): string {
   for (const [key, value] of Object.entries(state)) params.set(key, String(value));
   return params.toString();
 }
+
+/** Pick a value from a fixed set, or fall back. Used for strategy toggles. */
+export function parseEnum<T extends string>(
+  raw: string | null,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  return raw !== null && (allowed as readonly string[]).includes(raw)
+    ? (raw as T)
+    : fallback;
+}
+
+// ── Debt lists ───────────────────────────────────────────────────────────────
+
+export interface DebtParam {
+  readonly balance: number;
+  readonly rate: number;
+  readonly minimum: number;
+}
+
+/** Hard cap. Bounds the work a crafted URL can make a browser do. */
+export const MAX_DEBTS = 12;
+
+const DEBT_FIELD_SEPARATOR = '-';
+const DEBT_SEPARATOR = ',';
+
+const BALANCE: NumberSpec = { min: 1, max: 10_000_000, fallback: 0 };
+const RATE: NumberSpec = { min: 0, max: 200, fallback: 0 };
+const MINIMUM: NumberSpec = { min: 0, max: 1_000_000, fallback: 0 };
+
+/**
+ * Encode debts as `balance-rate-minimum,balance-rate-minimum`.
+ *
+ * NAMES ARE DELIBERATELY NOT ENCODED.
+ *
+ * A shared link carrying "Barclaycard" or "Mum's loan" leaks something about
+ * the person who shared it, to everyone who ever sees the URL — in a forum
+ * post, a support ticket, a screenshot. The numbers are the useful part of a
+ * shared scenario; the lender names are not. Restoring a link therefore
+ * produces "Debt 1", "Debt 2", and the site can say plainly that sharing a
+ * scenario shares the figures and never who you owe them to.
+ */
+export function encodeDebts(debts: readonly DebtParam[]): string {
+  return debts
+    .slice(0, MAX_DEBTS)
+    .map((d) => [d.balance, d.rate, d.minimum].join(DEBT_FIELD_SEPARATOR))
+    .join(DEBT_SEPARATOR);
+}
+
+/**
+ * Parse an encoded debt list. Returns null on ANY malformation.
+ *
+ * Wholesale rejection, consistent with parseParams: a partially-recovered debt
+ * list would compute a confident answer about debts the user does not have.
+ */
+export function parseDebts(raw: string | null): DebtParam[] | null {
+  if (raw === null || raw.trim() === '') return null;
+
+  const chunks = raw.split(DEBT_SEPARATOR);
+  if (chunks.length === 0 || chunks.length > MAX_DEBTS) return null;
+
+  const debts: DebtParam[] = [];
+
+  for (const chunk of chunks) {
+    const fields = chunk.split(DEBT_FIELD_SEPARATOR);
+    if (fields.length !== 3) return null;
+
+    const balance = parseNumber(fields[0] ?? null, BALANCE);
+    const rate = parseNumber(fields[1] ?? null, RATE);
+    const minimum = parseNumber(fields[2] ?? null, MINIMUM);
+    if (balance === null || rate === null || minimum === null) return null;
+
+    debts.push({ balance, rate, minimum });
+  }
+
+  return debts;
+}

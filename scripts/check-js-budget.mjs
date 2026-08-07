@@ -5,10 +5,6 @@
  * This is the HARD gate, not Lighthouse. Lighthouse is non-deterministic in CI
  * and will collapse once ad scripts load regardless; a byte count is neither.
  *
- * Budget: 15KB gzipped per page. Achievable with Preact (~5KB core). NOT
- * achievable with React, whose runtime is ~45KB gzipped before a line of our
- * code â€” which is why the framework choice is not a preference.
- *
  * WHY THE MODULE GRAPH AND NOT `du dist/**\/*.js`:
  * Astro emits the Preact renderer chunks whenever the integration is
  * registered, whether or not a given page hydrates anything. Summing every
@@ -94,17 +90,17 @@ async function moduleGraph(entries) {
   return seen;
 }
 
-// â”€â”€ main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── main ─────────────────────────────────────────────────────────────────────
 
 if (!(await exists(DIST))) {
-  console.error(`âœ— ${DIST}/ not found. Run \`npm run build\` first.`);
+  console.error(`FAIL: ${DIST}/ not found. Run \`npm run build\` first.`);
   process.exit(1);
 }
 
 const pages = await walk(DIST, (name) => name.endsWith('.html'));
 
 if (pages.length === 0) {
-  console.error('âœ— No HTML found in dist/. The build produced nothing to measure.');
+  console.error('FAIL: no HTML found in dist/. The build produced nothing to measure.');
   process.exit(1);
 }
 
@@ -139,7 +135,7 @@ for (const page of pages) {
         .join('/')
         .replace(/index\.html$/, ''),
     bytes,
-    modules: graph.size,
+    graph,
   });
 }
 
@@ -150,16 +146,28 @@ const pad = Math.max(6, ...results.map((r) => r.url.length));
 
 console.log(`Client JavaScript per page, gzipped (budget ${kb(BUDGET_BYTES)}):\n`);
 for (const r of results) {
-  const flag = r.bytes > BUDGET_BYTES ? 'âœ—' : ' ';
-  const mods =
-    r.modules === 0 ? 'no JS' : `${r.modules} module${r.modules === 1 ? '' : 's'}`;
-  console.log(`${flag} ${r.url.padEnd(pad)}  ${kb(r.bytes).padStart(9)}   ${mods}`);
+  const flag = r.bytes > BUDGET_BYTES ? 'FAIL' : '  ok';
+  const mods = r.graph.size === 0 ? 'no JS' : `${r.graph.size} modules`;
+  console.log(`${flag}  ${r.url.padEnd(pad)}  ${kb(r.bytes).padStart(9)}   ${mods}`);
 }
 
 const over = results.filter((r) => r.bytes > BUDGET_BYTES);
 
 if (over.length > 0) {
-  console.error(`\nâœ— ${over.length} page(s) over the ${kb(BUDGET_BYTES)} budget.`);
+  // "Over budget" is useless without "by what". Break the offending pages down
+  // so the next step is obvious rather than a bisect.
+  for (const page of over) {
+    console.error(
+      `\n${page.url} is ${kb(page.bytes)}, over by ${kb(page.bytes - BUDGET_BYTES)}:`,
+    );
+    const parts = [...page.graph]
+      .map((file) => ({ file: relative(DIST, file), gz: gzipCache.get(file) ?? 0 }))
+      .sort((a, b) => b.gz - a.gz);
+    const width = Math.max(...parts.map((p) => p.file.length));
+    for (const part of parts) {
+      console.error(`    ${part.file.padEnd(width)}  ${kb(part.gz).padStart(9)}`);
+    }
+  }
   console.error('');
   console.error('  CLAUDE.md rule 9: if a change breaks this, it is the wrong change.');
   console.error('  Do not raise the budget. Find what got added and remove it.');
@@ -168,6 +176,6 @@ if (over.length > 0) {
 
 const worst = results[0];
 console.log(
-  `\nâœ“ All ${results.length} page(s) within budget. ` +
-    `Worst: ${worst.url} at ${kb(worst.bytes)} â€” ${kb(BUDGET_BYTES - worst.bytes)} headroom.`,
+  `\nPASS: all ${results.length} page(s) within budget. ` +
+    `Worst is ${worst.url} at ${kb(worst.bytes)}, ${kb(BUDGET_BYTES - worst.bytes)} to spare.`,
 );
