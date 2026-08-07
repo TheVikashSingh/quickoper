@@ -40,7 +40,11 @@
   --color-ink-mute: oklch(52% 0.018 160);
 
   --color-line: oklch(88.5% 0.012 120);
-  --color-line-strong: oklch(77% 0.022 140);
+  /* 60%, not 77%. At 77% a button border measured 1.92:1 against the surface it
+     sits on — WCAG 1.4.11 requires 3:1 for the boundary of a UI component, and
+     it is why the controls read as flat rectangles with nothing around them.
+     Measured, not eyeballed. */
+  --color-line-strong: oklch(60% 0.03 145);
 
   /* Banknote green. One accent, used sparingly. */
   --color-brand: oklch(42% 0.105 158);
@@ -75,6 +79,21 @@
      very faint without dragging the table borders with it. */
   --color-engrave: oklch(42% 0.105 158 / 0.05);
   --color-engrave-strong: oklch(42% 0.105 158 / 0.22);
+
+  /* ── The masthead band ────────────────────────────────────────────────────
+     A note carries a band of heavy ink at its head. The old masthead was
+     --color-surface on --color-canvas — two shades of cream a hairline apart,
+     which is why the header did not read as a header at all.
+
+     Deliberately NOT a surface token: it is dark in the light theme and darker
+     still in the dark one, so it separates in both directions rather than
+     inverting. Its own ink token comes with it, because text on this band can
+     never take --color-ink. */
+  --color-masthead: oklch(24% 0.035 162);
+  --color-masthead-ink: oklch(95% 0.012 95);
+  --color-masthead-mute: oklch(80% 0.02 120);
+  --color-masthead-line: oklch(38% 0.045 160);
+  --color-masthead-accent: oklch(80% 0.14 158);
 }
 
 /* ---------------------------------------------------------------------------
@@ -97,7 +116,8 @@
     --color-ink-mute: oklch(62% 0.014 140);
 
     --color-line: oklch(28% 0.022 160);
-    --color-line-strong: oklch(39% 0.032 160);
+    /* 55%, not 39%: 2.04:1 against the dark surface. Same rule as light. */
+    --color-line-strong: oklch(55% 0.038 160);
 
     --color-brand: oklch(74% 0.135 158);
     --color-brand-hover: oklch(82% 0.13 158);
@@ -113,6 +133,12 @@
        presence to survive the darker field. */
     --color-engrave: oklch(74% 0.135 158 / 0.055);
     --color-engrave-strong: oklch(74% 0.135 158 / 0.24);
+
+    --color-masthead: oklch(11% 0.02 162);
+    --color-masthead-ink: oklch(93% 0.012 100);
+    --color-masthead-mute: oklch(74% 0.018 130);
+    --color-masthead-line: oklch(26% 0.03 160);
+    --color-masthead-accent: oklch(78% 0.14 158);
   }
 }
 
@@ -126,7 +152,7 @@
   --color-ink-mute: oklch(62% 0.014 140);
 
   --color-line: oklch(28% 0.022 160);
-  --color-line-strong: oklch(39% 0.032 160);
+  --color-line-strong: oklch(55% 0.038 160);
 
   --color-brand: oklch(74% 0.135 158);
   --color-brand-hover: oklch(82% 0.13 158);
@@ -140,6 +166,12 @@
 
   --color-engrave: oklch(74% 0.135 158 / 0.055);
   --color-engrave-strong: oklch(74% 0.135 158 / 0.24);
+
+  --color-masthead: oklch(11% 0.02 162);
+  --color-masthead-ink: oklch(93% 0.012 100);
+  --color-masthead-mute: oklch(74% 0.018 130);
+  --color-masthead-line: oklch(26% 0.03 160);
+  --color-masthead-accent: oklch(78% 0.14 158);
 }
 
 @layer base {
