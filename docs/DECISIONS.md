@@ -57,7 +57,7 @@ A system serif was chosen over a self-hosted webfont because it is the largest
 character gain available at **zero bytes**.
 
 Applied site-wide rather than scoped to finance pages: every page here is a
-finance page, and sub-theming an eleven-page site fragments it for no gain.
+finance page, and sub-theming a ten-page site fragments it for no gain.
 
 ---
 
@@ -273,6 +273,29 @@ signal. `/404` and `/dev/*` are the only legitimate exceptions.
 This is the fifth time a check found something real by being asked to look
 (D18). It is also the second latent launch-blocker found by inspecting state
 rather than writing new code — the first was six 404s in the site navigation.
+
+### D27 — "Pages" is two numbers, and only one of them is the build's
+
+`docs/STATE.md` claimed **11 pages for two pull requests**. The build has
+produced ten since PR #5. The figure was not stale — `git log -S` puts its
+introduction at PR #11, and the tree at that commit already had exactly the ten
+route files it has now. It was wrong on the day it was written, and nothing
+recomputed it, because every other number in that table is printed by a gate and
+this one was typed.
+
+The two numbers, kept separate deliberately:
+
+- **Pages built — 10.** What `astro build` reports and what
+  `check-js-budget.mjs` enumerates. A mechanical fact.
+- **Substantive pages — 9.** The AdSense criterion. `/404` is excluded: it is an
+  error page, it is correctly absent from the sitemap (D26), and counting it
+  toward "15+ substantive pages" would be claiming credit for a page nobody
+  navigates to on purpose.
+
+They differ by one today and will differ by one forever, which is exactly why a
+single number invited the conflation. Same reasoning as the insistence that
+content pages ship 0.53KB rather than "zero" (rule 9): a small inaccuracy in a
+document whose entire argument is carefulness is not small.
 
 ### D21 — Emailing reports is rejected, not deferred
 
