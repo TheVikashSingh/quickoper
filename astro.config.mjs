@@ -36,7 +36,9 @@ export default defineConfig({
     assets: '_assets',
   },
 
-  prefetch: {
-    prefetchAll: false,
-  },
+  // NOTE: no `prefetch` key. Declaring it at all — even as
+  // `{ prefetchAll: false }` — enables the feature and ships Astro's link
+  // prefetch runtime (~1.1 KB gzipped) to EVERY page, including pages with no
+  // JavaScript of their own. We do not use prefetching, so the correct
+  // configuration is silence. Article pages ship zero bytes (rule 9).
 });
