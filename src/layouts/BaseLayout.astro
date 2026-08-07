@@ -61,6 +61,27 @@ const graph = [organization, ...structuredData];
         <script type="application/ld+json" set:html={JSON.stringify(node)} is:inline />
       ))
     }
+
+    {
+      /*
+      Applies a stored theme choice BEFORE first paint. It has to be inline and
+      blocking: anything deferred lets the wrong theme render for a frame, and
+      a white flash on a dark-theme page is worse than no toggle at all.
+
+      Reads localStorage but never writes here — only an explicit click does
+      that (CLAUDE.md: nothing in storage the user has not chosen to save).
+    */
+    }
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('qo-theme');
+          if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+        } catch (e) {
+          /* private mode, storage disabled — fall through to system preference */
+        }
+      })();
+    </script>
   </head>
 
   <body class="bg-canvas text-ink min-h-dvh antialiased">
@@ -71,19 +92,65 @@ const graph = [organization, ...structuredData];
       Skip to content
     </a>
 
-    <header class="border-line border-b">
+    <header class="border-line bg-surface border-b">
       <nav
-        class="mx-auto flex max-w-3xl items-center justify-between px-4 py-4"
+        class="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3.5"
         aria-label="Primary"
       >
-        <a href="/" class="text-lg font-semibold tracking-tight">
+        <a
+          href="/"
+          class="font-display text-ink text-xl font-semibold"
+          aria-label="QuickOper home"
+        >
           Quick<span class="text-brand">Oper</span>
         </a>
-        <ul class="text-ink-soft flex gap-5 text-sm">
+
+        <ul class="text-ink-soft ml-auto flex items-center gap-5 text-sm">
           <li><a class="hover:text-ink" href="/finance">Calculators</a></li>
-          <li><a class="hover:text-ink" href="/methodology">Methodology</a></li>
+          <li>
+            <a class="hover:text-ink hidden sm:inline" href="/methodology">Methodology</a>
+          </li>
           <li><a class="hover:text-ink" href="/about">About</a></li>
         </ul>
+
+        <button
+          id="theme-toggle"
+          type="button"
+          class="border-line hover:border-line-strong hover:bg-sunken text-ink-soft rounded-control -mr-1 border p-1.5"
+          aria-label="Switch theme"
+          aria-pressed="false"
+        >
+          {
+            /* Both icons ship; CSS shows whichever matches the active theme, so
+              the button is correct on first paint with no scripting. */
+          }
+          <svg
+            class="theme-icon-light h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4"></circle>
+            <path
+              d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+            ></path>
+          </svg>
+          <svg
+            class="theme-icon-dark h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path>
+          </svg>
+        </button>
       </nav>
     </header>
 
@@ -106,5 +173,51 @@ const graph = [organization, ...structuredData];
         </ul>
       </div>
     </footer>
+
+    {
+      /*
+      The toggle. Inline and dependency-free so content pages stay at zero
+      module JavaScript — a theme switch is not worth hydrating a framework for.
+
+      localStorage is written ONLY on click. A theme is something the visitor
+      explicitly chose, which is exactly the exception CLAUDE.md allows; storing
+      one they never asked for would not be.
+    */
+    }
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        var btn = document.getElementById('theme-toggle');
+        if (!btn) return;
+
+        function active() {
+          return (
+            root.dataset.theme ||
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          );
+        }
+
+        function label(theme) {
+          btn.setAttribute(
+            'aria-label',
+            theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
+          );
+          btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+        }
+
+        label(active());
+
+        btn.addEventListener('click', function () {
+          var next = active() === 'dark' ? 'light' : 'dark';
+          root.dataset.theme = next;
+          try {
+            localStorage.setItem('qo-theme', next);
+          } catch (e) {
+            /* storage unavailable — the choice still applies for this page */
+          }
+          label(next);
+        });
+      })();
+    </script>
   </body>
 </html>

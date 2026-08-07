@@ -31,14 +31,26 @@ const DIST = 'dist';
  *   Astro hydration client    1.36 KB
  *   preact/hooks              1.13 KB
  *   shared UI + lib chunk     3.42 KB   (table, chart, money, csv, params)
+ *   Astro island bootstrap    1.73 KB   (inline, was never counted until PR #9)
+ *   theme script              0.53 KB   (inline, on every page)
  *   ------------------------------------
- *   fixed cost               10.22 KB
+ *   fixed cost               12.48 KB
  *
- * 18KB leaves roughly 7.8KB for an individual calculator, which is a real
- * constraint: it still fails instantly on React (~45KB), on any charting
+ * The last two lines were discovered when inline scripts started being counted.
+ * They had been shipping since PR #5 and were invisible, which means the 10.22KB
+ * floor recorded in PR #8 was itself an under-measurement. Corrected here rather
+ * than left to mislead the next person who reads it.
+ *
+ * 18KB therefore leaves about 5.5KB for an individual calculator — a real
+ * constraint that still fails instantly on React (~45KB), on any charting
  * library (Recharts and Chart.js are 40KB+), and on a schema library reaching
  * an island (Zod cost 15.7KB when it did). Everything rule 9 exists to prevent
  * is still prevented.
+ *
+ * IT IS NOW TIGHT: the worst page sits 0.18KB under. A third calculator will
+ * breach it, and the honest fix at that point is structural — hydrate the
+ * below-fold chart and schedule separately with client:visible — not another
+ * increment.
  *
  * For scale: the project charter's original budget was 40KB, and median
  * JavaScript on a mobile page is several hundred.
@@ -67,6 +79,17 @@ const ENTRY_PATTERNS = [
 
 /** Static imports inside bundled ESM: `from"./x.js"`, `import"./x.js"`. */
 const IMPORT_PATTERN = /(?:\bfrom|\bimport)\s*\(?\s*["']([^"']+\.js)["']/g;
+
+/**
+ * Inline scripts, which a browser executes just as surely as a fetched one.
+ *
+ * The theme toggle is inline by necessity — a deferred one paints the wrong
+ * theme for a frame. Not counting it would let the budget report a page as
+ * shipping "no JS" while it ships some, which is the third time this gate would
+ * have quietly lied. JSON-LD is data, not script, and is excluded by type.
+ */
+const INLINE_SCRIPT =
+  /<script(?![^>]*\bsrc=)(?![^>]*type=["']application\/(?:ld\+json|json)["'])[^>]*>([\s\S]*?)<\/script>/g;
 
 async function walk(dir, predicate, found = []) {
   let entries;
@@ -155,7 +178,17 @@ for (const page of pages) {
   let bytes = 0;
   for (const file of graph) bytes += await gzipSize(file);
 
+  // Inline scripts count too. Gzipped together, since that is how the HTML
+  // document carrying them is served.
+  const inlineSource = [...html.matchAll(INLINE_SCRIPT)]
+    .map(([, body]) => body)
+    .join('\n');
+  const inlineBytes =
+    inlineSource.trim() === '' ? 0 : gzipSync(Buffer.from(inlineSource)).length;
+  bytes += inlineBytes;
+
   results.push({
+    inlineBytes,
     url:
       '/' +
       relative(DIST, page)
@@ -175,8 +208,11 @@ const pad = Math.max(6, ...results.map((r) => r.url.length));
 console.log(`Client JavaScript per page, gzipped (budget ${kb(BUDGET_BYTES)}):\n`);
 for (const r of results) {
   const flag = r.bytes > BUDGET_BYTES ? 'FAIL' : '  ok';
-  const mods = r.graph.size === 0 ? 'no JS' : `${r.graph.size} modules`;
-  console.log(`${flag}  ${r.url.padEnd(pad)}  ${kb(r.bytes).padStart(9)}   ${mods}`);
+  const parts = [];
+  if (r.graph.size > 0) parts.push(`${r.graph.size} modules`);
+  if (r.inlineBytes > 0) parts.push(`${kb(r.inlineBytes)} inline`);
+  const detail = parts.length === 0 ? 'no JS' : parts.join(' + ');
+  console.log(`${flag}  ${r.url.padEnd(pad)}  ${kb(r.bytes).padStart(9)}   ${detail}`);
 }
 
 const over = results.filter((r) => r.bytes > BUDGET_BYTES);

@@ -92,10 +92,16 @@ config from memory.** Dependencies are pinned to exact versions. Never use `^` o
    pages ship **zero**. Enforced by a byte-count assertion in CI against the built
    output — a deterministic gate, not a Lighthouse score.
 
-   The number is derived, not chosen. Fixed cost is 10.22KB (preact 4.31, Astro
-   hydration client 1.36, hooks 1.13, shared UI/lib chunk 3.42), leaving ~7.8KB for
-   an individual calculator. It was 15KB until PR #8 — picked before any of that had
-   been measured, and it proved 0.56KB too tight to fit a complete tool.
+   **Inline scripts count**, not just fetched modules. A browser executes both.
+
+   The number is derived, not chosen. Fixed cost is 12.48KB: preact 4.31, Astro
+   hydration client 1.36, hooks 1.13, shared UI/lib chunk 3.42, Astro's inline
+   island bootstrap 1.73, theme script 0.53. That leaves ~5.5KB for an individual
+   calculator. It was 15KB until PR #8, picked before any of it had been measured.
+
+   Content pages ship **0.53KB** — the inline theme script and nothing else. Not
+   literally zero, and saying "zero" when it is 0.53 would be the kind of small
+   inaccuracy this project cannot afford elsewhere.
 
    **Raising it again requires the same treatment:** measure the floor first, write
    down what the number is made of, and state what it still forbids. It must always
