@@ -297,6 +297,16 @@ single number invited the conflation. Same reasoning as the insistence that
 content pages ship 0.53KB rather than "zero" (rule 9): a small inaccuracy in a
 document whose entire argument is carefulness is not small.
 
+`scripts/check-state.mjs` now derives both from `dist/` and fails if `STATE.md`
+disagrees — in the Status table, the AdSense table, or the prose in Next, since
+the same count stated three ways is two chances to update one of them. A missing
+claim fails too: rewording a sentence must not silently retire the check on it.
+
+It deliberately does **not** check the JS byte figures. They are derivable, but
+only by importing `check-js-budget.mjs`'s module-graph measurement, and
+destabilising the project's most safety-critical gate to police a document is a
+bad trade. Worth revisiting when tool 3 moves those numbers.
+
 ### D21 — Emailing reports is rejected, not deferred
 
 Requested by the operator and then withdrawn, correctly. The site's proposition

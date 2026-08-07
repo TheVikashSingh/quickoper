@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-07, after PR #13.
+**Updated:** 2026-08-07, after PR #14.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -24,7 +24,7 @@ changes the answer to "what exists" or "what is next".
 | Pages built | 10 (9 substantive — `/404` is not) |
 | Working calculators | 2 |
 | Tests | 136 passing |
-| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing |
+| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts |
 | Worst-page JS | 17.92 KB of 18 KB (0.08 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only) |
 
@@ -58,7 +58,8 @@ Build-time SVG, zero JavaScript, `currentColor`.
 
 **Gates** (`scripts/`) — `check-js-budget.mjs` (per-page module graph *and*
 inline scripts), `check-links.mjs` (every internal href resolves; indexability
-invariant), `check-spacing.mjs` (missing spaces in rendered prose).
+invariant), `check-spacing.mjs` (missing spaces in rendered prose),
+`check-state.mjs` (the counts in this file match the build).
 
 Every gate has been deliberately broken once to prove it exits non-zero. A gate
 that has never failed is not a gate.
