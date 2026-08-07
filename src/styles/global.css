@@ -1,82 +1,147 @@
 @import 'tailwindcss';
 
 /* ---------------------------------------------------------------------------
-   Design tokens.
+   Design tokens — "the ledger".
 
-   Tailwind v4 is CSS-first: tokens live here, in @theme, and NOT in a
-   tailwind.config file. Every token declared here becomes a utility
-   automatically (--color-ink -> text-ink, bg-ink, border-ink, ...).
+   The site's product is schedules and worked arithmetic. That artefact already
+   has a visual tradition: ruled paper, engraved serif, banknote green, figures
+   in a column that line up. Leaning into it gives QuickOper an identity that is
+   about what it actually does, rather than another slate-and-blue SaaS palette.
 
-   CLAUDE.md rule: never hardcode a colour, font size or spacing value inside a
-   component. If a value is needed twice, it belongs here.
+   Three decisions carry the whole look:
+
+   1. PAPER, NOT WHITE. The light canvas is warm off-cream. Pure #fff reads as a
+      form to fill in; paper reads as a document to keep — which is what the
+      print and PDF output actually is.
+
+   2. INK, NOT BLACK. Text is a very dark green-black. Absolute black on white
+      is harsh and characterless; ink has a hue.
+
+   3. BANKNOTE GREEN. One accent, deep and desaturated. Used for actions and
+      figures that matter, never decoratively.
+
+   Tailwind v4 is CSS-first: tokens live here in @theme, and the dark theme
+   overrides the same custom properties further down. No component knows which
+   theme is active.
    --------------------------------------------------------------------------- */
 
 @theme {
-  /* Surface and text. Light values are the defaults; dark overrides below. */
-  --color-canvas: oklch(99% 0.003 240);
-  --color-surface: oklch(100% 0 0);
-  --color-sunken: oklch(96.5% 0.005 240);
+  /* Surfaces — warm paper. */
+  --color-canvas: oklch(97.6% 0.008 95);
+  --color-surface: oklch(99.4% 0.004 95);
+  --color-sunken: oklch(94.6% 0.012 95);
 
-  --color-ink: oklch(24% 0.02 250);
-  --color-ink-soft: oklch(45% 0.015 250);
-  --color-ink-mute: oklch(58% 0.012 250);
+  /* Ink — dark green-black, not pure black. */
+  --color-ink: oklch(23% 0.016 160);
+  --color-ink-soft: oklch(43% 0.018 160);
+  /* 52%, not 57%. At 57% this measured 4.15:1 against the canvas — below the
+     4.5:1 floor, and it is used for footer text, field hints and table
+     headings, so the failure was everywhere. Measured, not eyeballed. */
+  --color-ink-mute: oklch(52% 0.018 160);
 
-  --color-line: oklch(90% 0.008 250);
-  --color-line-strong: oklch(82% 0.01 250);
+  --color-line: oklch(88.5% 0.012 120);
+  --color-line-strong: oklch(77% 0.022 140);
 
-  /* Brand. One accent, used sparingly - actions and focus only. */
-  --color-brand: oklch(48% 0.13 245);
-  --color-brand-hover: oklch(42% 0.14 245);
-  --color-brand-soft: oklch(95% 0.02 245);
+  /* Banknote green. One accent, used sparingly. */
+  --color-brand: oklch(42% 0.105 158);
+  --color-brand-hover: oklch(35% 0.115 158);
+  --color-brand-soft: oklch(94% 0.03 158);
 
-  /* Semantic. Used by result panels and validation, never decoratively. */
-  --color-positive: oklch(48% 0.12 155);
-  --color-caution: oklch(58% 0.13 75);
-  --color-negative: oklch(52% 0.17 25);
+  /* Semantic. Result panels and validation only, never decoration. */
+  --color-positive: oklch(45% 0.115 155);
+  --color-caution: oklch(56% 0.13 75);
+  --color-negative: oklch(50% 0.17 25);
 
-  /* Type. Fonts are wired via Astro's Fonts API, never the Google Fonts CDN. */
+  /* ── Type: three voices ───────────────────────────────────────────────────
+     A serif for headings is the single largest character gain available at
+     zero bytes — Georgia ships on effectively every device and belongs to the
+     financial-document tradition the rest of the design is drawing on. Sans
+     handles interface furniture, mono handles figures. */
+  --font-display:
+    Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Times New Roman',
+    serif;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, monospace;
-
-  /* Numeric output. Tabular figures so schedule columns align. */
   --font-numeric: var(--font-mono);
 
-  /* Radii and elevation. Deliberately restrained. */
-  --radius-control: 0.375rem;
-  --radius-panel: 0.5rem;
-  --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.04), 0 1px 3px oklch(0% 0 0 / 0.06);
+  --radius-control: 0.3rem;
+  --radius-panel: 0.4rem;
+  --shadow-panel: 0 1px 2px oklch(30% 0.02 160 / 0.06);
 }
 
-/* Dark theme. Tokens are redefined; no component knows which theme is active. */
+/* ---------------------------------------------------------------------------
+   Dark theme.
+
+   Declared twice on purpose: once for visitors whose system asks for dark and
+   who have expressed no preference, once for an explicit choice. The explicit
+   choice must win in BOTH directions, so `[data-theme='light']` has to be able
+   to override a dark system setting — hence the :not() on the media query.
+   --------------------------------------------------------------------------- */
+
 @media (prefers-color-scheme: dark) {
-  @theme {
-    --color-canvas: oklch(18% 0.012 250);
-    --color-surface: oklch(21% 0.014 250);
-    --color-sunken: oklch(15.5% 0.012 250);
+  :root:not([data-theme='light']) {
+    --color-canvas: oklch(16.5% 0.018 160);
+    --color-surface: oklch(20% 0.02 160);
+    --color-sunken: oklch(13.5% 0.016 160);
 
-    --color-ink: oklch(95% 0.006 250);
-    --color-ink-soft: oklch(78% 0.01 250);
-    --color-ink-mute: oklch(62% 0.012 250);
+    --color-ink: oklch(94% 0.01 100);
+    --color-ink-soft: oklch(78% 0.014 120);
+    --color-ink-mute: oklch(62% 0.014 140);
 
-    --color-line: oklch(30% 0.014 250);
-    --color-line-strong: oklch(38% 0.016 250);
+    --color-line: oklch(28% 0.022 160);
+    --color-line-strong: oklch(39% 0.032 160);
 
-    --color-brand: oklch(72% 0.12 245);
-    --color-brand-hover: oklch(79% 0.12 245);
-    --color-brand-soft: oklch(27% 0.04 245);
+    --color-brand: oklch(74% 0.135 158);
+    --color-brand-hover: oklch(82% 0.13 158);
+    --color-brand-soft: oklch(26% 0.05 158);
 
-    --color-positive: oklch(72% 0.14 155);
+    --color-positive: oklch(74% 0.14 155);
     --color-caution: oklch(78% 0.13 75);
     --color-negative: oklch(70% 0.16 25);
 
-    --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.4);
+    --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.4);
   }
+}
+
+:root[data-theme='dark'] {
+  --color-canvas: oklch(16.5% 0.018 160);
+  --color-surface: oklch(20% 0.02 160);
+  --color-sunken: oklch(13.5% 0.016 160);
+
+  --color-ink: oklch(94% 0.01 100);
+  --color-ink-soft: oklch(78% 0.014 120);
+  --color-ink-mute: oklch(62% 0.014 140);
+
+  --color-line: oklch(28% 0.022 160);
+  --color-line-strong: oklch(39% 0.032 160);
+
+  --color-brand: oklch(74% 0.135 158);
+  --color-brand-hover: oklch(82% 0.13 158);
+  --color-brand-soft: oklch(26% 0.05 158);
+
+  --color-positive: oklch(74% 0.14 155);
+  --color-caution: oklch(78% 0.13 75);
+  --color-negative: oklch(70% 0.16 25);
+
+  --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.4);
 }
 
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    /* Tells form controls and scrollbars which theme they are in. */
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme='light']) {
+      color-scheme: dark;
+    }
+  }
+
+  html[data-theme='dark'] {
+    color-scheme: dark;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -96,37 +161,91 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* Accessibility is not optional (CLAUDE.md). Focus must always be visible. */
+  /* Headings carry the character. Slightly tightened, never shouty. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.011em;
+  }
+
+  /* Accessibility is not optional. Focus must always be visible. */
   :focus-visible {
     outline: 2px solid var(--color-brand);
     outline-offset: 2px;
     border-radius: 2px;
   }
 
-  /* Every figure in a schedule or result must align on the decimal point. */
+  /* Every figure in a schedule or result aligns on the decimal point. */
   .numeric,
   td.numeric,
   output {
     font-family: var(--font-numeric);
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
   }
 
-  /* Shown only when printing. See the @media print block below. */
+  /* ── The ledger treatment ─────────────────────────────────────────────────
+     Column headings set small, spaced and quiet, with one strong rule beneath;
+     rows separated by hairlines rather than blocks of colour. A ledger is read
+     down a column, and heavy zebra striping fights that. */
+  thead th {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--color-ink-mute);
+  }
+
   .print-only {
     display: none;
+  }
+
+  /* ── Theme toggle icons ───────────────────────────────────────────────────
+     Each icon is named for the theme it takes you TO, and both ship in the
+     markup so CSS alone shows the right one on first paint. Without this the
+     button would render the wrong glyph until script ran. */
+  .theme-icon-light {
+    display: none;
+  }
+  .theme-icon-dark {
+    display: block;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .theme-icon-light {
+      display: block;
+    }
+    :root:not([data-theme='light']) .theme-icon-dark {
+      display: none;
+    }
+  }
+
+  :root[data-theme='dark'] .theme-icon-light {
+    display: block;
+  }
+  :root[data-theme='dark'] .theme-icon-dark {
+    display: none;
+  }
+  :root[data-theme='light'] .theme-icon-light {
+    display: none;
+  }
+  :root[data-theme='light'] .theme-icon-dark {
+    display: block;
   }
 }
 
 /* ---------------------------------------------------------------------------
    Print / Save as PDF.
 
-   This is the "download it as a document" feature, and it is deliberately CSS
-   rather than a PDF library: jsPDF and pdf-lib are ~90KB and ~140KB gzipped
-   against a 15KB per-page budget, so they were never available. The browser's
-   own print pipeline is better anyway — selectable text, real typography, and
-   the chart prints as VECTOR rather than a blurry raster.
+   Deliberately CSS rather than a PDF library: jsPDF and pdf-lib are ~90KB and
+   ~140KB gzipped against an 18KB per-page budget, so they were never
+   available. The browser's own pipeline is better anyway — selectable text,
+   real typography, and the chart prints as VECTOR rather than a blurry raster.
 
    The printed document is designed, not merely allowed to happen: interactive
    chrome is dropped, the debts become a clean table instead of input boxes,
@@ -141,9 +260,19 @@
     margin: 14mm 12mm 16mm;
   }
 
-  /* Print on white with black ink regardless of the reader's theme. */
-  :root {
+  /* Always print on white with black ink, whatever the reader's theme. */
+  :root,
+  :root[data-theme='dark'] {
     color-scheme: light;
+    --color-canvas: #fff;
+    --color-surface: #fff;
+    --color-sunken: #fff;
+    --color-ink: #000;
+    --color-ink-soft: #222;
+    --color-ink-mute: #444;
+    --color-line: #ccc;
+    --color-line-strong: #999;
+    --color-brand: #000;
   }
 
   html,
@@ -159,7 +288,6 @@
     margin: 0 !important;
   }
 
-  /* Interactive chrome has no meaning on paper. */
   header,
   footer,
   button,
@@ -226,7 +354,6 @@
     text-decoration: none;
   }
 
-  /* Panels become plain sections; screen decoration wastes ink. */
   .rounded-panel {
     border-radius: 0 !important;
     box-shadow: none !important;
