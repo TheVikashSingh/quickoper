@@ -166,8 +166,11 @@ export function LineChart({
         <figcaption class="text-ink-soft mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
           {withData.map((s, i) => (
             <span key={s.id} class="inline-flex items-center gap-1.5">
+              {/* data-tight: the parent is a flex row with `gap-1.5`, so the
+                  space between swatch and label is layout, not whitespace. */}
               <span
                 aria-hidden="true"
+                data-tight
                 class="inline-block h-0.5 w-4 rounded"
                 style={{
                   background: s.colour ?? DEFAULT_COLOURS[i % DEFAULT_COLOURS.length],

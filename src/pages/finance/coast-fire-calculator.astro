@@ -138,8 +138,8 @@ const structuredData = [
 
       <p>
         The second line runs compounding backwards. If $1,000,000 is the target and money
-        grows at 5% a year for 30 years, then
-        <span class="numeric">1.05<sup>30</sup> = 4.3219</span>, so you need
+        grows at 5% a year for 30 years, then{' '}
+        <span class="numeric">1.05<sup>30</sup> = 4.3219</span>, so you need{' '}
         <span class="numeric">$1,000,000 ÷ 4.3219 = $231,377.45</span> today. Leave that alone
         for thirty years and it becomes the million.
       </p>
@@ -164,7 +164,7 @@ const structuredData = [
         An investment return does not work that way. A stated 7% annual return means the
         money grows 7% <em>over the year</em>, compounding as it goes. The monthly rate is
         therefore the one that compounds to 7% in twelve steps —
-        <span class="numeric">(1.07)<sup>1/12</sup> − 1 = 0.5654%</span> — not
+        <span class="numeric">(1.07)<sup>1/12</sup> − 1 = 0.5654%</span> — not{' '}
         <span class="numeric">7 ÷ 12 = 0.5833%</span>.
       </p>
 
@@ -213,9 +213,9 @@ const structuredData = [
         </li>
         <li>
           <strong class="text-ink">Tax.</strong> Which account the money sits in changes what
-          you keep. We do not model tax anywhere on this site, deliberately — see
+          you keep. We do not model tax anywhere on this site, deliberately — see{' '}
           <a class="text-brand underline" href="/methodology">how we verify our numbers</a
-          >
+          >{' '}
           for why.
         </li>
         <li>
@@ -236,9 +236,9 @@ const structuredData = [
 
       <p>
         The engine is tested against the compound interest formula, which anyone can
-        reproduce on a pocket calculator. $100,000 growing at 7% for 30 years is
+        reproduce on a pocket calculator. $100,000 growing at 7% for 30 years is{' '}
         <span class="numeric">$100,000 × 1.07<sup>30</sup> = $761,225.50</span>. Our
-        projection walks 360 monthly steps at the effective rate and lands within
+        projection walks 360 monthly steps at the effective rate and lands within{' '}
         <strong class="text-ink">42 cents</strong> of that — about five parts in a billion,
         the accumulated cost of rounding to the cent every month.
       </p>

@@ -93,6 +93,10 @@ export function DebtPayoffCalculator(): JSX.Element {
   const [state, setState] = useUrlState<State>({ decode, encode, initial: INITIAL });
   const [nextId, setNextId] = useState(STARTER.length + 1);
 
+  // Never in the URL and never persisted, for the same reason lender names are
+  // not: a name in a shared link identifies whoever shared it.
+  const [preparedFor, setPreparedFor] = useState('');
+
   // Captured at print time rather than on every keystroke: the URL is written
   // debounced, so reading it here guarantees the printed link matches the
   // figures on the page.
@@ -152,8 +156,8 @@ export function DebtPayoffCalculator(): JSX.Element {
         <div style="border-bottom:2px solid #000;padding-bottom:6pt;margin-bottom:10pt">
           <strong style="font-size:13pt">QuickOper — debt payoff schedule</strong>
           <div style="font-size:8pt;margin-top:3pt">
-            Prepared {printedAt?.date ?? ''} · every figure worked out in the browser,
-            nothing transmitted
+            {preparedFor.trim() !== '' && <>For {preparedFor.trim()} · </>}
+            {printedAt?.date ?? ''} · worked out in the browser
           </div>
           {printedAt !== null && (
             <div style="font-size:7.5pt;word-break:break-all;margin-top:2pt">
@@ -324,6 +328,8 @@ export function DebtPayoffCalculator(): JSX.Element {
             comparison={outcome.comparison}
             view={state.view}
             onView={(v) => patch({ view: v })}
+            name={preparedFor}
+            onName={setPreparedFor}
           />
         )
       )}
@@ -337,6 +343,8 @@ interface ResultsProps {
   comparison: ReturnType<typeof compareStrategies>;
   view: View;
   onView: (view: View) => void;
+  name: string;
+  onName: (value: string) => void;
 }
 
 interface Row {
@@ -346,7 +354,7 @@ interface Row {
   remaining: Minor;
 }
 
-function Results({ comparison, view, onView }: ResultsProps): JSX.Element {
+function Results({ comparison, view, onView, name, onName }: ResultsProps): JSX.Element {
   const shown: PayoffResult = comparison[view];
 
   const rows: Row[] = shown.schedule.map((m) => ({
@@ -559,10 +567,20 @@ function Results({ comparison, view, onView }: ResultsProps): JSX.Element {
             Save as PDF or print
           </button>
         </div>
-        <p class="text-ink-mute mt-2 text-xs">
-          The PDF carries your debts, the summary, the chart and the complete
-          month-by-month schedule — plus a link back to these exact figures, so whoever
-          you send it to can change them.
+        <label for="prepared-for" class="text-ink-mute mt-3 block text-xs font-medium">
+          Name on the report (optional)
+        </label>
+        <input
+          id="prepared-for"
+          type="text"
+          value={name}
+          maxLength={60}
+          onInput={(e) => onName((e.target as HTMLInputElement).value)}
+          class="border-line-strong bg-surface rounded-control mt-1 w-56 border px-2 py-1.5 text-sm"
+        />
+        <p class="text-ink-mute mt-1 text-xs">
+          Stays on this device. Never saved, never in the link. The PDF carries the full
+          schedule and a link back to these figures.
         </p>
       </div>
 

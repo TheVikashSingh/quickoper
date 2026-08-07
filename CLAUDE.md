@@ -2,6 +2,30 @@
 
 Read this file before every task. If a request conflicts with it, say so and stop.
 
+## Start here
+
+Three files carry everything a new session needs. Read them in order:
+
+1. **`CLAUDE.md`** (this file) — the rules. What you must and must not do.
+2. **`docs/DECISIONS.md`** — why the rules are what they are, what was measured,
+   and what was already tried and rejected. Read this before proposing a change
+   to anything in here; several obvious-looking improvements have already been
+   attempted and are recorded as superseded.
+3. **`docs/STATE.md`** — what exists today, what is next, what is blocked on the
+   operator.
+4. **`docs/VERIFICATION.md`** — how to check every published figure against Excel,
+   Google Sheets and the SEC's own calculator. Point anyone worried about an
+   AI-written codebase at this rather than reassuring them.
+
+These are the handoff. A session that has read them needs no other context, and
+the git history plus pull request bodies carry the detail if a specific decision
+needs re-examining.
+
+**Keep them current.** A pull request that changes what exists updates
+`docs/STATE.md`; one that makes a non-obvious call adds an entry to
+`docs/DECISIONS.md`. Stale handoff notes are worse than none, because they are
+believed.
+
 ## What this is
 
 Static personal-finance calculators at `quickoper.com/finance/<tool>`.

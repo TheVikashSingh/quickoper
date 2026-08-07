@@ -102,7 +102,11 @@ const graph = [organization, ...structuredData];
           class="font-display text-ink text-xl font-semibold"
           aria-label="QuickOper home"
         >
-          Quick<span class="text-brand">Oper</span>
+          {
+            /* One word in two colours. data-tight tells the spacing checker
+              this adjacency is deliberate. */
+          }
+          Quick<span class="text-brand" data-tight>Oper</span>
         </a>
 
         <ul class="text-ink-soft ml-auto flex items-center gap-5 text-sm">

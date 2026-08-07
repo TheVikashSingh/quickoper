@@ -51,6 +51,12 @@ jobs:
       - name: Internal links
         run: npm run links
 
+      # Astro trims the newline between prose and an inline element, so
+      # "we keep anyway:" + <strong> renders as "anyway:if". Invisible in the
+      # source and in review; only exists in the built HTML.
+      - name: Prose spacing
+        run: npm run spacing
+
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-latest
