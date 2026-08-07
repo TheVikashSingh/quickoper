@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-07, after PR #12.
+**Updated:** 2026-08-07, after PR #13.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
