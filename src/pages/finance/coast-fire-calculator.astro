@@ -1,0 +1,339 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { CoastFireCalculator } from '../../components/calculators/CoastFireCalculator';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+const LAST_VERIFIED = '2026-08-07';
+
+const SOURCES = [
+  {
+    label: 'Bengen, W. (1994) — Determining Withdrawal Rates Using Historical Data',
+    url: 'https://www.financialplanningassociation.org/article/journal/JAN18-40-years-safe-withdrawal-rates',
+    retrieved: '2026-08-07',
+  },
+  {
+    label: 'Trinity Study (Cooley, Hubbard & Walz, 1998) — Retirement Savings',
+    url: 'https://www.aaii.com/journal/198802/feature.pdf',
+    retrieved: '2026-08-07',
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'What is Coast FIRE, exactly?',
+    a: 'It is the point at which what you have already invested will grow, on its own, to your retirement target — so further saving becomes optional rather than necessary. It is not retirement. You still need to cover your living costs until then; you just no longer need to add to the investments.',
+  },
+  {
+    q: 'Why does it ask for a real return rather than a normal one?',
+    a: 'Because everything here is in today’s money. If you enter 5% and mean 5% after inflation, the projected balance means what it would mean if you spent it today. Entering a nominal return like 8% while thinking in today’s prices produces a number that looks large and buys less than you expect.',
+  },
+  {
+    q: 'Where does the withdrawal rate come from?',
+    a: 'It converts a spending figure into a target: at 4% you need 25 times your annual spending, at 3.5% you need about 28.6 times. The 4% convention comes from Bengen (1994) and the Trinity Study (1998), both of which tested historical US portfolios over 30-year windows. It is a widely used starting point, it is actively debated, and it is your input here rather than our recommendation.',
+  },
+  {
+    q: 'Should I trust a projection that assumes a constant return?',
+    a: 'Not as a forecast. Real returns arrive in an uneven order, and a bad run early in retirement does more damage than the same run later — sequence-of-returns risk, which a smooth curve hides completely. This tool describes what a constant rate would produce. It is a way to compare scenarios, not a prediction of yours.',
+  },
+  {
+    q: 'Does it account for tax, fees, or a pension?',
+    a: 'No. It models one pot growing at one rate. Platform fees and fund charges reduce your real return, so subtract them from the rate you enter. State or workplace pensions arriving later reduce what the pot has to cover, which this does not model. Both push the honest answer around, and neither is something a calculator can know about you.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Coast FIRE calculator',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/finance/coast-fire-calculator`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'Work out how much you need invested today for it to grow to your retirement target without adding another penny. Year-by-year projection, chart, CSV and printable PDF.',
+    author: { '@type': 'Person', name: SITE.author.name },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Calculators',
+        item: `${SITE.url}/finance`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Coast FIRE calculator',
+        item: `${SITE.url}/finance/coast-fire-calculator`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="Coast FIRE calculator — when saving becomes optional | QuickOper"
+  description="Work out how much you need invested today for it to reach your retirement target on its own. Year-by-year projection, chart, spreadsheet and printable PDF. Every figure worked out in your browser."
+  structuredData={structuredData}
+>
+  <article>
+    <h1 class="text-3xl font-semibold tracking-tight">Coast FIRE calculator</h1>
+
+    <p class="text-ink-soft mt-3 text-lg">
+      How much would you need invested today for it to reach your retirement target on its
+      own — without you adding another penny?
+    </p>
+
+    <div class="mt-10">
+      <CoastFireCalculator client:load />
+    </div>
+
+    <section class="prose-like text-ink-soft mt-16 space-y-4">
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        What the number actually means
+      </h2>
+
+      <p>
+        Coast FIRE is a threshold, not a finish line. Past it, the money you have already
+        invested is enough to grow into your retirement target by itself. You still have
+        to pay your rent and your groceries between now and then — but you no longer have
+        to keep feeding the investments for the plan to work.
+      </p>
+
+      <p>
+        That makes it a genuinely different question from "when can I retire", and an
+        easier one to answer, because it depends on far fewer guesses.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">The arithmetic</h2>
+
+      <p>It is the compound interest formula, used twice.</p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        target = yearly spending ÷ withdrawal rate
+        <br />
+        coast number = target ÷ (1 + real return)<sup>years</sup>
+      </p>
+
+      <p>
+        The first line turns a spending figure into a pot. At a 4% withdrawal rate you
+        need 25 times your annual spending; at 3.5% you need about 28.6 times. That
+        multiplier is simply 1 ÷ the rate.
+      </p>
+
+      <p>
+        The second line runs compounding backwards. If $1,000,000 is the target and money
+        grows at 5% a year for 30 years, then
+        <span class="numeric">1.05<sup>30</sup> = 4.3219</span>, so you need
+        <span class="numeric">$1,000,000 ÷ 4.3219 = $231,377.45</span> today. Leave that alone
+        for thirty years and it becomes the million.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        Why the monthly rate is not the annual rate divided by twelve
+      </h2>
+
+      <p>
+        This is the one piece of arithmetic here that is commonly got wrong, and it
+        matters more the longer the projection runs.
+      </p>
+
+      <p>
+        Our <a class="text-brand underline" href="/finance/debt-payoff-calculator"
+          >debt payoff calculator</a
+        > divides the annual rate by twelve, because that is genuinely how lenders quote an
+        APR and how a card statement computes a month's charge.
+      </p>
+
+      <p>
+        An investment return does not work that way. A stated 7% annual return means the
+        money grows 7% <em>over the year</em>, compounding as it goes. The monthly rate is
+        therefore the one that compounds to 7% in twelve steps —
+        <span class="numeric">(1.07)<sup>1/12</sup> − 1 = 0.5654%</span> — not
+        <span class="numeric">7 ÷ 12 = 0.5833%</span>.
+      </p>
+
+      <p>
+        The gap looks trivial. Over thirty years it is not: the nominal division
+        overstates the final balance by several percent, and always in the flattering
+        direction. We use the effective rate.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        Everything is in today's money
+      </h2>
+
+      <p>
+        The return you enter is a <strong class="text-ink">real</strong> return — after inflation.
+        If you expect 8% nominal and 3% inflation, enter 5%.
+      </p>
+
+      <p>
+        This is deliberate. A projection in future dollars produces a bigger, more
+        exciting number that buys less than it appears to, and it forces you to guess
+        inflation on top of guessing returns. Working in today's money means the figure on
+        screen means what it would mean if you spent it this afternoon, and removes one
+        guess from a calculation that already has plenty.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        What this deliberately does not do
+      </h2>
+
+      <p>
+        A smooth curve is the most misleading thing about every projection of this kind,
+        including this one. Four things it does not know:
+      </p>
+
+      <ul class="list-disc space-y-1 pl-5">
+        <li>
+          <strong class="text-ink">The order returns arrive in.</strong> A constant 5% and a
+          real market averaging 5% are not the same experience. A bad run early does far more
+          damage than the same run late — sequence-of-returns risk — and no constant-rate model
+          can show it.
+        </li>
+        <li>
+          <strong class="text-ink">Fees.</strong> Platform and fund charges come straight off
+          your real return. Subtract them from the rate you enter.
+        </li>
+        <li>
+          <strong class="text-ink">Tax.</strong> Which account the money sits in changes what
+          you keep. We do not model tax anywhere on this site, deliberately — see
+          <a class="text-brand underline" href="/methodology">how we verify our numbers</a
+          >
+          for why.
+        </li>
+        <li>
+          <strong class="text-ink">Other income.</strong> A state or workplace pension arriving
+          later reduces what this pot has to cover, and would lower your target.
+        </li>
+      </ul>
+
+      <p>
+        Use it to compare scenarios — what happens if I save $200 more, retire two years
+        later, or assume a percentage point less growth. That comparison is robust. The
+        single headline figure is not a prediction.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        How we check this is right
+      </h2>
+
+      <p>
+        The engine is tested against the compound interest formula, which anyone can
+        reproduce on a pocket calculator. $100,000 growing at 7% for 30 years is
+        <span class="numeric">$100,000 × 1.07<sup>30</sup> = $761,225.50</span>. Our
+        projection walks 360 monthly steps at the effective rate and lands within
+        <strong class="text-ink">42 cents</strong> of that — about five parts in a billion,
+        the accumulated cost of rounding to the cent every month.
+      </p>
+
+      <p>
+        There is a second check that ties the two halves together. Someone starting with
+        exactly their coast number and contributing nothing must land exactly on their
+        target thirty years later. Ours lands on <strong class="text-ink"
+          >$1,000,000.12</strong
+        > — twelve cents high, and high rather than low, which is the safe direction. The discount
+        and the projection are genuine inverses.
+      </p>
+
+      <p>
+        Both assertions are exact rather than tolerance-based, so a change to the rounding
+        policy has to be noticed and justified. The tests are public —
+        <a class="text-brand underline" href="/methodology">read the methodology</a>.
+      </p>
+    </section>
+
+    <section class="mt-14" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="text-2xl font-semibold tracking-tight">
+        Common questions
+      </h2>
+      <dl class="mt-4 space-y-5">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="text-2xl font-semibold tracking-tight">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          The projection is checked against the compound interest formula, FV = PV × (1 +
+          r)<sup>n</sup>, which is independently derivable and quoted identically
+          everywhere.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is a calculator, not advice.</strong> QuickOper works
+        out the arithmetic and shows its working. It does not know your circumstances and cannot
+        tell you what to do with your money. Nothing here is financial, tax or investment advice.
+      </p>
+      <p class="mt-2">
+        Projections assume a constant real return, which markets do not provide. Past
+        returns do not predict future ones, and the value of investments can fall.
+      </p>
+    </aside>
+
+    <nav class="no-print mt-14" aria-label="Related tools">
+      <h2 class="text-lg font-semibold">Related</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        <li>
+          <a class="text-brand underline" href="/finance/debt-payoff-calculator">
+            Debt payoff calculator
+          </a>
+          <span class="text-ink-mute">
+            — the same arithmetic, running the other way.</span
+          >
+        </li>
+        <li>
+          <a class="text-brand underline" href="/methodology">How we verify our numbers</a
+          >
+          <span class="text-ink-mute"> — the rounding policy and the tests.</span>
+        </li>
+      </ul>
+    </nav>
+  </article>
+</BaseLayout>

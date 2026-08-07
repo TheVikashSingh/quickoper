@@ -88,9 +88,20 @@ config from memory.** Dependencies are pinned to exact versions. Never use `^` o
    derivation and worked example, an FAQ block, sources with dates, and the
    not-financial-advice disclaimer. A page missing any of these is not done.
 
-9. **Client JS budget: under 15KB gzipped** per calculator page. Article pages ship zero.
-   Enforced by a byte-count assertion in CI against the built output — a deterministic gate,
-   not a Lighthouse score.
+9. **Client JS budget: under 18KB gzipped** per calculator page. Article and content
+   pages ship **zero**. Enforced by a byte-count assertion in CI against the built
+   output — a deterministic gate, not a Lighthouse score.
+
+   The number is derived, not chosen. Fixed cost is 10.22KB (preact 4.31, Astro
+   hydration client 1.36, hooks 1.13, shared UI/lib chunk 3.42), leaving ~7.8KB for
+   an individual calculator. It was 15KB until PR #8 — picked before any of that had
+   been measured, and it proved 0.56KB too tight to fit a complete tool.
+
+   **Raising it again requires the same treatment:** measure the floor first, write
+   down what the number is made of, and state what it still forbids. It must always
+   forbid React (~45KB), any charting library (40KB+), and a schema library reaching
+   an island (Zod cost 15.7KB when it did). "This change needs the budget raised" is
+   still evidence the change is wrong until proven otherwise.
 
 10. **Every calculator outputs more than a number.** A single computed figure is something a
     chatbot gives away free; it is not a product. Each tool ships all four of:
