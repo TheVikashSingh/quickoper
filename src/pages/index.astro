@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// noindex stays until the site has real content and the domain is attached
+// (charter §13). A two-page site should not be indexed.
+const NOINDEX_UNTIL_LAUNCH = true;
+---
+
+<BaseLayout
+  title="QuickOper — calculators that show their working"
+  description="Verified-calculation tools for personal money decisions. Every calculation runs in your browser, shows its formula, and exports a full schedule. Nothing you type leaves your device."
+  noindex={NOINDEX_UNTIL_LAUNCH}
+>
+  <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
+    Calculators that show their working.
+  </h1>
+
+  <p class="text-ink-soft mt-4 text-lg">
+    Money tools that give you the whole schedule, not just a number — and prove the
+    arithmetic against real published figures.
+  </p>
+
+  <div class="mt-10 grid gap-4 sm:grid-cols-3">
+    <div class="rounded-panel border-line bg-surface shadow-panel border p-4">
+      <h2 class="text-sm font-semibold">Verified arithmetic</h2>
+      <p class="text-ink-soft mt-1 text-sm">
+        Every calculation is a separately-tested pure function, checked against a real
+        published schedule. The tests are public.
+      </p>
+    </div>
+
+    <div class="rounded-panel border-line bg-surface shadow-panel border p-4">
+      <h2 class="text-sm font-semibold">Nothing is transmitted</h2>
+      <p class="text-ink-soft mt-1 text-sm">
+        Static site, no backend, no accounts. Your numbers never leave your device — there
+        is no server to send them to.
+      </p>
+    </div>
+
+    <div class="rounded-panel border-line bg-surface shadow-panel border p-4">
+      <h2 class="text-sm font-semibold">The whole schedule</h2>
+      <p class="text-ink-soft mt-1 text-sm">
+        Formula, intermediate values, every period, a chart, and a CSV you can take with
+        you.
+      </p>
+    </div>
+  </div>
+
+  <p class="rounded-panel border-line bg-sunken text-ink-soft mt-10 border p-4 text-sm">
+    <strong class="text-ink">Scaffold.</strong> No calculators are live yet — the first ships
+    in the next pull request. This page exists to prove the build, the design tokens and the
+    CI gates.
+  </p>
+</BaseLayout>

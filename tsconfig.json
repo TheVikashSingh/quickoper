@@ -1,0 +1,36 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    // Preact, not React. compat is on, so JSX is authored React-style.
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+
+    // Beyond `strict`. These two catch the class of error that produces a
+    // WRONG NUMBER rather than a crash, which is the only failure mode this
+    // project treats as fatal.
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Additional correctness rails for financial logic.
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+
+    "types": ["vitest/globals"],
+
+    // No `baseUrl`: deprecated in TypeScript 6, removed in 7. Path mappings
+    // resolve relative to this file, which is what we wanted anyway.
+    "paths": {
+      "@/*": ["./src/*"],
+      "@calc/*": ["./src/lib/calc/*"]
+    }
+  },
+  // `.astro/types.d.ts` chains to `.astro/content.d.ts`, which declares the
+  // `astro:content` virtual module. It must NOT appear in `exclude` — exclude
+  // filters include, so excluding `.astro` silently breaks `tsc --noEmit`
+  // while leaving `astro check` green, which is a confusing way to fail.
+  "include": [".astro/types.d.ts", "**/*.ts", "**/*.tsx", "**/*.astro"],
+  "exclude": ["dist", "node_modules"]
+}
