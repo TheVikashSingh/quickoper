@@ -1,5 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Guilloche from '../components/ornament/Guilloche.astro';
+import Rule from '../components/ornament/Rule.astro';
 import { SITE } from '../lib/site';
 
 // The differentiator, written as a public artefact rather than a trust-page
@@ -29,9 +31,15 @@ const structuredData = [
   structuredData={structuredData}
 >
   <article class="text-ink-soft space-y-4">
-    <h1 class="text-ink text-3xl font-semibold tracking-tight">
-      How we verify our numbers
-    </h1>
+    <div class="relative">
+      <Guilloche
+        size={230}
+        class="text-brand pointer-events-none absolute -top-12 -right-10 hidden opacity-[0.09] sm:block"
+      />
+      <h1 class="text-ink relative text-3xl font-semibold tracking-tight">
+        How we verify our numbers
+      </h1>
+    </div>
 
     <p class="text-lg">
       A calculator is only worth using if its arithmetic is right, and almost nobody
@@ -173,7 +181,9 @@ const structuredData = [
       one failure this site cannot survive.
     </p>
 
-    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Read the tests</h2>
+    <Rule class="pt-4" />
+
+    <h2 class="text-ink pt-2 text-2xl font-semibold tracking-tight">Read the tests</h2>
 
     <p>
       The source and every test are public at{' '}

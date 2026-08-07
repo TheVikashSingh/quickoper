@@ -1,0 +1,26 @@
+---
+/**
+ * Engraved section rule — a hairline broken by a small lozenge, the divider
+ * used on certificates and in set-metal typography.
+ *
+ * Replaces a plain `border-t` where a section break wants a little ceremony.
+ * `.astro`, zero JavaScript, `currentColor`, `aria-hidden` — a separator that
+ * a screen reader announces is noise, and the surrounding headings already
+ * carry the document structure.
+ */
+interface Props {
+  readonly class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+---
+
+<div class={`text-line-strong flex items-center gap-3 ${className}`} aria-hidden="true">
+  <span class="h-px flex-1 bg-current opacity-60"></span>
+  <svg width="26" height="7" viewBox="0 0 26 7" fill="none" focusable="false">
+    <path d="M13 0.6 19 3.5 13 6.4 7 3.5Z" fill="currentColor" opacity="0.55"></path>
+    <path d="M0 3.5H5M21 3.5H26" stroke="currentColor" stroke-width="1" opacity="0.4"
+    ></path>
+  </svg>
+  <span class="h-px flex-1 bg-current opacity-60"></span>
+</div>

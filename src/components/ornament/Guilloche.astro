@@ -1,0 +1,69 @@
+---
+/**
+ * Guilloché rosette — the engine-turned pattern engraved on banknotes,
+ * passports and share certificates since the eighteenth century.
+ *
+ * Drawn as rotated ellipses rather than a plotted hypotrochoid. A real
+ * parametric curve needs a few hundred coordinates and gzips to about 1.5KB;
+ * twenty-eight rotated ellipses read the same at a glance and cost a fraction
+ * of that, because the transform is one number per element.
+ *
+ * `.astro`, so it renders at build time and ships ZERO JavaScript. Stroked in
+ * `currentColor`, so it inherits the theme without knowing one exists.
+ *
+ * Decorative only — `aria-hidden`, and it carries no information a reader
+ * would miss.
+ */
+interface Props {
+  /** Viewport size in px. The pattern scales to fill it. */
+  readonly size?: number;
+  /** More rings is denser and heavier. Twenty-eight is legible at any size. */
+  readonly rings?: number;
+  readonly class?: string;
+}
+
+const { size = 260, rings = 28, class: className = '' } = Astro.props;
+
+const c = size / 2;
+const outer = { rx: c * 0.94, ry: c * 0.4 };
+const inner = { rx: c * 0.52, ry: c * 0.2 };
+
+const angles = Array.from({ length: rings }, (_, i) => (i * 180) / rings);
+---
+
+<svg
+  viewBox={`0 0 ${size} ${size}`}
+  width={size}
+  height={size}
+  class={className}
+  aria-hidden="true"
+  focusable="false"
+>
+  <g fill="none" stroke="currentColor" stroke-width="0.5">
+    {
+      angles.map((a) => (
+        <ellipse
+          cx={c}
+          cy={c}
+          rx={outer.rx}
+          ry={outer.ry}
+          transform={`rotate(${a.toFixed(1)} ${c} ${c})`}
+        />
+      ))
+    }
+  </g>
+  <g fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.75">
+    {
+      angles.map((a) => (
+        <ellipse
+          cx={c}
+          cy={c}
+          rx={inner.rx}
+          ry={inner.ry}
+          transform={`rotate(${(a + 90 / rings).toFixed(1)} ${c} ${c})`}
+        />
+      ))
+    }
+  </g>
+  <circle cx={c} cy={c} r={c * 0.055} fill="currentColor" opacity="0.5"></circle>
+</svg>
