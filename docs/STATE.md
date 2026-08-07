@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-07, after PR #14.
+**Updated:** 2026-08-07, after PR #15.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -24,8 +24,8 @@ changes the answer to "what exists" or "what is next".
 | Pages built | 10 (9 substantive — `/404` is not) |
 | Working calculators | 2 |
 | Tests | 136 passing |
-| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts |
-| Worst-page JS | 17.92 KB of 18 KB (0.08 KB spare) |
+| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots |
+| Worst-page JS | 17.42 KB of 18 KB (0.58 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only) |
 
 ---
@@ -59,7 +59,8 @@ Build-time SVG, zero JavaScript, `currentColor`.
 **Gates** (`scripts/`) — `check-js-budget.mjs` (per-page module graph *and*
 inline scripts), `check-links.mjs` (every internal href resolves; indexability
 invariant), `check-spacing.mjs` (missing spaces in rendered prose),
-`check-state.mjs` (the counts in this file match the build).
+`check-state.mjs` (the counts in this file match the build),
+`check-slots.mjs` (every prose slot an island declares reaches its page).
 
 Every gate has been deliberately broken once to prove it exits non-zero. A gate
 that has never failed is not a gate.
@@ -79,7 +80,9 @@ Nothing in code depends on these, but launch does.
 2. **Cloudflare DNS migration.** The domain carries **live email** — MX, SPF,
    DMARC and three DKIM CNAMEs. Recreate every one in Cloudflare *before*
    switching nameservers, and test mail end-to-end as a gate before anything
-   else. Exact records are in the project charter §13.
+   else. Records and the full procedure: `docs/DNS.md`. That file used to say
+   "the project charter §13", which is not in this repository — the values are
+   now here, flagged as operator-supplied and unverified against the zone.
 
 3. **Search Console** verification and sitemap submission, once the domain
    resolves.
@@ -96,11 +99,13 @@ Nothing in code depends on these, but launch does.
 Ordered. Nothing here is started.
 
 1. **Mortgage overpayment calculator.** Tool 3, and the first with market
-   exposure — see D20. **This will breach the JS budget** (0.08 KB spare). The
-   options, in order of preference: move static disclosure prose out of the
-   island into the `.astro` page (real saving, better architecture); or revisit
-   the number with the same discipline as D10. Do **not** deduplicate components
-   across islands — that has been measured twice and makes it worse (D23).
+   exposure — see D20. The headroom it needed now exists: **0.58 KB spare**,
+   up from 0.08 KB, by moving static prose out of the islands into the pages
+   (D28). Build it with its prose in slots from the first commit rather than
+   retrofitting. The risk is no longer this page — it is the **shared chunk**,
+   which grew when the second calculator was added and will grow again, and
+   that lands on every calculator page at once. Do **not** deduplicate
+   components across islands to fix it: measured twice, makes it worse (D23).
 2. **Supporting content** to reach 15+ pages for AdSense. Six more needed —
    the build produces 10 pages, of which 9 are substantive (`/404` is not).
 3. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression that only

@@ -63,6 +63,12 @@ jobs:
       - name: STATE.md matches the build
         run: npm run state
 
+      # Static prose reaches the islands as named slots, and TypeScript cannot
+      # see slots as props — so a page that forgets one type-checks, builds, and
+      # ships with a rule 8 disclosure missing.
+      - name: Island prose slots
+        run: npm run slots
+
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-latest

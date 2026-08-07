@@ -96,8 +96,79 @@ const structuredData = [
       against doing nothing but the minimums.
     </p>
 
+    {
+      /*
+      The calculator's static prose lives here, not in the island.
+
+      Every sentence inside a Preact component is shipped twice — once as HTML,
+      once as the JavaScript able to re-render it. These never change, so the
+      second copy is waste. Passing them as slots keeps them in the document
+      only, and @astrojs/preact's StaticHtml wrapper marks them
+      shouldComponentUpdate=false, so they also stop re-rendering on keystroke.
+
+      Slot names are single words on purpose: the server pass camel-cases them
+      and the client pass does not, so a hyphenated name hydrates to undefined.
+      See the header comment in DebtPayoffCalculator.tsx.
+    */
+    }
     <div class="mt-10">
-      <DebtPayoffCalculator client:load />
+      <DebtPayoffCalculator client:load>
+        <Fragment slot="privacy">
+          Everything is worked out in your browser. Nothing you type is sent anywhere.
+        </Fragment>
+
+        <Fragment slot="strategies">
+          Avalanche targets the highest rate first; snowball targets the smallest balance
+          first.
+        </Fragment>
+
+        {
+          /*
+          The only slot carrying more than one block, so the only one that needs to
+          bring its own spacing. Astro renders <astro-slot> as `display: contents`,
+          which means the space-y-3 on the container in the island applies a margin
+          to a box that generates no layout — the paragraphs below would sit flush
+          against each other. Caught in the browser; every automated gate passed.
+        */
+        }
+        <Fragment slot="method">
+          <div class="space-y-3">
+            <p>
+              Each month, interest is charged on the balance you owed at the start of the
+              month, then your payment is applied:
+            </p>
+            <p class="numeric rounded-control bg-surface p-3">
+              interest = balance × (annual rate ÷ 12)
+              <br />
+              new balance = balance + interest − payment
+            </p>
+            <p>
+              Every debt gets its minimum. Whatever is left of your monthly total goes to
+              a single target debt — the highest rate under avalanche, the smallest
+              balance under snowball. When a debt clears, its minimum joins the surplus,
+              which is why the balance falls faster over time.
+            </p>
+          </div>
+        </Fragment>
+
+        <Fragment slot="rounding">
+          Figures are rounded to the cent each month, the way a statement does it. Credit
+          card issuers charge interest daily on an average daily balance, which shifts the
+          total slightly depending on when in the month you pay — so treat this as a close
+          estimate rather than a lender quote.
+        </Fragment>
+
+        <Fragment slot="retention">
+          Stays on this device. Never saved, never in the link. The PDF carries the full
+          schedule and a link back to these figures.
+        </Fragment>
+
+        <Fragment slot="stalled">
+          At this payment the balance never clears — the interest charged each month is
+          more than the amount being paid, so the debt grows. The schedule below shows it
+          rising.
+        </Fragment>
+      </DebtPayoffCalculator>
     </div>
 
     <!-- ── Explanation (CLAUDE.md rule 7) ───────────────────────────────── -->
