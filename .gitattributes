@@ -1,0 +1,15 @@
+# Normalise line endings to LF in the repository.
+# CI runs on Linux; without this, Windows checkouts produce CRLF diffs and
+# byte-budget assertions drift against the built output.
+* text=auto eol=lf
+
+# Never touch binaries
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.avif  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.pdf   binary
