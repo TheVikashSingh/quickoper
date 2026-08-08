@@ -36,12 +36,49 @@ export interface LineChartProps {
   readonly height?: number;
 }
 
-const DEFAULT_COLOURS = [
-  'var(--color-brand)',
-  'var(--color-positive)',
-  'var(--color-caution)',
-  'var(--color-negative)',
+/**
+ * Series styling — colour AND dash, never colour alone.
+ *
+ * WHAT WAS WRONG: the palette opened with `--color-brand` and
+ * `--color-positive`, which are oklch hue 158 and 155 at 42% and 45% lightness.
+ * Those are the same green. On every chart the first two series were
+ * indistinguishable — avalanche from snowball, contractual from overpaid — and
+ * the operator spotted it before any check did.
+ *
+ * WHY DASHES AND NOT JUST BETTER HUES. Three reasons, and each one alone is
+ * enough:
+ *
+ *   1. WCAG 1.4.1 — colour must not be the only means of conveying
+ *      information. Roughly one man in twelve has a colour vision deficiency,
+ *      and deuteranopia is exactly the kind that merges green with amber.
+ *   2. This site's headline feature is a printable PDF. Greyscale printing
+ *      collapses hue entirely; two lines of similar lightness become one.
+ *      A dash pattern survives a monochrome laser printer.
+ *   3. Overlapping lines. Where two series cross or run together — which is
+ *      most of a payoff chart — a dash lets the eye separate them even when
+ *      the colours are perfectly distinct.
+ *
+ * Hues are now spread across the wheel (158 green → 75 amber → neutral ink →
+ * 25 red) rather than clustered, and the legend swatch repeats the dash so it
+ * matches the line it labels.
+ */
+interface SeriesStyle {
+  readonly colour: string;
+  /** SVG stroke-dasharray. Empty string is a solid line. */
+  readonly dash: string;
+}
+
+const DEFAULT_STYLES: readonly SeriesStyle[] = [
+  { colour: 'var(--color-brand)', dash: '' },
+  { colour: 'var(--color-caution)', dash: '7 4' },
+  { colour: 'var(--color-ink-soft)', dash: '2 3' },
+  { colour: 'var(--color-negative)', dash: '10 3 2 3' },
 ];
+
+const styleFor = (index: number, override?: string): SeriesStyle => {
+  const base = DEFAULT_STYLES[index % DEFAULT_STYLES.length] as SeriesStyle;
+  return override === undefined ? base : { colour: override, dash: base.dash };
+};
 
 // A fixed viewBox with preserveAspectRatio="none" would distort strokes, so the
 // chart draws into a fixed coordinate space and scales as a whole.
@@ -149,36 +186,58 @@ export function LineChart({
         ))}
 
         {/* Series */}
-        {withData.map((s, i) => (
-          <path
-            key={s.id}
-            d={path(s.points)}
-            fill="none"
-            stroke={s.colour ?? DEFAULT_COLOURS[i % DEFAULT_COLOURS.length]}
-            stroke-width="2"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-          />
-        ))}
+        {withData.map((s, i) => {
+          const style = styleFor(i, s.colour);
+          return (
+            <path
+              key={s.id}
+              d={path(s.points)}
+              fill="none"
+              stroke={style.colour}
+              stroke-width="2"
+              stroke-dasharray={style.dash === '' ? undefined : style.dash}
+              stroke-linejoin="round"
+              stroke-linecap="round"
+            />
+          );
+        })}
       </svg>
 
       {withData.length > 1 && (
         <figcaption class="text-ink-soft mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-          {withData.map((s, i) => (
-            <span key={s.id} class="inline-flex items-center gap-1.5">
-              {/* data-tight: the parent is a flex row with `gap-1.5`, so the
-                  space between swatch and label is layout, not whitespace. */}
-              <span
-                aria-hidden="true"
-                data-tight
-                class="inline-block h-0.5 w-4 rounded"
-                style={{
-                  background: s.colour ?? DEFAULT_COLOURS[i % DEFAULT_COLOURS.length],
-                }}
-              />
-              {s.label}
-            </span>
-          ))}
+          {withData.map((s, i) => {
+            const style = styleFor(i, s.colour);
+            return (
+              <span key={s.id} class="inline-flex items-center gap-1.5">
+                {/* The swatch repeats the DASH as well as the colour, drawn as a
+                    tiny SVG rather than a coloured div. A solid block beside a
+                    dashed line is a legend that disagrees with its own chart —
+                    which is worse than no legend, because it is believed.
+                    data-tight: the parent is a flex row with `gap-1.5`, so the
+                    space between swatch and label is layout, not whitespace. */}
+                <svg
+                  aria-hidden="true"
+                  data-tight
+                  width="18"
+                  height="8"
+                  viewBox="0 0 18 8"
+                  class="inline-block shrink-0"
+                >
+                  <line
+                    x1="0"
+                    y1="4"
+                    x2="18"
+                    y2="4"
+                    stroke={style.colour}
+                    stroke-width="2"
+                    stroke-dasharray={style.dash === '' ? undefined : style.dash}
+                    stroke-linecap="round"
+                  />
+                </svg>
+                {s.label}
+              </span>
+            );
+          })}
         </figcaption>
       )}
     </figure>
