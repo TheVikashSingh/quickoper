@@ -93,11 +93,12 @@ that has never failed is not a gate.
 
 Nothing in code depends on these, but launch does.
 
-1. **Create `hello@quickoper.com`.** Published on three pages and in structured
-   data. Hostinger mail is already in the DNS zone, so this is a mailbox to
-   create, not infrastructure to build. An address that bounces is worse than
-   none, and AdSense checks the contact route works. Change it in one place if
-   preferred: `SITE.email` in `src/lib/site.ts`.
+1. ~~**Create a published mailbox.**~~ **Done.** `vikash@quickoper.com` exists on
+   Hostinger Starter Business Email and receives. The site publishes the author's
+   own address rather than a role address, deliberately (D44). One remaining
+   operator action: send a message to it from an external account and reply back
+   out, and keep the `Show original` headers as the pre-migration baseline —
+   `docs/DNS.md` step 1.
 
 2. **Cloudflare DNS migration.** The domain carries **live email** — MX, SPF,
    DMARC and three DKIM CNAMEs. Recreate every one in Cloudflare *before*
