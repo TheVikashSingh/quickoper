@@ -883,6 +883,69 @@ does not exist. Exit 1; exit 0 once the block is removed.
 **What it deliberately does not check:** whether the header *values* are wise.
 Whether HSTS should be a year is a judgement, not a fact derivable from `dist/`.
 
+### D47 — The arithmetic was right, the test was right, and the sentence was false
+
+Found on the live deployment by changing one number: a first debt of $3,000 at
+29.99% with a $30 minimum. The calculator reported
+
+> **SAVED VS MINIMUMS — $0.00**, and 0 months sooner
+
+and, below the toggle, *"Either way you save $0.00 against paying only the
+minimums."*
+
+Paying $600 a month against $300 of minimums cannot save nothing. What had
+actually happened is that $30 does not cover the $74.98 of monthly interest on
+that card, so the **baseline never ends** — and the engine, correctly and
+deliberately, refuses to quote a saving against a schedule that does not
+terminate:
+
+```ts
+// A baseline that never clears has no meaningful saving to quote against.
+const interestSavedVsMinimums = minimumsOnly.neverPaysOff ? ZERO : …
+```
+
+**The bug was that the UI read the wrong flag.** `shown.neverPaysOff` asks
+whether *the strategy the visitor selected* clears the debt, and that was
+handled — it shows a caution panel. `minimumsOnly.neverPaysOff` asks whether
+*the baseline* does. Two different questions, and the second was never asked.
+When your plan clears and the baseline does not, the stats rendered and the zero
+was formatted as a fact.
+
+**This is the worst possible case to be wrong in.** "Your minimum payments never
+clear this debt" is the single most important thing this tool can tell anyone.
+Instead it said the opposite: that doubling their payment gained them nothing.
+And the inputs are not exotic — a store card at 29.99% with a $30 minimum is an
+ordinary statement.
+
+Now branches on the baseline in both places:
+
+> **SAVED VS MINIMUMS — Never clears**, still owing after 50 years of minimums
+
+> Paying only the minimums, a balance is still outstanding after **50 years** —
+> so there is no finite saving to quote against it.
+
+"50 years" is derived from `minimumsOnly.months / 12`, not typed, so it cannot
+drift if `MAX_MONTHS` moves. Saying *why* no number is shown is the "shows its
+working" positioning applied to an absence.
+
+**The part worth generalising.** `tests/calc/debt-payoff.test.ts` already had
+`quotes no saving against a baseline that never clears`, asserting exactly the
+zero that was being displayed. The engine was right, the fixture was right, and
+nobody asked what sentence they would produce together. D37 said an interface
+can be wrong while the markup, the state and the arithmetic are all correct;
+this is the same failure one level up — **a correct number formatted into a
+false claim.** That test now carries a comment saying the zeros are not
+displayable and naming the branch that depends on them.
+
+**No component test was added, deliberately.** This project has no DOM testing
+setup, and adding one means `@testing-library/preact` — a dependency against
+rule 4, to catch a class of defect the working agreement already assigns to
+opening a browser. It was found by opening a browser. Both branches were then
+verified the same way, at defaults and at the stalling inputs.
+
+**Cost: 0.12KB** on the worst page (18.27 → 18.39, 1.11 spare), for one ternary
+and two strings.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
