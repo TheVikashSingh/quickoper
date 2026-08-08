@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-08, after PR #17.
+**Updated:** 2026-08-08, after PR #18.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -21,7 +21,7 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **No.** Nothing is deployed. The domain does not resolve to this site. |
-| Pages built | 10 (9 substantive — `/404` is not) |
+| Pages built | 11 (10 substantive — `/404` is not) |
 | Working calculators | 2 |
 | Tests | 136 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots |
@@ -44,8 +44,8 @@ report (local-only — never in the URL, never persisted).
 
 **Content and trust**
 
-`/` · `/finance` (cluster hub) · `/methodology` · `/about` · `/privacy` ·
-`/terms` · `/contact` · `/404`
+`/` · `/finance` (cluster hub) · `/methodology` · `/verify` · `/about` ·
+`/privacy` · `/terms` · `/contact` · `/404`
 
 **Engines** (`src/lib/calc/`) — `money.ts`, `debt-payoff.ts`, `coast-fire.ts`.
 Pure, no DOM, no framework. Fixtures anchored to published figures (D7).
@@ -103,16 +103,11 @@ Nothing in code depends on these, but launch does.
 
 Ordered, and the order changed on 2026-08-08. **Content now outranks tool 3.**
 Nothing monetises until AdSense clears, and that needs 15 substantive pages:
-the build produces 10 pages, of which 9 are substantive, so six more needed.
+the build produces 11 pages, of which 10 are substantive, so five more needed.
 Content pages ship 0.53KB and need no budget work at all. Tool 3 is one page and
 a pile of engineering.
 
-1. **`/verify` — the public version of `docs/VERIFICATION.md`.** "Check our
-   arithmetic in your own spreadsheet", with the `PMT`/`NPER`/`FV` formulas the
-   reader can paste, our figure beside the spreadsheet's, and the *reasons* they
-   differ by cents. Highest-trust asset on the site and essentially nobody else
-   in the vertical publishes one. **Agreed with the operator; start here.**
-2. **Five more content pages**, each a derivation tied to a tool that already
+1. **Five more content pages**, each a derivation tied to a tool that already
    exists, not filler to hit a threshold:
    - how credit card interest is actually calculated (CFPB, daily periodic rate)
    - why a payoff date differs from the one on a statement (Reg Z Appendix M1
@@ -125,15 +120,15 @@ a pile of engineering.
    Each needs the thing CLAUDE.md demands and a model cannot fake: a worked
    example with real numbers, or a documented comparison against a named
    competitor. That is a handful of sessions, not one.
-3. **Mortgage overpayment calculator.** Tool 3, first with market exposure (D20).
+2. **Mortgage overpayment calculator.** Tool 3, first with market exposure (D20).
    Build its prose in slots from the first commit (D28). The risk is the
    **shared chunk**, which grows for every calculator page at once, not this
    page's own island. Do **not** deduplicate across islands (D23).
-4. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression and D29
+3. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression and D29
    measured by hand again. Needs Playwright and a headless run — and it must
    resolve colours through a canvas, because `getComputedStyle` returns
    `oklch()` and parsing those three numbers as RGB silently reports nonsense.
-5. **Affiliate plumbing** (`/go/*`) before there is anything to put in it.
+4. **Affiliate plumbing** (`/go/*`) before there is anything to put in it.
 
 ---
 
@@ -141,7 +136,7 @@ a pile of engineering.
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **9** — six to go |
+| 15+ substantive pages | **10** — five to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |

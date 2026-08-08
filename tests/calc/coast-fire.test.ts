@@ -81,6 +81,21 @@ describe('external cross-check: the compound interest formula', () => {
     // loose bound: a change to the rounding policy should have to be noticed
     // and justified, not silently absorbed by a tolerance.
     expect(driftCents).toBe(42);
+
+    // ...and the DIRECTION, which the line above does not pin. Math.abs() means
+    // a projection landing 42 cents HIGH would pass identically. Successive
+    // rounding of a growing balance should lose fractions, not gain them, so
+    // the sign is part of the claim.
+    //
+    // This matters more than it used to: /verify now publishes this exact
+    // figure and invites the reader to reproduce it in a spreadsheet. A number
+    // on that page must be pinned by a test, or the page is doing the very
+    // thing it exists to argue against.
+    //
+    // Narrowed rather than defaulted, because `Minor` is branded (D4) and
+    // `final ?? 0` widens to `0 | Minor`, which toMajor correctly refuses.
+    if (final === undefined) throw new Error('coastOnly returned an empty series');
+    expect(toMajor(final)).toBe(761_225.08);
   });
 
   it('produces one row per year, inclusive of both ends', () => {

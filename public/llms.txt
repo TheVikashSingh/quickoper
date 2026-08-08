@@ -13,9 +13,27 @@ claimed is computational, not advisory.
 
 ## Tools
 
-No calculators are published yet. The first ships shortly; this file is
-maintained alongside them and lists, for each tool: what it computes, its inputs,
-its jurisdiction, and its methodology URL.
+### Debt payoff calculator — avalanche vs snowball
+URL: https://quickoper.com/finance/debt-payoff-calculator
+Computes: months to debt freedom and total interest, for the avalanche and
+snowball strategies and for a minimum-payments-only baseline, with a full
+month-by-month schedule.
+Inputs: per-debt balance, annual rate and minimum payment; one total monthly
+payment.
+Jurisdiction: none. Interest is charged monthly on the opening balance, which
+is a convention, not a rule of any one country.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
+### Coast FIRE calculator
+URL: https://quickoper.com/finance/coast-fire-calculator
+Computes: the amount that must already be invested for it to reach a retirement
+target with no further contributions, plus a year-by-year projection.
+Inputs: current age, retirement age, amount invested, annual spending,
+withdrawal rate, real annual return, monthly contribution.
+Jurisdiction: none. No tax treatment or account type is modelled.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
 
 ## Verification
 
