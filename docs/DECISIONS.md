@@ -710,6 +710,37 @@ themes) rather than outlined text. The border is `--color-brand` rather than
 is the same invisible-boundary failure D30 fixed for the masthead — brand
 inverts with the theme and stays crisp against both.
 
+### D42 — Two chart series were the same green, and colour was the only channel
+
+The default palette opened with `--color-brand` and `--color-positive`:
+**oklch hue 158 at 42% and hue 155 at 45%.** That is the same green. On every
+chart the first two series were indistinguishable — avalanche from snowball,
+contractual from overpaid, projection from target. The operator saw it; no gate
+did, because nothing compares two colours to each other.
+
+**The fix is not just better hues.** Colour is now one of *two* channels, and
+the second is a dash pattern. Three reasons, each sufficient on its own:
+
+1. **WCAG 1.4.1** — colour must never be the sole means of conveying
+   information. Deuteranopia is the common form and it is precisely the one
+   that merges green with amber.
+2. **The printed PDF is a headline feature.** Measured greyscale luminance of
+   the three series after the fix: **0.431, 0.465, 0.477** — nearly identical.
+   Hue collapses entirely on a monochrome printer, so without a dash the three
+   lines would be one. The fix is load-bearing, not belt-and-braces.
+3. **Overlap.** Payoff curves run together for most of their length; a dash
+   separates them even when the colours are perfectly distinct.
+
+New order spreads the hues rather than clustering them — green (solid), amber
+(dashed `7 4`), neutral ink (dotted `2 3`), red (dash-dot). Measured pairwise
+RGB distance after: **107 to 164**, against roughly a dozen before.
+
+**The legend swatch now draws the dash too**, as a tiny SVG line rather than a
+coloured block. A solid swatch beside a dashed line is a legend that contradicts
+its own chart, which is worse than none because it is believed.
+
+Cost: 0.09KB on the worst page. 18.27KB of 19.5.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
