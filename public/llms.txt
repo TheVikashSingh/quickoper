@@ -35,6 +35,27 @@ Jurisdiction: none. No tax treatment or account type is modelled.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/verify
 
+### Mortgage overpayment calculator
+URL: https://quickoper.com/finance/mortgage-overpayment-calculator
+Computes: what an extra monthly payment removes from a fixed-rate mortgage, in
+months and in interest, with the full month-by-month amortisation schedule.
+Inputs: amount borrowed, annual interest rate, term in years, extra paid monthly.
+Jurisdiction: US fixed-rate convention. Interest is charged monthly at
+annualRate/12, which is how a lender's nominal APR is defined.
+Key figures, computed on $320,000 at 6.706% over 30 years:
+  - Required monthly payment: $2,066.16. This matches calculator.net's
+    published output for the same inputs, to the cent.
+  - Contractual schedule: 360 payments, $423,821.51 of interest.
+  - Paying $200 extra a month: 280 payments, $312,930.95 of interest.
+  - That removes 80 months and $110,890.56 of interest.
+  - Month 1 on the contractual payment: $1,788.27 interest, $277.89 principal.
+  - The final payment is $2,070.07, larger than the others, because a payment
+    rounded to the cent leaves a residue that lenders collect in the last month
+    rather than issuing a 361st bill.
+Not modelled: escrow, PMI, fees, prepayment penalties, adjustable rates.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
 ## Derivations
 
 ### How credit card interest is actually calculated

@@ -57,6 +57,8 @@ const exists = async (p) => {
 const HOSTS = {
   'DebtPayoffCalculator.tsx': 'finance/debt-payoff-calculator/index.html',
   'CoastFireCalculator.tsx': 'finance/coast-fire-calculator/index.html',
+  'MortgageCalculator.tsx': 'finance/mortgage-overpayment-calculator/index.html',
+  'QuickCost.tsx': 'index.html',
 };
 
 /** Slot names from the island's exported `Prose` interface. */
