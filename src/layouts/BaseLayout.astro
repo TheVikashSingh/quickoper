@@ -1,4 +1,5 @@
 ---
+import { existsSync } from 'node:fs';
 import '../styles/global.css';
 import LatheBand from '../components/ornament/LatheBand.astro';
 import Rosette from '../components/ornament/Rosette.astro';
@@ -47,12 +48,24 @@ const canonicalUrl = canonical ?? new URL(Astro.url.pathname, Astro.site).href;
 const personId = `${SITE.url}/about#person`;
 const orgId = `${SITE.url}#organization`;
 
+/**
+ * The author photograph, if it has been committed yet.
+ *
+ * `image` on the Person node is what a search engine and a retrieval system
+ * read for "is there a real, identifiable human behind this". Included only
+ * when the file actually exists, so this ships safely before the photo does —
+ * an entity claiming an image that 404s is worse than one claiming none.
+ */
+const AUTHOR_PHOTO = '/author.jpg';
+const hasAuthorPhoto = existsSync(`public${AUTHOR_PHOTO}`);
+
 const person = {
   '@context': 'https://schema.org',
   '@type': 'Person',
   '@id': personId,
   name: SITE.author.name,
   url: `${SITE.url}/about`,
+  ...(hasAuthorPhoto ? { image: `${SITE.url}${AUTHOR_PHOTO}` } : {}),
   // The only identity claims that can be verified by following a link. No
   // invented credentials, no fabricated profiles.
   sameAs: [SITE.author.github],

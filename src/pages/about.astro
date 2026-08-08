@@ -1,6 +1,29 @@
 ---
+import { existsSync } from 'node:fs';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE } from '../lib/site';
+
+/**
+ * The author photograph.
+ *
+ * A real face on a YMYL site is a genuine trust signal — "who wrote this" is
+ * the first question asked of financial content from an unknown domain, and a
+ * name plus a face plus a linked profile answers it far better than a name
+ * alone. It also gives the Person entity an `image`, which is what a search
+ * engine and a retrieval system read.
+ *
+ * NO BACKEND IS INVOLVED. This is a static site; the photo is a file in
+ * `public/`, served as an asset like the stylesheet. There was never anything
+ * to build for it.
+ *
+ * CHECKED AT BUILD TIME rather than assumed, because `scripts/check-links.mjs`
+ * validates `src` attributes as well as `href` — referencing a photo that does
+ * not exist would fail the build. So the page renders the portrait when the
+ * file is there and silently omits it when it is not, which means this can be
+ * committed before the photograph is.
+ */
+const PHOTO = '/author.jpg';
+const hasPhoto = existsSync(`public${PHOTO}`);
 
 // A named author with a real biography is an expertise signal, and an honest
 // one is worth more than an inflated one. The claim made here is COMPUTATIONAL,
@@ -45,6 +68,28 @@ const structuredData = [
     </p>
 
     <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">Who writes this</h2>
+
+    {
+      hasPhoto && (
+        <figure class="border-line-strong bg-surface rounded-panel float-none mt-4 mb-6 flex items-center gap-4 border p-3 sm:float-right sm:ml-6 sm:w-64 sm:flex-col sm:items-start">
+          <img
+            src={PHOTO}
+            width="112"
+            height="112"
+            loading="lazy"
+            decoding="async"
+            alt={`${SITE.author.name}, who writes and maintains QuickOper`}
+            class="border-line-strong rounded-panel h-20 w-20 shrink-0 border object-cover sm:h-28 sm:w-28"
+          />
+          <figcaption class="text-ink-mute text-xs">
+            <span class="engraved text-ink block text-[0.7rem]">{SITE.author.name}</span>
+            <span class="mt-1 block">
+              Software engineer. Writes the calculations, the tests and the prose.
+            </span>
+          </figcaption>
+        </figure>
+      )
+    }
 
     <p>
       QuickOper is built and maintained by{' '}

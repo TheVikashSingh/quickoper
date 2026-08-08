@@ -1,0 +1,436 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Guilloche from '../components/ornament/Guilloche.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
+import Rule from '../components/ornament/Rule.astro';
+import { SITE } from '../lib/site';
+import { sourceRef } from '../lib/schema';
+
+const LAST_VERIFIED = '2026-08-08';
+
+const SOURCES = [
+  {
+    label: 'CFPB — How is my credit card interest calculated?',
+    url: 'https://www.consumerfinance.gov/ask-cfpb/how-is-my-credit-card-interest-calculated-en-51/',
+    retrieved: '2026-08-08',
+  },
+  {
+    label: 'Regulation Z, Appendix M1 — Repayment Disclosures',
+    url: 'https://www.consumerfinance.gov/rules-policy/regulations/1026/m1/',
+    retrieved: '2026-08-08',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * Every figure below is computed from APR 22.99% on a $6,000 balance, not
+ * transcribed from anywhere. Reproduced by the reader with a calculator in
+ * under a minute, which is the point — see /verify for the same discipline
+ * applied to the calculators themselves.
+ */
+const APR = 22.99;
+const BALANCE = 6000;
+
+const CYCLES = [
+  { days: 28, daily: 105.82, delta: -9.13 },
+  { days: 30, daily: 113.38, delta: -1.57 },
+  { days: 31, daily: 117.15, delta: 2.2 },
+];
+
+const TIMING = [
+  { when: 'Day 1 of the cycle', adb: 5800.0, interest: 109.6 },
+  { when: 'Day 15 (halfway)', adb: 5893.33, interest: 111.36 },
+  { when: 'Day 30 (the due date)', adb: 5993.33, interest: 113.25 },
+];
+
+const FAQ = [
+  {
+    q: 'What is the daily periodic rate on my credit card?',
+    a: 'Your APR divided by 365. At 22.99% that is 0.062986% a day. Your issuer applies it to each day’s balance rather than charging one figure at the end of the month, which is why the interest line on your statement is rarely a round number.',
+  },
+  {
+    q: 'Why is the interest on my statement different from APR ÷ 12?',
+    a: 'Because billing cycles are not all the same length. A 30-day cycle at 22.99% on $6,000 charges $113.38 under the daily method against $114.95 under APR ÷ 12; a 31-day cycle charges $117.15, which is more. Over a full year the two methods reach exactly the same total, $1,379.40 — the difference is entirely about which days fall in which statement.',
+  },
+  {
+    q: 'Does credit card interest compound?',
+    a: 'On most US cards, yes — daily. If unpaid interest is added to the balance each day, a stated 22.99% APR costs 25.838% over a year: $1,550.30 on $6,000 rather than $1,379.40. That gap of $170.90 is the difference between the rate being quoted and the rate being charged, and it appears nowhere on the statement.',
+  },
+  {
+    q: 'What is the average daily balance method?',
+    a: 'Your issuer adds up what you owed at the end of each day in the cycle and divides by the number of days. That average, not your closing balance, is what interest is charged on. It is why the date a payment lands changes the interest even when the amount does not.',
+  },
+  {
+    q: 'Does paying earlier in the billing cycle reduce interest?',
+    a: 'Arithmetically, yes, because it lowers the average daily balance. A $200 payment on a $6,000 balance costs $109.60 in interest if it lands on day 1 of a 30-day cycle and $113.25 if it lands on day 30 — $3.65 apart for the same money. Whether that is worth arranging is your call; this page only reports the arithmetic.',
+  },
+  {
+    q: 'What is a grace period?',
+    a: 'If you pay your statement balance in full by the due date, most US cards charge no interest on purchases at all. The daily periodic rate still exists; it is simply applied to nothing. Carry any balance and the grace period typically disappears until the account is paid in full again.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'How credit card interest is actually calculated',
+    url: `${SITE.url}/credit-card-interest`,
+    description:
+      'The daily periodic rate, the average daily balance method, and why the interest on your statement never equals APR divided by twelve. Worked with real figures.',
+    author: { '@id': `${SITE.url}/about#person` },
+    publisher: { '@id': `${SITE.url}#organization` },
+    dateModified: LAST_VERIFIED,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'How credit card interest is calculated',
+        item: `${SITE.url}/credit-card-interest`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+
+const money = (n: number) =>
+  `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+---
+
+<BaseLayout
+  title="How credit card interest is actually calculated | QuickOper"
+  description="The daily periodic rate, the average daily balance method, and why your statement never shows APR ÷ 12. Worked end to end on a $6,000 balance at 22.99%, with every figure reproducible."
+  structuredData={structuredData}
+>
+  <article>
+    <div class="relative">
+      <Guilloche
+        size={280}
+        class="text-brand pointer-events-none absolute -top-14 -right-14 hidden opacity-[0.10] sm:block"
+      />
+
+      <p class="engraved-fine text-ink-mute relative">Derivation</p>
+
+      <h1 class="relative mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+        How credit card interest is actually calculated
+      </h1>
+
+      <p class="text-ink-soft relative mt-4 text-lg">
+        Not <span class="numeric">APR ÷ 12</span>. Your issuer charges a rate every day,
+        against the average of what you owed on each of those days — which is why the
+        interest line on your statement is never the round number the arithmetic suggests.
+      </p>
+    </div>
+
+    <NoteFrame class="mt-8" corners={false}>
+      <p class="engraved text-ink-mute text-xs">The short version</p>
+      <p class="text-ink-soft mt-2 text-sm">
+        Your <strong class="text-ink">daily periodic rate</strong> is your APR divided by 365.
+        At <span class="numeric">22.99%</span> that is{' '}
+        <span class="numeric">0.062986%</span> a day. It is applied to your{' '}
+        <strong class="text-ink">average daily balance</strong> across the billing cycle. Over
+        a full year the daily and monthly methods agree exactly — but if your card compounds
+        daily, as most US cards do, a stated{' '}
+        <span class="numeric">22.99%</span> costs <span class="numeric">25.838%</span>.
+      </p>
+    </NoteFrame>
+
+    <section class="prose-like text-ink-soft mt-12 space-y-4">
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        The daily periodic rate
+      </h2>
+
+      <p>
+        A credit card APR is an annual figure, but no issuer waits a year to charge it.
+        They divide it by 365 to get a <strong class="text-ink"
+          >daily periodic rate</strong
+        >, and apply that rate once for every day in the billing cycle.
+      </p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        daily periodic rate = APR ÷ 365
+        <br />
+        {APR}% ÷ 365 = 0.062986% per day
+      </p>
+
+      <p>
+        A few issuers divide by 360 instead, which makes each day fractionally more
+        expensive. The divisor is disclosed in your cardholder agreement, and it is worth
+        knowing which one yours uses before concluding that a statement is wrong.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        Why the length of the month matters
+      </h2>
+
+      <p>
+        This is the part that surprises people. Because interest accrues per <em>day</em>,
+        a longer statement period costs more — and billing cycles are not all the same
+        length.
+      </p>
+
+      <p>
+        Here is {money(BALANCE)} at {APR}%, held constant with no payment, across three
+        cycle lengths. The last column compares each against the{' '}
+        <span class="numeric">APR ÷ 12</span> figure of{' '}
+        <strong class="text-ink numeric">$114.95</strong> that a simple monthly model would
+        give:
+      </p>
+    </section>
+
+    <div class="not-prose mt-4 overflow-x-auto">
+      <table class="border-line w-full border-collapse border text-sm">
+        <thead>
+          <tr class="bg-sunken">
+            <th class="border-line border p-2 text-left">Billing cycle</th>
+            <th class="border-line border p-2 text-right">Interest charged</th>
+            <th class="border-line border p-2 text-right">vs APR ÷ 12</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            CYCLES.map((cycle) => (
+              <tr>
+                <td class="border-line border p-2">{cycle.days} days</td>
+                <td class="numeric border-line border p-2 text-right">
+                  {money(cycle.daily)}
+                </td>
+                <td
+                  class={`numeric border-line border p-2 text-right ${
+                    cycle.delta > 0 ? 'text-caution' : 'text-positive'
+                  }`}
+                >
+                  {cycle.delta > 0 ? '+' : '−'}
+                  {money(Math.abs(cycle.delta)).slice(1)}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <section class="prose-like text-ink-soft mt-6 space-y-4">
+      <p>
+        A February statement can be <strong class="text-ink">$9.13</strong> cheaper than the
+        monthly model predicts and a 31-day statement <strong class="text-ink"
+          >$2.20</strong
+        > more expensive, on identical debt at an identical rate. Nothing has changed except
+        the calendar.
+      </p>
+
+      <p>
+        And here is the fact that resolves it:{' '}
+        <strong class="text-ink"
+          >over a full year the two methods produce exactly the same total.</strong
+        > Twelve monthly charges of $114.95 come to <span class="numeric">$1,379.40</span
+        >. 365 days at 0.062986% come to <span class="numeric">$1,379.40</span>. The daily
+        method does not cost more over a year — it just distributes the same money
+        differently across statements.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        The average daily balance
+      </h2>
+
+      <p>
+        The rate is only half of it. The other half is what the rate is applied{' '}
+        <em>to</em> — and it is not your closing balance. Your issuer records what you owed
+        at the end of every day in the cycle, adds those figures up, and divides by the number
+        of days.
+      </p>
+
+      <p>
+        Which means the <strong class="text-ink">date</strong> a payment lands changes the interest
+        even when the amount does not. Same {money(BALANCE)} balance, same $200 payment, same
+        30-day cycle — only the timing moves:
+      </p>
+    </section>
+
+    <div class="not-prose mt-4 overflow-x-auto">
+      <table class="border-line w-full border-collapse border text-sm">
+        <thead>
+          <tr class="bg-sunken">
+            <th class="border-line border p-2 text-left">$200 payment lands</th>
+            <th class="border-line border p-2 text-right">Average daily balance</th>
+            <th class="border-line border p-2 text-right">Interest</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            TIMING.map((row) => (
+              <tr>
+                <td class="border-line border p-2">{row.when}</td>
+                <td class="numeric border-line border p-2 text-right">
+                  {money(row.adb)}
+                </td>
+                <td class="numeric border-line border p-2 text-right">
+                  {money(row.interest)}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <section class="prose-like text-ink-soft mt-6 space-y-4">
+      <p>
+        <strong class="text-ink">$3.65</strong> between the best and worst timing of the same
+        payment. That is the entire mechanism behind the advice you have read elsewhere about
+        paying early — stated here as arithmetic rather than as a recommendation, because whether
+        it is worth arranging depends on circumstances this page knows nothing about.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        Compounding: the number that is not on your statement
+      </h2>
+
+      <p>
+        Everything above assumed interest is charged and then left alone. On most US cards
+        it is not — unpaid interest is added to the balance, and the next day's rate
+        applies to that larger figure. Interest earns interest.
+      </p>
+
+      <p>
+        On {money(BALANCE)} carried for a year at {APR}% with nothing repaid:
+      </p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        without compounding: $1,379.40
+        <br />
+        with daily compounding: $1,550.30
+        <br />
+        effective annual rate: 25.838%
+      </p>
+
+      <p>
+        <strong class="text-ink">$170.90</strong>, and an effective rate nearly three
+        points above the one printed on the agreement. The APR is a{' '}
+        <em>nominal</em> figure; the rate actually charged on a balance that is never cleared
+        is higher, and that higher number appears nowhere on the statement.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        Where our calculator sits, and where it does not
+      </h2>
+
+      <p>
+        Our{' '}
+        <a class="text-brand underline" href="/finance/debt-payoff-calculator"
+          >debt payoff calculator</a
+        > uses <span class="numeric">APR ÷ 12</span> against the opening balance of each month.
+        That is a simplification, and this page exists partly to say so precisely rather than
+        bury it in a footnote.
+      </p>
+
+      <p>
+        It is the right simplification for the question the tool answers. A payoff
+        schedule spans years; over that horizon the daily and monthly methods converge to
+        the same total, as the $1,379.40 above shows. Modelling per-day accrual would
+        require knowing the exact date every future payment will land — something no
+        calculator can know, and asking for it would trade a large false precision for a
+        small real one.
+      </p>
+
+      <p>
+        <strong class="text-ink">What it means for you:</strong> expect our figure to be within
+        a few dollars of a statement in any given month, and closer than that over a year. If
+        it is out by more, the cause is almost always new spending, a variable rate that has
+        moved, a promotional period ending, or fees — none of which the model includes. You
+        can{' '}
+        <a class="text-brand underline" href="/verify"
+          >check the arithmetic itself in a spreadsheet</a
+        >.
+      </p>
+    </section>
+
+    <Rule class="mt-12" />
+
+    <section class="mt-10" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="text-2xl font-semibold tracking-tight">
+        Common questions
+      </h2>
+      <dl class="mt-4 space-y-5">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="text-2xl font-semibold tracking-tight">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          Every figure on this page is computed from {APR}% APR on a {money(BALANCE)}{' '}
+          balance using the formulas shown. Nothing is transcribed from a third party, and all
+          of it can be reproduced with a pocket calculator.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper explains
+        how a calculation works and shows its working. It does not know your circumstances and
+        cannot tell you what to do with your money. Nothing here is financial, tax or investment
+        advice. Your own cardholder agreement is the authority on how your card charges interest.
+      </p>
+    </aside>
+
+    <nav class="no-print mt-14" aria-label="Related">
+      <h2 class="text-lg font-semibold">Related</h2>
+      <ul class="text-ink-soft mt-2 space-y-1 text-sm">
+        <li>
+          <a class="text-brand underline" href="/finance/debt-payoff-calculator"
+            >Debt payoff calculator</a
+          > — put your own balances in and get the full month-by-month schedule.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/verify">Check our arithmetic</a> — reproduce
+          every published figure in your own spreadsheet.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/methodology">Methodology</a> — the rounding
+          policy and compounding conventions across every tool.
+        </li>
+      </ul>
+    </nav>
+  </article>
+</BaseLayout>
