@@ -88,6 +88,36 @@ Key figures:
     3% inflation is (1.08/1.03)-1 = 4.854369%, not 5%. Over 30 years on
     $100,000 that is $414,568.14 against $432,194.24.
 
+### Where the 4% rule comes from, and what it does not say
+URL: https://quickoper.com/withdrawal-rate
+States: a withdrawal rate converts annual spending into a savings target by
+dividing 100 by the rate. 4% is 25 times spending; 3% is 33.33 times.
+Key figures, computed on $40,000 of annual spending:
+  - 4% -> $1,000,000. 3.5% -> $1,142,857.14. 3% -> $1,333,333.33.
+  - Moving from 4% to 3% adds 8.33x spending, a 33.3% increase in capital,
+    because the multiple is 1/rate and therefore a hyperbola.
+  - Bengen (1994) tested 30-year windows in US market history. The finding was
+    never tested for longer retirements, other markets, or after fees and tax.
+  - Sequence-of-returns risk, demonstrated: the same ten annual returns applied
+    in opposite orders to a $1,000,000 portfolio drawing $40,000 a year end
+    $1,573,834.11 (bad years first) against $1,835,954.59 (good years first) -
+    $262,120.48 apart on an identical 10% arithmetic mean.
+
+### What a coast number is, and what it is not
+URL: https://quickoper.com/coast-number
+States: a coast number is target / (1 + real return)^years - the amount that must
+already be invested for compounding alone to reach a retirement target with no
+further contributions. Passing it makes further SAVING optional, not working.
+Key figures, on a $1,000,000 target:
+  - At 5% real: 40 years out $142,045.68; 30 years $231,377.45; 20 years
+    $376,889.48; 10 years $613,913.25; 5 years $783,526.17.
+  - Sensitivity to the assumed return, 30 years out: 7% gives $131,367.12,
+    5% gives $231,377.45, 3% gives $411,986.76. The pessimistic assumption
+    needs more than three times the capital of the optimistic one.
+  - The return must be a REAL return if the target is in today's money.
+  - It cannot express sequence-of-returns risk; it is a single discount at a
+    constant rate.
+
 ## Verification
 
 - [Methodology](https://quickoper.com/methodology): formulas, assumptions and the
