@@ -187,7 +187,10 @@ const claims = [
 const problems = [];
 
 for (const claim of claims) {
-  const matches = [...md.matchAll(new RegExp(claim.re, 'g'))];
+  // Case-insensitive: a sentence that moves to the start of a line gets a
+  // capital letter, and a gate that fails on that is training people to edit
+  // the gate. The comparison below is case-insensitive for the same reason.
+  const matches = [...md.matchAll(new RegExp(claim.re, 'gi'))];
 
   if (matches.length === 0) {
     problems.push({

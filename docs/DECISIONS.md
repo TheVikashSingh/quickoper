@@ -601,6 +601,47 @@ The row is also honest about its own length — it says "two calculators today"
 rather than padding itself out to look fuller. Three tools are planned and none
 are started; `STATE.md` Next is the list.
 
+### D39 — Tool 3: mortgage overpayment, anchored to a competitor's published output
+
+The first tool with market exposure (D20), and the first whose anchor is a named
+competitor rather than a formula. calculator.net publishes, for $400,000 with
+20% down at 6.706% over 30 years: **$2,066.16 a month, $743,818.78 over 360
+payments, $423,818.78 of interest.** Our engine reproduces the payment **to the
+cent**.
+
+That is a stronger anchor than a formula we derived, and it is the "documented
+comparison against a named competitor" CLAUDE.md asks every page to carry.
+
+**Two real bugs, both found by fixtures rather than by review.**
+
+**A "30-year" mortgage ran to 361 months.** The payment is rounded to the cent,
+which puts it a hair *below* the exact amortising figure ($2,066.16 against
+$2,066.1633), so the principal is never quite retired and a 361st payment of a
+few dollars appears. Arithmetically defensible and wrong about the product: no
+lender writes a 30-year loan that takes 361 months. The contractual term is now
+a hard stop and the final payment absorbs the residue — **$2,070.07**, larger
+than the others, which is what a real schedule does.
+
+Rounding the payment *up* would also have fixed it, and was written first. It is
+wrong for a different reason: $2,066.17 misses the published figure by a cent,
+and matching the anchor is the entire point.
+
+**"Overpay nothing" reported saving minus one cent.** The baseline capped at the
+term and the comparison schedule did not, so they diverged by a month. A
+comparison whose no-op is not a no-op is broken. Both now take the cap.
+
+**Where we differ from calculator.net, stated on the page rather than buried.**
+They report $423,818.78 of interest; we report **$423,821.51**, $2.73 more. They
+carry the unrounded payment at full precision — which is why their "total of 360
+payments" is $743,818.78 rather than $2,066.16 × 360 = $743,817.60, a payment
+nobody could make. We charge the rounded payment a lender collects. Ours being
+higher is the direction that makes sense: a payment rounded down retires the
+loan marginally more slowly. Under a cent a month over thirty years.
+
+Four assertions in the fixture were corrected **from measured failures**, using
+D7's technique — write the guess, read the truth off the failure, assert that.
+Every one is exact; no tolerances.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

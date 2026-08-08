@@ -1,0 +1,385 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { MortgageCalculator } from '../../components/calculators/MortgageCalculator';
+import TrustStrip from '../../components/ornament/TrustStrip.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+const LAST_VERIFIED = '2026-08-08';
+
+const SOURCES = [
+  {
+    label: 'CFPB — What is an amortization schedule?',
+    url: 'https://www.consumerfinance.gov/ask-cfpb/what-is-an-amortization-schedule-en-100/',
+    retrieved: '2026-08-08',
+  },
+  {
+    label: 'CFPB — Understanding loan prepayment penalties',
+    url: 'https://www.consumerfinance.gov/ask-cfpb/what-is-a-prepayment-penalty-en-1957/',
+    retrieved: '2026-08-08',
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'Does paying extra on a mortgage actually save money?',
+    a: 'It removes future interest, because interest is charged on the balance and the extra reduces the balance sooner. On $320,000 at 6.706% over 30 years, $200 a month removes 80 months and $110,890.56 of interest. That is arithmetic, not advice — whether the money is better used elsewhere is a question this calculator cannot answer and does not try to.',
+  },
+  {
+    q: 'Where does the extra payment go?',
+    a: 'Straight to principal. The contractual payment covers that month’s interest first and reduces the balance with the remainder; anything above the contractual payment has no interest left to cover, so all of it reduces the balance. That is why the effect compounds — a smaller balance is charged less interest next month, and every month after.',
+  },
+  {
+    q: 'Why does your required payment differ by a cent from my lender’s?',
+    a: 'The exact amortising payment for $320,000 at 6.706% over 360 months is $2,066.1633. Rounded to the cent that is $2,066.16, which is what we and most published calculators show. A lender rounding up would charge $2,066.17. One cent a month over thirty years is $3.60, and it lands in the final payment either way.',
+  },
+  {
+    q: 'Why is my final payment larger than the others?',
+    a: 'Because the monthly payment is rounded. A payment rounded down by a fraction of a cent cannot retire the principal to exactly zero over 360 months, so a small residue is left. Lenders collect it in the final month rather than adding a 361st payment. On the default scenario the last payment is $2,070.07 against a normal $2,066.16.',
+  },
+  {
+    q: 'Does this account for a prepayment penalty?',
+    a: 'No. Some mortgages charge a fee for paying down principal early, and the rules vary by loan type and by state. Check your note before acting on any figure here. The CFPB source below explains what to look for.',
+  },
+  {
+    q: 'Is anything I type sent to your server?',
+    a: 'No, and there is no server to send it to. This is a static page and every figure is computed in your browser. The shareable link in your address bar carries the loan amount, rate, term and overpayment — nothing else, and no name.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Mortgage overpayment calculator',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/finance/mortgage-overpayment-calculator`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'See exactly what paying extra removes from a mortgage: months, interest, and the full month-by-month schedule. Runs entirely in your browser.',
+    author: { '@id': `${SITE.url}/about#person` },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Calculators',
+        item: `${SITE.url}/finance`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Mortgage overpayment calculator',
+        item: `${SITE.url}/finance/mortgage-overpayment-calculator`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="Mortgage overpayment calculator — what paying extra removes | QuickOper"
+  description="See exactly what an extra monthly payment removes from a mortgage: months, interest, and the full schedule. $200 a month on $320,000 at 6.706% removes 80 months and $110,890.56. Worked out in your browser."
+  structuredData={structuredData}
+>
+  <article>
+    <p class="engraved-fine text-ink-mute">Verified calculation</p>
+
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+      Mortgage overpayment calculator
+    </h1>
+
+    <p class="text-ink-soft mt-3 text-lg">
+      What does paying a bit extra each month actually remove — in months, and in
+      interest?
+    </p>
+
+    <TrustStrip
+      class="mt-5"
+      items={[
+        { label: 'Nothing you type is sent anywhere' },
+        { label: 'Payment matches the published figure', href: '/verify' },
+        { label: 'Full schedule, chart, CSV and printable report' },
+      ]}
+    />
+
+    <div class="mt-10">
+      <MortgageCalculator client:load>
+        <Fragment slot="privacy">
+          Worked out in your browser. Nothing you type is sent anywhere, and nothing is
+          saved.
+        </Fragment>
+
+        <Fragment slot="method">
+          <div class="space-y-3">
+            <p>
+              Each month, interest is charged on the balance you owed at the start of it,
+              and the rest of your payment reduces the balance:
+            </p>
+            <p class="numeric bg-surface rounded-control p-3">
+              interest = balance × (annual rate ÷ 12)
+              <br />
+              principal = payment − interest
+              <br />
+              new balance = balance − principal
+            </p>
+            <p>
+              Anything you pay above the required amount has no interest left to cover, so
+              every cent of it reduces the balance. That is why the effect grows: a
+              smaller balance is charged less interest next month, and in every month
+              after.
+            </p>
+          </div>
+        </Fragment>
+
+        <Fragment slot="assumptions">
+          <div class="space-y-3">
+            <p>
+              Figures are rounded to the cent every month, the way a statement does it,
+              and the final payment is adjusted to clear the balance exactly.
+            </p>
+            <p>
+              Not modelled: prepayment penalties, escrow for tax and insurance, PMI, rate
+              changes on an adjustable loan, or fees. Those move the real number and none
+              of them is something a calculator can know about your loan.
+            </p>
+          </div>
+        </Fragment>
+
+        <Fragment slot="retention">
+          Stays on this device. Never saved, never in the link.
+        </Fragment>
+      </MortgageCalculator>
+    </div>
+
+    <section class="prose-like text-ink-soft mt-16 space-y-4">
+      <h2 class="text-ink section-head">Why an overpayment does so much</h2>
+
+      <p>
+        A mortgage payment is not one thing. It is interest on the balance you owe today,
+        plus whatever is left over to reduce that balance. Early in a thirty-year loan the
+        first part dominates: on $320,000 at 6.706%, the first month charges
+        <strong class="text-ink">$1,788.27</strong> of interest against a payment of
+        <strong class="text-ink">$2,066.16</strong>. Only
+        <strong class="text-ink">$277.89</strong> of that first payment actually reduces what
+        you owe.
+      </p>
+
+      <p>
+        An extra payment behaves completely differently, because the interest for that
+        month has already been covered. Every cent of it goes to principal. In month one,
+        an extra $200 does the work of about{' '}
+        <strong class="text-ink">72%</strong> of the entire contractual payment's principal
+        reduction — for less than a tenth of the money.
+      </p>
+
+      <p>
+        And it compounds. A balance $200 smaller is charged roughly $1.12 less interest
+        the next month, which frees another $1.12 to reduce principal, and so on for three
+        hundred months. That is the whole mechanism, and it is why the totals look
+        implausible until you follow the schedule.
+      </p>
+
+      <h2 class="text-ink section-head">A worked example you can check</h2>
+
+      <p>
+        Take the default scenario: <strong class="text-ink">$320,000</strong> borrowed at{
+          ' '
+        }
+        <strong class="text-ink">6.706%</strong> over{' '}
+        <strong class="text-ink">30 years</strong>. The required payment is
+        <span class="numeric">$2,066.16</span> a month — the figure the standard amortisation
+        formula gives, and the same one calculator.net publishes for these inputs.
+      </p>
+
+      <p>Now add $200 a month:</p>
+
+      <div class="not-prose overflow-x-auto">
+        <table class="border-line w-full border-collapse border text-sm">
+          <thead>
+            <tr class="bg-sunken">
+              <th class="border-line border p-2 text-left">Paying</th>
+              <th class="border-line border p-2 text-right">Term</th>
+              <th class="border-line border p-2 text-right">Total interest</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border-line border p-2">$2,066.16 (contractual)</td>
+              <td class="numeric border-line border p-2 text-right">360 months</td>
+              <td class="numeric border-line border p-2 text-right">$423,821.51</td>
+            </tr>
+            <tr>
+              <td class="border-line border p-2">$2,266.16 (+$200)</td>
+              <td class="numeric border-line border p-2 text-right">280 months</td>
+              <td class="numeric border-line border p-2 text-right">$312,930.95</td>
+            </tr>
+            <tr>
+              <td class="border-line border p-2 font-semibold">Difference</td>
+              <td class="numeric border-line border p-2 text-right font-semibold">
+                80 months
+              </td>
+              <td class="numeric border-line border p-2 text-right font-semibold">
+                $110,890.56
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        $200 a month for 280 months is <span class="numeric">$56,000</span> of extra payments.
+        It removes <span class="numeric">$110,890.56</span> of interest — very nearly twice
+        what was put in, and it ends the loan six years and eight months early. The ratio is
+        that favourable because the money is applied at the point in the schedule where the
+        balance, and therefore the interest, is largest.
+      </p>
+
+      <h2 class="text-ink section-head">
+        Where our figure differs from other calculators
+      </h2>
+
+      <p>
+        calculator.net reports <span class="numeric">$423,818.78</span> of total interest for
+        the contractual schedule. We report
+        <span class="numeric">$423,821.51</span> — <strong class="text-ink"
+          >$2.73 more</strong
+        >, and the difference has a specific cause rather than being noise.
+      </p>
+
+      <p>
+        They compute from the unrounded payment, <span class="numeric">$2,066.163273</span
+        >, carried at full precision across 360 months. That is why their "total of 360
+        payments" is $743,818.78 rather than $2,066.16 × 360 = $743,817.60 — a payment
+        nobody could actually make. We charge the rounded payment a lender collects, round
+        interest to the cent every month, and collect the residue in the final payment.
+      </p>
+
+      <p>
+        Ours being higher is the direction that makes sense: a payment rounded down by a
+        fraction of a cent retires the loan marginally more slowly. $2.73 over thirty
+        years is under a cent a month. Neither figure is wrong; they answer slightly
+        different questions, and{' '}
+        <a class="text-brand underline" href="/verify">our verification page</a> covers how
+        to check both.
+      </p>
+
+      <h2 class="text-ink section-head">Why the last payment is bigger</h2>
+
+      <p>
+        The exact amortising payment is <span class="numeric">$2,066.1633</span>. Rounded
+        to the cent it becomes $2,066.16 — very slightly too little to retire the
+        principal to exactly zero over 360 months. The residue has to go somewhere, and
+        lenders collect it in the final month rather than issuing a 361st bill for a few
+        dollars.
+      </p>
+
+      <p>
+        On this scenario the last payment is <span class="numeric">$2,070.07</span>. Our
+        engine models it that way deliberately: a schedule that reported 361 months would
+        be arithmetically defensible and wrong about the product.
+      </p>
+
+      <h2 class="text-ink section-head">What this does not include</h2>
+
+      <p>
+        The model covers principal and interest on a fixed rate. It does not include
+        escrow for property tax and insurance, PMI, HOA dues, or any fee — which is why
+        the payment here is smaller than the one your servicer collects. It does not model
+        rate changes on an adjustable loan, and it does not know whether your note carries
+        a prepayment penalty. Check the note before acting on any figure here.
+      </p>
+    </section>
+
+    <section class="mt-14" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="section-head">Common questions</h2>
+      <dl class="mt-4 grid gap-x-8 gap-y-5 lg:grid-cols-2">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="section-head">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          The required payment is cross-checked against the standard amortisation formula,
+          P·i(1+i)<sup>n</sup> ÷ ((1+i)<sup>n</sup> − 1), and against calculator.net's published
+          output for the same inputs — $2,066.16, which our fixture asserts to the cent.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is a calculator, not advice.</strong> QuickOper works
+        out the arithmetic and shows its working. It does not know your circumstances and cannot
+        tell you whether overpaying a mortgage is a good use of your money. Nothing here is
+        financial, tax or investment advice.
+      </p>
+      <p class="mt-2">
+        Principal and interest only. Escrow, PMI, fees and prepayment penalties are not
+        modelled, and your note is the authority on all of them.
+      </p>
+    </aside>
+
+    <nav class="no-print mt-14" aria-label="Related tools">
+      <h2 class="section-head">Related</h2>
+      <ul class="text-ink-soft mt-3 space-y-1 text-sm">
+        <li>
+          <a class="text-brand underline" href="/finance/debt-payoff-calculator"
+            >Debt payoff calculator</a
+          > — the same idea across several debts at once.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/credit-card-interest"
+            >How credit card interest is calculated</a
+          > — why a statement never shows APR ÷ 12.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/verify">Check our arithmetic</a> — reproduce
+          these figures in a spreadsheet.
+        </li>
+      </ul>
+    </nav>
+  </article>
+</BaseLayout>
