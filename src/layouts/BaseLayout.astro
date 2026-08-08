@@ -236,7 +236,7 @@ const graph = [organization, person, website, ...structuredData];
         <button
           id="theme-toggle"
           type="button"
-          class="border-masthead-line hover:border-masthead-accent hover:text-masthead-ink text-masthead-mute rounded-control -mr-1 border p-1.5"
+          class="border-masthead-mute hover:border-masthead-accent hover:text-masthead-ink text-masthead-mute rounded-control -mr-1 border p-1.5"
           aria-label="Switch theme"
           aria-pressed="false"
         >
@@ -330,10 +330,11 @@ const graph = [organization, person, website, ...structuredData];
         var btn = document.getElementById('theme-toggle');
         if (!btn) return;
 
-        // Dark is the site default, so an unset data-theme means dark. The
-        // system preference is deliberately not consulted — see global.css.
         function active() {
-          return root.dataset.theme || 'dark';
+          return (
+            root.dataset.theme ||
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          );
         }
 
         function label(theme) {

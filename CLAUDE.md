@@ -112,16 +112,22 @@ config from memory.** Dependencies are pinned to exact versions. Never use `^` o
    derivation and worked example, an FAQ block, sources with dates, and the
    not-financial-advice disclaimer. A page missing any of these is not done.
 
-9. **Client JS budget: under 18KB gzipped** per calculator page. Article and content
-   pages ship **zero**. Enforced by a byte-count assertion in CI against the built
+9. **Client JS budget: under 19.5KB gzipped** per calculator page. Article and content
+   pages ship **zero**, with one named exception: the homepage carries a single
+   island (the quick-cost calculator) and is measured like a tool page. Enforced by a byte-count assertion in CI against the built
    output — a deterministic gate, not a Lighthouse score.
 
    **Inline scripts count**, not just fetched modules. A browser executes both.
 
-   The number is derived, not chosen. Fixed cost is 12.48KB: preact 4.31, Astro
-   hydration client 1.36, hooks 1.13, shared UI/lib chunk 3.42, Astro's inline
-   island bootstrap 1.73, theme script 0.53. That leaves ~5.5KB for an individual
-   calculator. It was 15KB until PR #8, picked before any of it had been measured.
+   The number is derived, not chosen. Fixed cost is 10.13KB before any shared
+   chunk: preact 4.31, Astro hydration client 1.36, hooks 1.13, preact jsxRuntime
+   1.07, Astro's inline island bootstrap 1.73, theme script 0.53.
+
+   It was 15KB until PR #8 (picked before any of it had been measured), 18KB
+   until a second island existed. jsxRuntime joined the floor at that point:
+   with one island Rollup inlines it, with two it becomes a shared chunk every
+   calculator page fetches. Measured — the debt payoff page moved 17.51 →
+   17.99KB with its own code untouched.
 
    Content pages ship **0.53KB** — the inline theme script and nothing else. Not
    literally zero, and saying "zero" when it is 0.53 would be the kind of small

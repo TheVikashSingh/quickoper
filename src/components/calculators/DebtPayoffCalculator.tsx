@@ -330,6 +330,19 @@ export function DebtPayoffCalculator(prose: Prose): JSX.Element {
         >
           Add a debt
         </button>
+
+        {/* No way back to a blank slate existed: Remove worked per row, and
+            the last row could not be removed at all. */}
+        <button
+          type="button"
+          onClick={() => {
+            patch({ entries: STARTER, budget: INITIAL.budget, view: INITIAL.view });
+            setNextId(STARTER.length + 1);
+          }}
+          class="rounded-control border-line-strong bg-sunken hover:bg-brand-soft hover:border-brand mt-3 ml-2 border px-3 py-1.5 text-sm font-medium"
+        >
+          Reset to example
+        </button>
       </section>
 
       <section aria-labelledby="budget-heading" class="no-print">
