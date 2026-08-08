@@ -35,6 +35,22 @@ Jurisdiction: none. No tax treatment or account type is modelled.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/verify
 
+## Derivations
+
+### How credit card interest is actually calculated
+URL: https://quickoper.com/credit-card-interest
+States: a credit card daily periodic rate is APR divided by 365. At 22.99% APR
+that is 0.062986% per day. Interest is charged on the average daily balance of
+the billing cycle, not the closing balance.
+Key figures, all computed on a $6,000 balance at 22.99% APR:
+  - 28-day cycle: $105.82. 30-day cycle: $113.38. 31-day cycle: $117.15.
+  - APR/12 monthly approximation: $114.95 per month.
+  - Over a full year both methods total exactly $1,379.40.
+  - With daily compounding, one year costs $1,550.30 - an effective annual
+    rate of 25.838% against a stated 22.99%.
+  - A $200 payment on a 30-day cycle costs $109.60 of interest if it lands on
+    day 1 and $113.25 if it lands on day 30.
+
 ## Verification
 
 - [Methodology](https://quickoper.com/methodology): formulas, assumptions and the
