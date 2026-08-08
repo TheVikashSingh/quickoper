@@ -741,6 +741,73 @@ its own chart, which is worse than none because it is believed.
 
 Cost: 0.09KB on the worst page. 18.27KB of 19.5.
 
+### D43 — The migration runbook, and the character that would have unverified the domain
+
+`docs/DNS.md` carried a table of ten records and a warning that they were
+operator-supplied and had never been checked against the zone. Checking them was
+ten minutes of `nslookup`. Nine matched exactly — both MX, SPF, DMARC, three DKIM
+CNAMEs, `autodiscover`, `autoconfig`.
+
+The tenth was wrong, in precisely the way the file's own warning describes:
+
+```
+doc : google-site-verification=QrWqvXMiSI_pmA5-aYVgZ6bsYI1PZHVxcbekLA4NO8I
+live: google-site-verification=QrWqvXMiSI_pmA5-aYVgZ6bsYl1PZHVxcbekLA4NO8I
+index 25: doc "I" (U+0049) vs live "l" (U+006C)
+```
+
+Capital `I` where the zone has lowercase `l`. Indistinguishable in most fonts,
+including the one this file is read in. Anyone recreating the zone by copying the
+table would have dropped Search Console verification on a domain property, and
+the failure is silent — the record resolves, the dashboard looks right, and
+verification lapses later.
+
+**The general lesson is the one D18 keeps producing.** The file already said
+"verify against the export" and had said it for two pull requests; nobody had.
+A warning is not a check. The values are now marked verified, with the date and
+the resolver used, so the next reader knows whether the claim has been tested
+rather than merely asserted.
+
+**Three changes to the procedure, each removing a way the migration can go wrong.**
+
+**Deploy before DNS.** The old step order attached the Worker custom domain after
+the nameserver switch, which meant a first-ever deploy would be debugged with the
+real domain already pointing at Cloudflare. The site is now proven on
+`workers.dev` first. That also puts a real check under `public/_headers`, which
+has never been served by anything and is assumed rather than known to work on
+Workers static assets.
+
+**Query the destination nameservers directly, before switching.** Cloudflare's
+assigned nameservers answer for the zone before the registrar points anyone at
+them. The old procedure asked for a visual review of the dashboard, which
+confirms what was typed; querying confirms what will be *served*. This is what
+converts the irreversible step into a safe one, and it is the check that would
+have caught the character above without anyone noticing it by eye.
+
+**Retire Vercel last, not first.** The operator's instinct was to close the
+account up front, which is reasonable and slightly wrong: until mail passes on
+the far side of the nameserver switch, the previous host is a free rollback
+target. Reverting nameservers at Hostinger restores a fully working state only if
+something is still there to serve.
+
+**Also found, and it changes what launch means.** The apex was assumed parked.
+It is not — it serves an unrelated earlier application from Vercel, a React SPA
+with `/dashboard`, `/tracker`, `/checklists`, `/pricing` and `/blog`, with its own
+`/sitemap.xml`. So this is a **replacement**, and the expected 404 spike is
+correct behaviour rather than a defect to chase. No redirects are warranted:
+none of that content has an equivalent here, and redirecting `/pricing` at a page
+about amortisation would be worse than a clean 404.
+
+`/about` and `/contact` exist on both sites with entirely different content.
+
+**Only one step in the whole migration is irreversible**, and stating that
+plainly is most of the value of the rewrite. Nameservers switch back in minutes;
+a deploy is replaced by another deploy; a custom domain detaches; the Hostinger
+zone stays as rollback for as long as it is left alone. The single unrecoverable
+failure is mail that bounces while MX is wrong — the message is gone and the
+sender gets a rejection the operator never sees. Everything in the ordering
+exists to isolate that.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
