@@ -300,6 +300,29 @@
     font-weight: 600;
   }
 
+  /* ── Section heading ──────────────────────────────────────────────────────
+     The operator reported "no contrast" on headings like "What you can pay each
+     month". Measured, they are at **16.05:1** — the highest this palette can
+     produce. Contrast was never the problem.
+
+     The problem is hierarchy. A section heading was 19px against 12.75px body,
+     in the same colour, with nothing marking where one section ended and the
+     next began. calculator.net solves this with a coloured bar; a ledger solves
+     it with a rule, which is the idiom this site already speaks.
+
+     So: bigger, in the display face, over a hairline that runs the width of the
+     column. The eye gets a horizontal edge to catch on, which is what it was
+     missing. */
+  .section-head {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.011em;
+    line-height: 1.25;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--color-line-strong);
+  }
+
   /* Same voice, quieter — for the small print a note carries around its edges. */
   .engraved-fine {
     font-family: var(--font-display);

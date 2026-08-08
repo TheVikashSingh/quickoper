@@ -243,7 +243,7 @@ export function DebtPayoffCalculator(prose: Prose): JSX.Element {
       </div>
 
       <section aria-labelledby="debts-heading" class="no-print">
-        <h2 id="debts-heading" class="text-lg font-semibold">
+        <h2 id="debts-heading" class="section-head">
           Your debts
         </h2>
         <p class="text-ink-soft mt-1 text-sm">{prose.privacy}</p>
@@ -346,7 +346,7 @@ export function DebtPayoffCalculator(prose: Prose): JSX.Element {
       </section>
 
       <section aria-labelledby="budget-heading" class="no-print">
-        <h2 id="budget-heading" class="text-lg font-semibold">
+        <h2 id="budget-heading" class="section-head">
           What you can pay each month
         </h2>
         <label for="budget" class="mt-2 block text-sm font-medium">
@@ -382,6 +382,7 @@ export function DebtPayoffCalculator(prose: Prose): JSX.Element {
         outcome.comparison !== null && (
           <Results
             comparison={outcome.comparison}
+            debtCount={state.entries.length}
             view={state.view}
             onView={(v) => patch({ view: v })}
             name={preparedFor}
@@ -398,6 +399,8 @@ export function DebtPayoffCalculator(prose: Prose): JSX.Element {
 
 interface ResultsProps {
   comparison: ReturnType<typeof compareStrategies>;
+  /** One debt has only one possible order, so the strategy toggle is inert. */
+  debtCount: number;
   view: View;
   onView: (view: View) => void;
   name: string;
@@ -414,6 +417,7 @@ interface Row {
 
 function Results({
   comparison,
+  debtCount,
   view,
   onView,
   name,
@@ -456,7 +460,7 @@ function Results({
 
   return (
     <section aria-labelledby="results-heading" class="space-y-6">
-      <h2 id="results-heading" class="text-lg font-semibold">
+      <h2 id="results-heading" class="section-head">
         What happens
       </h2>
 
@@ -498,15 +502,28 @@ function Results({
               key={v}
               type="button"
               aria-pressed={view === v}
+              disabled={debtCount < 2}
+              title={
+                debtCount < 2
+                  ? 'With a single debt both methods clear it in the same order'
+                  : undefined
+              }
               onClick={() => onView(v)}
-              class={`first:rounded-l-control last:rounded-r-control px-3 py-1.5 text-sm font-medium capitalize ${
-                view === v ? 'bg-brand text-white' : 'hover:bg-sunken'
+              class={`first:rounded-l-control last:rounded-r-control px-3 py-1.5 text-sm font-medium capitalize disabled:cursor-not-allowed disabled:opacity-45 ${
+                view === v ? 'bg-brand text-canvas' : 'hover:bg-sunken'
               }`}
             >
               {v}
             </button>
           ))}
         </div>
+        {debtCount < 2 && (
+          <p class="text-ink-mute mt-2 text-sm">
+            Add a second debt to compare the two methods — with one, there is only one
+            order to pay it in.
+          </p>
+        )}
+
         <p class="text-ink-soft mt-2 text-sm">
           {prose.strategies}{' '}
           {comparison.interestDifferenceBetweenStrategies === 0 ? (
