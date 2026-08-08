@@ -24,8 +24,8 @@ changes the answer to "what exists" or "what is next".
 | Pages built | 16 (15 substantive — `/404` is not) |
 | Working calculators | 3 |
 | Tests | 153 passing |
-| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · deploy config |
-| Worst-page JS | 18.27 KB of 19.5 KB (1.23 KB spare) |
+| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · headers config |
+| Worst-page JS | 18.39 KB of 19.5 KB (1.11 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only); homepage 12.81 KB — it carries an island (D34) |
 
 ---

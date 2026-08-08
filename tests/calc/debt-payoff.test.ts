@@ -292,6 +292,20 @@ describe('debt that never amortises', () => {
     // The real strategies still resolve.
     expect(comparison.best.neverPaysOff).toBe(false);
   });
+
+  /*
+   * THESE ZEROS ARE NOT DISPLAYABLE, and that is a contract with the UI.
+   *
+   * This assertion passed while the calculator rendered it as "Saved vs
+   * minimums — $0.00, and 0 months sooner": the tool telling someone that
+   * paying double their minimums gained them nothing, in the one case where
+   * that is most wrong. The engine was right, this test was right, and the
+   * sentence they produced together was false (D47).
+   *
+   * DebtPayoffCalculator.tsx now branches on `minimumsOnly.neverPaysOff`
+   * before formatting either figure. If the zero above is ever changed to
+   * something else, that branch has to change with it.
+   */
 });
 
 describe('compareStrategies', () => {

@@ -458,6 +458,20 @@ function Results({
 
   const firstMonth = shown.schedule[0];
 
+  /**
+   * Does the do-nothing baseline ever end?
+   *
+   * Distinct from `shown.neverPaysOff`, which is about the strategy the
+   * visitor selected. Both figures quoted against the baseline — the stat and
+   * the sentence under the toggle — are meaningless when it does not, and the
+   * engine returns zero for both rather than inventing an infinity.
+   *
+   * Years are derived from the result rather than hardcoded, so the sentence
+   * cannot drift if MAX_MONTHS ever moves.
+   */
+  const baselineStalls = comparison.minimumsOnly.neverPaysOff;
+  const baselineYears = Math.floor(comparison.minimumsOnly.months / 12);
+
   return (
     <section aria-labelledby="results-heading" class="space-y-6">
       <h2 id="results-heading" class="section-head">
@@ -483,11 +497,35 @@ function Results({
             value={format(shown.totalInterest, CURRENCY)}
             note={`total repaid ${format(shown.totalPaid, CURRENCY)}`}
           />
-          <Stat
-            label="Saved vs minimums"
-            value={format(comparison.interestSavedVsMinimums, CURRENCY)}
-            note={`and ${comparison.monthsSavedVsMinimums} months sooner`}
-          />
+          {/*
+            The BASELINE stalling is a different condition from YOUR PLAN
+            stalling, and it needs its own branch.
+
+            `shown.neverPaysOff` above asks whether the selected strategy
+            clears the debt. This asks whether paying only the minimums ever
+            does. When your plan clears and the baseline does not — a store
+            card at 29.99% with a $30 minimum is enough — the engine
+            deliberately quotes no saving, because there is no finite number
+            to quote against a schedule that never ends.
+
+            Rendered as `format(ZERO)` that came out as "$0.00 saved, and 0
+            months sooner": the tool telling someone that paying double their
+            minimums gains them nothing, in exactly the case where it is most
+            wrong. The number was right; the sentence it formed was false.
+          */}
+          {baselineStalls ? (
+            <Stat
+              label="Saved vs minimums"
+              value="Never clears"
+              note={`still owing after ${baselineYears} years of minimums`}
+            />
+          ) : (
+            <Stat
+              label="Saved vs minimums"
+              value={format(comparison.interestSavedVsMinimums, CURRENCY)}
+              note={`and ${comparison.monthsSavedVsMinimums} months sooner`}
+            />
+          )}
         </div>
       )}
 
@@ -540,11 +578,21 @@ function Results({
               less interest than snowball.
             </>
           )}{' '}
-          Either way you save{' '}
-          <strong class="text-ink">
-            {format(comparison.interestSavedVsMinimums, CURRENCY)}
-          </strong>{' '}
-          against paying only the minimums.
+          {baselineStalls ? (
+            <>
+              Paying only the minimums, a balance is still outstanding after{' '}
+              <strong class="text-ink">{baselineYears} years</strong> — so there is no
+              finite saving to quote against it.
+            </>
+          ) : (
+            <>
+              Either way you save{' '}
+              <strong class="text-ink">
+                {format(comparison.interestSavedVsMinimums, CURRENCY)}
+              </strong>{' '}
+              against paying only the minimums.
+            </>
+          )}
         </p>
       </div>
 

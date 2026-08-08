@@ -883,57 +883,68 @@ does not exist. Exit 1; exit 0 once the block is removed.
 **What it deliberately does not check:** whether the header *values* are wise.
 Whether HSTS should be a year is a judgement, not a fact derivable from `dist/`.
 
-### D46 — Every page was a 307, and two correct config files were the cause
+### D47 — The arithmetic was right, the test was right, and the sentence was false
 
-The first successful deployment served the whole site. Every content page
-returned **307 Temporary Redirect**:
+Found on the live deployment by changing one number: a first debt of $3,000 at
+29.99% with a $30 minimum. The calculator reported
 
+> **SAVED VS MINIMUMS — $0.00**, and 0 months sooner
+
+and, below the toggle, *"Either way you save $0.00 against paying only the
+minimums."*
+
+Paying $600 a month against $300 of minimums cannot save nothing. What had
+actually happened is that $30 does not cover the $74.98 of monthly interest on
+that card, so the **baseline never ends** — and the engine, correctly and
+deliberately, refuses to quote a saving against a schedule that does not
+terminate:
+
+```ts
+// A baseline that never clears has no meaningful saving to quote against.
+const interestSavedVsMinimums = minimumsOnly.neverPaysOff ? ZERO : …
 ```
-GET /about                              307 → /about/
-GET /finance/debt-payoff-calculator     307 → /finance/debt-payoff-calculator/
-```
 
-`astro.config.mjs` sets `trailingSlash: 'never'`. Every internal link, every
-sitemap `<loc>` and every `<link rel="canonical">` is slash-less. Cloudflare's
-default `html_handling` is `"auto-trailing-slash"`, which **adds** a slash and
-redirects to it.
+**The bug was that the UI read the wrong flag.** `shown.neverPaysOff` asks
+whether *the strategy the visitor selected* clears the debt, and that was
+handled — it shows a caution panel. `minimumsOnly.neverPaysOff` asks whether
+*the baseline* does. Two different questions, and the second was never asked.
+When your plan clears and the baseline does not, the stats rendered and the zero
+was formatted as a fact.
 
-So the served URL and the canonical tag disagreed on every page in the site:
+**This is the worst possible case to be wrong in.** "Your minimum payments never
+clear this debt" is the single most important thing this tool can tell anyone.
+Instead it said the opposite: that doubling their payment gained them nothing.
+And the inputs are not exotic — a store card at 29.99% with a $30 minimum is an
+ordinary statement.
 
-```
-Location: /about/
-<link rel="canonical" href="https://quickoper.com/about">
-```
+Now branches on the baseline in both places:
 
-**Why that is expensive rather than untidy.** Google reads a sitemap of 15
-slash-less URLs, is redirected on every one, and arrives at a page whose
-canonical points back at the URL it was just sent away from. Contradictory
-signals on a domain with no history, plus a wasted round trip on every internal
-click, on a site whose measured advantage is that it is fast.
+> **SAVED VS MINIMUMS — Never clears**, still owing after 50 years of minimums
 
-Fixed with `html_handling = "drop-trailing-slash"`, which serves `/about` from
-`about/index.html` and redirects `/about/` to `/about` — the form Astro's config
-already asserts. The value was read out of the installed `wrangler` 4.120.0
-rather than written from memory, per CLAUDE.md's version reality check.
+> Paying only the minimums, a balance is still outstanding after **50 years** —
+> so there is no finite saving to quote against it.
 
-**Neither file was wrong.** `astro.config.mjs` was right about what the site
-builds. `wrangler.toml` was silent, which is a legitimate default. The defect
-existed only in the *relationship* between them, and no tool reads both — Astro
-does not know Cloudflare exists, and wrangler does not read Astro's config.
+"50 years" is derived from `minimumsOnly.months / 12`, not typed, so it cannot
+drift if `MAX_MONTHS` moves. Saying *why* no number is shown is the "shows its
+working" positioning applied to an absence.
 
-That is the same shape as D45 and it is why both now live in one gate,
-`scripts/check-deploy-config.mjs`: **configuration consumed after CI, by
-something CI has never run.** `check-headers.mjs` was renamed rather than joined
-by a sibling, because a file called `check-headers` that also checks trailing
-slashes is the kind of small incoherence this project cannot afford.
+**The part worth generalising.** `tests/calc/debt-payoff.test.ts` already had
+`quotes no saving against a baseline that never clears`, asserting exactly the
+zero that was being displayed. The engine was right, the fixture was right, and
+nobody asked what sentence they would produce together. D37 said an interface
+can be wrong while the markup, the state and the arithmetic are all correct;
+this is the same failure one level up — **a correct number formatted into a
+false claim.** That test now carries a comment saying the zeros are not
+displayable and naming the branch that depends on them.
 
-Proven by removing the line and re-running — exit 1, naming both files, the
-required value, and what the default silently does. Exit 0 restored.
+**No component test was added, deliberately.** This project has no DOM testing
+setup, and adding one means `@testing-library/preact` — a dependency against
+rule 4, to catch a class of defect the working agreement already assigns to
+opening a browser. It was found by opening a browser. Both branches were then
+verified the same way, at defaults and at the stalling inputs.
 
-**Two defects, one deploy, zero cost**, because the domain was still on
-Hostinger. D43 argued for deploying before touching DNS on the grounds that a
-first deploy should not be debugged against a live domain. It has now paid for
-itself twice before the nameservers have moved at all.
+**Cost: 0.12KB** on the worst page (18.27 → 18.39, 1.11 spare), for one ternary
+and two strings.
 
 ### D26 — Indexability is an invariant, and it is checked
 
