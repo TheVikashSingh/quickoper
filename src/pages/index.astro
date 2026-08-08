@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { QuickCost } from '../components/calculators/QuickCost';
 
 import Guilloche from '../components/ornament/Guilloche.astro';
 import NoteFrame from '../components/ornament/NoteFrame.astro';
@@ -83,32 +84,46 @@ const slowMonths = demo.minimumsOnly.months;
         The whole schedule, not just a number.
       </h1>
 
-      <p class="text-ink-soft relative mt-4 text-lg">
-        Most calculators hand you one figure and keep the working. These give you every
-        month, the formula behind it, a chart, and a spreadsheet you can take away — and
-        every figure can be checked against Excel.
+      <p class="text-ink-soft relative mt-3 text-base sm:mt-4 sm:text-lg">
+        Most calculators hand you one figure and keep the working. These show all of it.
       </p>
-
-      {
-        /* Straight to the tool. A visitor who came for a debt calculator should
-          not have to scroll past an explanation of why we are trustworthy. */
-      }
-      <div class="relative mt-6 flex flex-wrap gap-3">
-        <a
-          href="/finance/debt-payoff-calculator"
-          class="rounded-control border-brand bg-brand text-canvas hover:bg-brand-hover border px-4 py-2 text-sm font-semibold"
-        >
-          Debt payoff calculator
-        </a>
-        <a
-          href="/finance/coast-fire-calculator"
-          class="rounded-control border-line-strong bg-sunken hover:bg-brand-soft hover:border-brand border px-4 py-2 text-sm font-semibold"
-        >
-          Coast FIRE calculator
-        </a>
-      </div>
     </div>
   </NoteFrame>
+
+  {
+    /*
+    THE ONE INTERACTIVE THING ABOVE THE FOLD.
+
+    Everything else on this page is build-time HTML. This is an island, and the
+    only reason the homepage ships JavaScript at all — a deliberate exception to
+    rule 9, recorded in DECISIONS and measured in the pull request that added
+    it. A visitor who types a number into a box has engaged; a visitor who reads
+    a value proposition has not.
+
+    client:load rather than client:visible on purpose: it is the first thing on
+    the screen, so deferring hydration would leave the input dead for exactly
+    the moment that matters.
+  */
+  }
+  <section class="mt-8" aria-labelledby="quick-heading">
+    <div class="rounded-panel border-line-strong bg-surface border p-1.5">
+      <div class="border-engrave-strong rounded-control border p-4 sm:p-6">
+        <p class="engraved-fine text-ink-mute">Try it now</p>
+        <h2 id="quick-heading" class="text-ink mt-1 text-xl font-semibold sm:text-2xl">
+          What is a debt actually costing you?
+        </h2>
+
+        <div class="mt-5">
+          <QuickCost client:load>
+            <Fragment slot="privacy">
+              Worked out in your browser. Nothing you type is sent anywhere, and nothing
+              is saved.
+            </Fragment>
+          </QuickCost>
+        </div>
+      </div>
+    </div>
+  </section>
 
   {
     /* Proof, computed at build time by the real engine on the calculator's own

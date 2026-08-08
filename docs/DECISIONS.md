@@ -491,6 +491,71 @@ tool down the page. Every claim is structurally true or links to the page that
 proves it. No adjectives; "trusted" and "accurate" are what a site says when it
 cannot say anything checkable.
 
+### D34 — A calculator on the homepage, and the budget moves to 19.5KB
+
+The homepage had nothing to *do*. Every element was build-time HTML, which is
+excellent for bytes and useless for the three seconds a visitor spends deciding
+whether to stay. Someone who types a number into a box has engaged; someone who
+reads a value proposition has not.
+
+**It is not a general calculator, deliberately.** calculator.net puts a
+scientific keypad on its front page, and that is right for calculator.net —
+it sells breadth. A four-function keypad here would demonstrate nothing this
+site is good at, in a category where we have no advantage and no intention of
+building one. `QuickCost` asks the one question the site answers better than a
+chatbot: not "what is the number" but "what does the whole thing cost, and over
+how long".
+
+**It uses the real engine.** `compareStrategies` — the same function behind the
+full tool. A closed-form approximation would have been ~2KB lighter and would
+have disagreed by cents or by a month boundary, which on a site whose entire
+pitch is checkable arithmetic is not a saving. Verified in the browser: teaser
+and full tool both return **33 months and $2,113.21** for the same inputs.
+
+**It hands off rather than competing.** The result carries a link that opens the
+full calculator with the figures already loaded, using the URL params the tool
+already reads. No schedule, no chart, no CSV, no PDF on the teaser — those are
+the reason to follow the link. Asked for PDF export here and pushed back: it
+would duplicate the print machinery and weaken the funnel it exists to feed.
+
+**THE BUDGET MOVED, 18KB → 19.5KB.** Not for this widget's own bytes. A *second
+island* means Rollup can no longer inline preact's jsxRuntime into a single
+island chunk, so it becomes a shared chunk fetched by every calculator page.
+The debt payoff page went **17.51 → 17.99KB with its own code unchanged**,
+leaving 0.01KB of headroom — untenable.
+
+That is D23 from the other side: splitting shared code across islands costs
+bytes rather than saving them. It was reverted when it was optional; here the
+second island is the product decision, so the cost is real and the budget
+absorbs it instead of pretending otherwise. 19.5KB leaves 1.51KB of margin and
+still fails instantly on React (~45KB), any charting library (40KB+), and Zod
+reaching an island (15.7KB). `CLAUDE.md` rule 9 updated to match, because a
+contract that states a false number is worse than one that states a hard one.
+
+**Mobile was the real test and it failed first.** At 375px the hero pushed the
+calculator to 774px — below the fold on the device most of the traffic will
+use, which defeated the entire point. The lead paragraph alone was 208px tall.
+Cut to one sentence, stepped down a size below `sm`, and the two tool buttons
+(duplicated verbatim further down the page) removed. Input now sits at 616px of
+an 830px viewport.
+
+### D35 — Light is the default again
+
+D33 made dark the default. Reverted after looking at it: harder to read cold,
+which matches the optics — a bright field constricts the pupil, deepening focus
+for the presbyopia and hypermetropia this audience is likely to have, and
+light-on-dark haloes for the astigmatism that usually accompanies them. The
+system preference decides again; the toggle still overrides in both directions.
+
+Also fixed in passing: the **theme toggle's border measured 1.34:1** against the
+masthead, the only control on any page below WCAG 1.4.11's 3:1. Found by
+measuring every interactive element rather than by looking, which is the fourth
+contrast defect found that way.
+
+The debt calculator gained a **Reset to example** control. `Remove` worked per
+row and the last row could not be removed at all, so there was no way back to a
+blank slate — calculator.net has AC for the same reason.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

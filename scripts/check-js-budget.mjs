@@ -20,41 +20,50 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 const DIST = 'dist';
 
 /**
- * 18KB gzipped per page. DERIVED, not guessed — the 15KB this replaced was
- * picked in PR #1 from rough arithmetic ("React is 45KB, Preact is 5KB")
- * before anything had been measured, and it turned out 0.56KB too tight to
- * fit a complete calculator.
+ * 19.5KB gzipped per page. DERIVED, not guessed, and raised twice — from 15KB
+ * (picked in PR #1 from rough arithmetic before anything had been measured) to
+ * 18KB, and from 18KB to 19.5KB when a second island changed the floor. Both
+ * increases are justified below with the measurement that forced them.
  *
  * Measured floor, which no amount of discipline removes:
  *
  *   preact                    4.31 KB
  *   Astro hydration client    1.36 KB
  *   preact/hooks              1.13 KB
- *   shared UI + lib chunk     3.42 KB   (table, chart, money, csv, params)
+ *   preact jsxRuntime         1.07 KB   (see below — new at 19.5KB)
  *   Astro island bootstrap    1.73 KB   (inline, was never counted until PR #9)
  *   theme script              0.53 KB   (inline, on every page)
  *   ------------------------------------
- *   fixed cost               12.48 KB
+ *   fixed cost               10.13 KB   before any shared UI or calc chunk
  *
  * The last two lines were discovered when inline scripts started being counted.
  * They had been shipping since PR #5 and were invisible, which means the 10.22KB
  * floor recorded in PR #8 was itself an under-measurement. Corrected here rather
  * than left to mislead the next person who reads it.
  *
- * 18KB therefore leaves about 5.5KB for an individual calculator — a real
- * constraint that still fails instantly on React (~45KB), on any charting
- * library (Recharts and Chart.js are 40KB+), and on a schema library reaching
- * an island (Zod cost 15.7KB when it did). Everything rule 9 exists to prevent
- * is still prevented.
+ * WHY 19.5 AND NOT 18. Raised once, in the pull request that put a calculator
+ * on the homepage. The floor moved for a structural reason, not a sloppy one:
+ * a SECOND island means Rollup can no longer inline preact's jsxRuntime into a
+ * single island chunk, so it becomes a shared chunk fetched by every calculator
+ * page. Measured, not predicted — the debt payoff page went 17.51 -> 17.99KB
+ * the moment the homepage island existed, with its own code unchanged.
  *
- * HEADROOM: the worst page sits 0.58KB under, after the static prose moved out
- * of the islands and into the pages that mount them (D28). This comment said
- * 0.18KB for two pull requests while the real figure was 0.08 — nothing checks
- * a byte count quoted in prose, including this one.
+ * That is D23 again from the other direction: splitting shared code ACROSS
+ * islands costs bytes rather than saving them. It was reverted when it was
+ * optional. Here a second island is the product decision, so the cost is real
+ * and the budget absorbs it rather than pretending otherwise.
  *
- * If it tightens again the honest fix is structural — more prose out of the
- * island, or hydrating the below-fold chart and schedule separately with
- * client:visible — not another increment.
+ * 19.5KB leaves the worst page 1.51KB of headroom, which is a margin rather
+ * than the 0.01KB the change would otherwise have left.
+ *
+ * WHAT IT STILL FORBIDS, unchanged and non-negotiable:
+ *   React + react-dom      ~45 KB
+ *   any charting library   40 KB+   (Recharts, Chart.js, D3)
+ *   Zod reaching an island 15.7 KB  (measured when it did, D9)
+ * Every one of those still fails instantly. If a change needs the number moved
+ * again, that is still evidence the change is wrong until proven otherwise, and
+ * the honest fix at that point is structural — hydrating the below-fold chart
+ * and schedule separately with client:visible — not a third increment.
  *
  * For scale: the project charter's original budget was 40KB, and median
  * JavaScript on a mobile page is several hundred.
@@ -62,7 +71,7 @@ const DIST = 'dist';
  * Raising this again should require the same treatment — measure first, write
  * down what the number is made of, and say what it still forbids.
  */
-const BUDGET_BYTES = 18 * 1024;
+const BUDGET_BYTES = 19.5 * 1024;
 
 /**
  * Entry points a browser fetches.

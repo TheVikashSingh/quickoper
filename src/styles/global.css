@@ -109,58 +109,56 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Dark theme — THE DEFAULT.
+   Dark theme — offered, not imposed.
 
-   The operator asked for dark on landing. That is a product decision, and it
-   overrides `prefers-color-scheme`: a visitor whose system is set to light
-   still arrives here in dark. Stated plainly because silently ignoring an
-   accessibility preference is not something to do by accident.
+   Dark was briefly the default (D33) and is now reverted: the system preference
+   decides, and a visitor who has expressed none lands in light. Tried, looked
+   at, and judged harder to read cold — which matches the optics. A bright field
+   constricts the pupil, deepening focus, and that helps the presbyopia and
+   hypermetropia this site's readers are likely to have; light-on-dark haloes
+   for the astigmatism that usually comes with them.
 
-   The tension is real and worth recording. Dark backgrounds help light
-   sensitivity and migraine; light backgrounds generally read better for
-   presbyopia and hypermetropia, because a bright field constricts the pupil,
-   which deepens focus — and because light-on-dark haloes for the astigmatism
-   that usually accompanies them. So this default is NOT the accessible choice
-   for the audience most likely to struggle. It is mitigated by a toggle that
-   is visible on every page and persists a choice for ever after.
-
-   Reverting is one edit: restore the `@media (prefers-color-scheme: dark)`
-   wrapper around the block below and the site respects the system again.
+   Declared twice on purpose: once for visitors whose system asks for dark and
+   who have expressed no preference, once for an explicit choice. The explicit
+   choice must win in BOTH directions, so `[data-theme='light']` has to be able
+   to override a dark system setting — hence the :not() on the media query.
    --------------------------------------------------------------------------- */
 
-:root:not([data-theme='light']) {
-  --color-canvas: oklch(16.5% 0.018 160);
-  --color-surface: oklch(20% 0.02 160);
-  --color-sunken: oklch(13.5% 0.016 160);
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-canvas: oklch(16.5% 0.018 160);
+    --color-surface: oklch(20% 0.02 160);
+    --color-sunken: oklch(13.5% 0.016 160);
 
-  --color-ink: oklch(94% 0.01 100);
-  --color-ink-soft: oklch(78% 0.014 120);
-  --color-ink-mute: oklch(62% 0.014 140);
+    --color-ink: oklch(94% 0.01 100);
+    --color-ink-soft: oklch(78% 0.014 120);
+    --color-ink-mute: oklch(62% 0.014 140);
 
-  --color-line: oklch(28% 0.022 160);
-  /* 55%, not 39%: 2.04:1 against the dark surface. Same rule as light. */
-  --color-line-strong: oklch(55% 0.038 160);
+    --color-line: oklch(28% 0.022 160);
+    /* 55%, not 39%: 2.04:1 against the dark surface. Same rule as light. */
+    --color-line-strong: oklch(55% 0.038 160);
 
-  --color-brand: oklch(74% 0.135 158);
-  --color-brand-hover: oklch(82% 0.13 158);
-  --color-brand-soft: oklch(26% 0.05 158);
+    --color-brand: oklch(74% 0.135 158);
+    --color-brand-hover: oklch(82% 0.13 158);
+    --color-brand-soft: oklch(26% 0.05 158);
 
-  --color-positive: oklch(74% 0.14 155);
-  --color-caution: oklch(78% 0.13 75);
-  --color-negative: oklch(70% 0.16 25);
+    --color-positive: oklch(74% 0.14 155);
+    --color-caution: oklch(78% 0.13 75);
+    --color-negative: oklch(70% 0.16 25);
 
-  --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.4);
+    --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.4);
 
-  /* Engraving on a dark note reads as light ink, and needs a little more
-     presence to survive the darker field. */
-  --color-engrave: oklch(74% 0.135 158 / 0.055);
-  --color-engrave-strong: oklch(74% 0.135 158 / 0.24);
+    /* Engraving on a dark note reads as light ink, and needs a little more
+       presence to survive the darker field. */
+    --color-engrave: oklch(74% 0.135 158 / 0.055);
+    --color-engrave-strong: oklch(74% 0.135 158 / 0.24);
 
-  --color-masthead: oklch(11% 0.02 162);
-  --color-masthead-ink: oklch(93% 0.012 100);
-  --color-masthead-mute: oklch(74% 0.018 130);
-  --color-masthead-line: oklch(26% 0.03 160);
-  --color-masthead-accent: oklch(78% 0.14 158);
+    --color-masthead: oklch(11% 0.02 162);
+    --color-masthead-ink: oklch(93% 0.012 100);
+    --color-masthead-mute: oklch(74% 0.018 130);
+    --color-masthead-line: oklch(26% 0.03 160);
+    --color-masthead-accent: oklch(78% 0.14 158);
+  }
 }
 
 :root[data-theme='dark'] {
@@ -197,8 +195,9 @@
 
 @layer base {
   html {
-    /* Dark is the default; see the note above the theme block. */
-    color-scheme: dark;
+    /* Light is the default. The system preference is respected, and an
+       explicit choice overrides it in both directions. */
+    color-scheme: light;
     /* 106.25% of the READER'S default, not a fixed pixel size.
        A px value here would override the font size someone with poor vision has
        deliberately set in their browser, which is the exact opposite of the
@@ -208,8 +207,14 @@
     scroll-behavior: smooth;
   }
 
-  html[data-theme='light'] {
-    color-scheme: light;
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme='light']) {
+      color-scheme: dark;
+    }
+  }
+
+  html[data-theme='dark'] {
+    color-scheme: dark;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -342,12 +347,27 @@
      markup so CSS alone shows the right one on first paint. Without this the
      button would render the wrong glyph until script ran. */
   .theme-icon-light {
-    display: block;
-  }
-  .theme-icon-dark {
     display: none;
   }
+  .theme-icon-dark {
+    display: block;
+  }
 
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .theme-icon-light {
+      display: block;
+    }
+    :root:not([data-theme='light']) .theme-icon-dark {
+      display: none;
+    }
+  }
+
+  :root[data-theme='dark'] .theme-icon-light {
+    display: block;
+  }
+  :root[data-theme='dark'] .theme-icon-dark {
+    display: none;
+  }
   :root[data-theme='light'] .theme-icon-light {
     display: none;
   }
