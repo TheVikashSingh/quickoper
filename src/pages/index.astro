@@ -87,6 +87,47 @@ const slowMonths = demo.minimumsOnly.months;
       <p class="text-ink-soft relative mt-3 text-base sm:mt-4 sm:text-lg">
         Most calculators hand you one figure and keep the working. These show all of it.
       </p>
+
+      {
+        /*
+        EVERY TOOL, VISIBLE WITHOUT SCROLLING.
+
+        Removed once to buy vertical space and put back deliberately: a visitor
+        who came for a specific calculator should be able to see whether it
+        exists before deciding anything, and that is the single most useful
+        thing this space can do. It is what calculator.net gets right.
+
+        Compact on purpose — one line on a phone, two short rows at most. The
+        list is also honest about its own length: two tools, and it says so
+        rather than padding the row to look fuller.
+      */
+      }
+      <nav class="relative mt-4" aria-label="Calculators">
+        <div class="flex flex-wrap gap-2">
+          <a
+            href="/finance/debt-payoff-calculator"
+            class="rounded-control border-line-strong bg-surface hover:border-brand hover:bg-brand-soft border px-3 py-2 text-sm font-semibold"
+          >
+            Debt payoff
+          </a>
+          <a
+            href="/finance/coast-fire-calculator"
+            class="rounded-control border-line-strong bg-surface hover:border-brand hover:bg-brand-soft border px-3 py-2 text-sm font-semibold"
+          >
+            Coast FIRE
+          </a>
+          <a
+            href="/verify"
+            class="rounded-control border-line-strong bg-surface hover:border-brand hover:bg-brand-soft border px-3 py-2 text-sm font-semibold"
+          >
+            Check our arithmetic
+          </a>
+        </div>
+        <p class="text-ink-mute mt-2 text-xs">
+          Two calculators today. More are added one at a time, each tested against a
+          published figure before it ships.
+        </p>
+      </nav>
     </div>
   </NoteFrame>
 

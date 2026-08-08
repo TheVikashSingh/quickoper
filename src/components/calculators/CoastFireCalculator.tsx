@@ -155,7 +155,7 @@ export function CoastFireCalculator(prose: Prose): JSX.Element {
       )}
 
       <section aria-labelledby="you-heading" class="no-print">
-        <h2 id="you-heading" class="text-lg font-semibold">
+        <h2 id="you-heading" class="section-head">
           Where you are now
         </h2>
         <p class="text-ink-soft mt-1 text-sm">{prose.privacy}</p>
@@ -187,7 +187,7 @@ export function CoastFireCalculator(prose: Prose): JSX.Element {
       </section>
 
       <section aria-labelledby="assume-heading" class="no-print">
-        <h2 id="assume-heading" class="text-lg font-semibold">
+        <h2 id="assume-heading" class="section-head">
           What you are assuming
         </h2>
         <p class="text-ink-soft mt-1 text-sm">{prose.assumptions}</p>
@@ -295,7 +295,7 @@ function Results({
 
   return (
     <section aria-labelledby="results-heading" class="space-y-6">
-      <h2 id="results-heading" class="text-lg font-semibold">
+      <h2 id="results-heading" class="section-head">
         What the arithmetic says
       </h2>
 

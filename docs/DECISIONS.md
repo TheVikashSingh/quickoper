@@ -556,6 +556,51 @@ The debt calculator gained a **Reset to example** control. `Remove` worked per
 row and the last row could not be removed at all, so there was no way back to a
 blank slate — calculator.net has AC for the same reason.
 
+### D36 — "No contrast" on headings was not a contrast problem
+
+Reported against headings like "What you can pay each month". Measured through a
+canvas: every `h2` and `h3` on the page sits at **16.05:1** — the highest ratio
+this palette can produce. There was nothing to fix in colour.
+
+The real fault was **hierarchy**. A section heading was 19px against 12.75px
+body text, in the same ink, with no device marking where one section ended and
+the next began. The eye had no edge to catch on, and "I cannot pick the headings
+out" is reported as "no contrast" because that is what it feels like.
+
+calculator.net solves this with coloured bars. A ledger solves it with a rule,
+which is the idiom this site already speaks — so `.section-head` is the display
+face at 1.375rem over a hairline running the width of the column. Measured
+after: 23.4px Georgia with a 0.8px rule.
+
+**Worth generalising:** when a contrast complaint measures fine, the answer is
+almost never more colour. It is size, weight, spacing or a rule.
+
+### D37 — The strategy toggle was live and provably inert
+
+With a single debt, avalanche and snowball are the same thing: there is only one
+order to pay one debt in. The toggle stayed clickable, `aria-pressed` flipped,
+and every figure on the page stayed identical — which reads as broken software
+rather than as "not applicable", and was reported as exactly that.
+
+Now disabled below two debts, with a title attribute and a line saying why. The
+prose that already explained the tie stays, because it is still true.
+
+Found by the operator, not by any gate. No automated check here could have
+caught it: the markup was correct, the state updated, the arithmetic was right.
+It was only wrong as an interface.
+
+### D38 — Every tool visible without scrolling
+
+Two calculator links were removed from the hero in D34 to buy vertical space,
+and put straight back. A visitor who came for a specific calculator should be
+able to see whether it exists before deciding anything — that is the most useful
+thing the top of the page can do, and it is what calculator.net gets right.
+
+Compact rather than the large buttons that were removed: one line on a phone.
+The row is also honest about its own length — it says "two calculators today"
+rather than padding itself out to look fuller. Three tools are planned and none
+are started; `STATE.md` Next is the list.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

@@ -25,7 +25,7 @@ changes the answer to "what exists" or "what is next".
 | Working calculators | 2 |
 | Tests | 136 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data |
-| Worst-page JS | 17.99 KB of 19.5 KB (1.51 KB spare) |
+| Worst-page JS | 18.10 KB of 19.5 KB (1.40 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only); homepage 12.81 KB — it carries an island (D34) |
 
 ---
