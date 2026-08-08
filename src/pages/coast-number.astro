@@ -1,0 +1,407 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Guilloche from '../components/ornament/Guilloche.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
+import Rule from '../components/ornament/Rule.astro';
+import { SITE } from '../lib/site';
+import { sourceRef } from '../lib/schema';
+
+const LAST_VERIFIED = '2026-08-08';
+
+const SOURCES = [
+  {
+    label: 'US Securities and Exchange Commission — Compound Interest Calculator',
+    url: 'https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator',
+    retrieved: '2026-08-08',
+  },
+  {
+    label: 'Microsoft — FV function (Excel)',
+    url: 'https://support.microsoft.com/en-us/office/fv-function-2eef9f44-a084-4c61-bdd8-4fe4bb1b71b3',
+    retrieved: '2026-08-08',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * Every figure is target ÷ (1 + r)^years on a $1,000,000 target. The 30-year,
+ * 5% row — $231,377.45 — is the same figure /verify asks readers to reproduce
+ * with `=1000000/1.05^30`, so this page and that one cannot disagree.
+ */
+const BY_YEARS = [
+  { years: 40, amount: 142_045.68 },
+  { years: 30, amount: 231_377.45 },
+  { years: 20, amount: 376_889.48 },
+  { years: 10, amount: 613_913.25 },
+  { years: 5, amount: 783_526.17 },
+  { years: 0, amount: 1_000_000 },
+];
+
+const BY_RETURN = [
+  { rate: 7, amount: 131_367.12 },
+  { rate: 6, amount: 174_110.13 },
+  { rate: 5, amount: 231_377.45 },
+  { rate: 4, amount: 308_318.67 },
+  { rate: 3, amount: 411_986.76 },
+];
+
+const FAQ = [
+  {
+    q: 'What is a coast number?',
+    a: 'The amount that needs to be invested today for it to grow, on its own, to a retirement target by a chosen date — with no further contributions. It is target ÷ (1 + real return)^years. For a $1,000,000 target thirty years out at a 5% real return, it is $231,377.45.',
+  },
+  {
+    q: 'Is reaching a coast number the same as being able to retire?',
+    a: 'No, and this is the most common misreading. Passing it means further saving becomes optional, not that working becomes optional. You still have to cover rent, food and everything else between now and retirement out of income. It is a milestone about contributions, not about employment.',
+  },
+  {
+    q: 'Why does a coast number fall so fast the further out you are?',
+    a: 'Because it is divided by (1 + r) raised to the number of years, so it decays geometrically. At 5% real, a $1,000,000 target needs $613,913.25 ten years out but only $142,045.68 forty years out — a quarter as much for four times the horizon. Time does most of the work, which is why the figure looks small at 25 and uncomfortable at 55.',
+  },
+  {
+    q: 'How much does the return assumption change the answer?',
+    a: 'Enormously, and this is the honest weakness of the whole idea. For the same $1,000,000 target thirty years out: 7% gives $131,367.12, 5% gives $231,377.45, and 3% gives $411,986.76. The 3% figure is more than three times the 7% one. A coast number is only as trustworthy as the rate you assumed.',
+  },
+  {
+    q: 'Should the return be real or nominal?',
+    a: 'Real — after inflation — if your target is stated in today’s money, which is how most people think about spending. Mixing a nominal return with a target in today’s prices produces a number that looks reassuring and buys less than expected. Our calculator asks for a real return and says so on the field.',
+  },
+  {
+    q: 'Does a coast number account for sequence-of-returns risk?',
+    a: 'No. It is a single discount at a constant rate, so it cannot express the risk that returns arrive in an unhelpful order. That risk is real and measurable — the same ten annual returns in opposite orders can end $262,120.48 apart on a drawdown portfolio. A coast number is a comparison tool, not a forecast.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'What a coast number is, and what it is not',
+    url: `${SITE.url}/coast-number`,
+    description:
+      'A coast number is target ÷ (1 + real return)^years — the amount that grows to a retirement target with no further contributions. What it means, how fast it falls, and how much the return assumption moves it.',
+    author: { '@id': `${SITE.url}/about#person` },
+    publisher: { '@id': `${SITE.url}#organization` },
+    dateModified: LAST_VERIFIED,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Coast numbers',
+        item: `${SITE.url}/coast-number`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+
+const money = (n: number) =>
+  `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+---
+
+<BaseLayout
+  title="What a coast number is, and what it is not | QuickOper"
+  description="A coast number is target ÷ (1 + real return)^years. For $1,000,000 thirty years out at 5% real it is $231,377.45. What passing it means, how fast it falls, and how much the return assumption moves it."
+  structuredData={structuredData}
+>
+  <article>
+    <div class="relative">
+      <Guilloche
+        size={280}
+        class="text-brand pointer-events-none absolute -top-14 -right-14 hidden opacity-[0.10] sm:block"
+      />
+
+      <p class="engraved-fine text-ink-mute relative">Derivation</p>
+
+      <h1 class="relative mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+        What a coast number is, and what it is not
+      </h1>
+
+      <p class="text-ink-soft relative mt-4 text-lg">
+        It is one division. Passing it means further saving becomes optional — not that
+        working does, which is the misreading that makes the idea sound better than it is.
+      </p>
+    </div>
+
+    <NoteFrame class="mt-8" corners={false}>
+      <p class="engraved text-ink-mute text-xs">The short version</p>
+      <p class="text-ink-soft mt-2 text-sm">
+        <span class="numeric"
+          >coast number = target ÷ (1 + real return)<sup>years</sup></span
+        >. For a <strong class="text-ink">$1,000,000</strong> target thirty years out at a 5%
+        real return, that is <strong class="text-ink">$231,377.45</strong>. It is
+        exquisitely sensitive to the rate you assume: at 3% the same target needs
+        <strong class="text-ink">$411,986.76</strong>, more than three times the 7%
+        figure.
+      </p>
+    </NoteFrame>
+
+    <section class="prose-like text-ink-soft mt-12 space-y-4">
+      <h2 class="text-ink section-head">The arithmetic</h2>
+
+      <p>
+        A coast number answers a narrow question: how much has to be invested{' '}
+        <em>today</em> for compounding alone to carry it to a target by a chosen date? It is
+        the compound interest formula rearranged — the present value of a future amount.
+      </p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        future value = present × (1 + r)<sup>n</sup>
+        <br />
+        so present = future ÷ (1 + r)<sup>n</sup>
+      </p>
+
+      <p>
+        That is the entire calculation. For a $1,000,000 target at a 5% real return:{' '}
+        <span class="numeric">1,000,000 ÷ 1.05<sup>30</sup> = $231,377.45</span>. You can
+        check it in a spreadsheet in ten seconds with{' '}
+        <code class="numeric">=1000000/1.05^30</code>, which is exactly what our{' '}
+        <a class="text-brand underline" href="/verify">verification page</a> asks readers to
+        do.
+      </p>
+
+      <h2 class="text-ink section-head">How fast it falls with time</h2>
+
+      <p>
+        The denominator is raised to the number of years, so the figure decays
+        geometrically. This is the part worth internalising:
+      </p>
+    </section>
+
+    <div class="not-prose mt-4 overflow-x-auto">
+      <table class="border-line w-full border-collapse border text-sm">
+        <thead>
+          <tr class="bg-sunken">
+            <th class="border-line border p-2 text-left">Years to retirement</th>
+            <th class="border-line border p-2 text-right">Needed today at 5% real</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            BY_YEARS.map((row) => (
+              <tr class={row.years === 30 ? 'bg-brand-soft' : ''}>
+                <td class="border-line border p-2">
+                  {row.years === 0 ? 'Today (no growth left)' : `${row.years} years`}
+                </td>
+                <td class="numeric border-line border p-2 text-right">
+                  {money(row.amount)}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <section class="prose-like text-ink-soft mt-6 space-y-4">
+      <p>
+        Forty years out, <strong class="text-ink">$142,045.68</strong> reaches a million. Ten
+        years out it takes <strong class="text-ink">$613,913.25</strong> — more than four times
+        as much for a quarter of the time. Compounding does the work, and it does most of it
+        early, which is why the same target feels trivial at 25 and punishing at 55.
+      </p>
+
+      <h2 class="text-ink section-head">How much the return assumption moves it</h2>
+
+      <p>
+        Here is the weakness, stated plainly rather than buried. The same $1,000,000
+        target, the same thirty years, different assumed real returns:
+      </p>
+    </section>
+
+    <div class="not-prose mt-4 overflow-x-auto">
+      <table class="border-line w-full border-collapse border text-sm">
+        <thead>
+          <tr class="bg-sunken">
+            <th class="border-line border p-2 text-left">Assumed real return</th>
+            <th class="border-line border p-2 text-right">Coast number</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            BY_RETURN.map((row) => (
+              <tr class={row.rate === 5 ? 'bg-brand-soft' : ''}>
+                <td class="border-line border p-2">{row.rate}%</td>
+                <td class="numeric border-line border p-2 text-right">
+                  {money(row.amount)}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <section class="prose-like text-ink-soft mt-6 space-y-4">
+      <p>
+        <strong class="text-ink">$131,367.12 at 7%. $411,986.76 at 3%.</strong> The pessimistic
+        assumption needs more than three times the capital of the optimistic one, for the same
+        target and the same horizon. A coast number is not a fact about your finances; it is
+        a fact about your assumption, and it inherits all of that assumption's uncertainty.
+      </p>
+
+      <p>
+        This is why the return field on our calculator is editable and why it asks for a{
+          ' '
+        }
+        <em>real</em> return. If you enter a nominal 8% while thinking about spending in today's
+        prices, the number you get back is optimistic twice over — once for the rate and once
+        for the inflation you forgot to remove. That distinction is worked through in{' '}
+        <a class="text-brand underline" href="/monthly-return-rate"
+          >why a 7% return is not 0.583% a month</a
+        >.
+      </p>
+
+      <h2 class="text-ink section-head">What passing it does not mean</h2>
+
+      <p>
+        <strong class="text-ink">It does not mean you can stop working.</strong> It means you
+        can stop <em>adding to the investments</em>. Rent, food, insurance and every other
+        cost between now and retirement still has to come from somewhere, and for almost
+        everyone that somewhere is income. Coast FIRE is a statement about contributions,
+        and it is routinely quoted as though it were a statement about employment.
+      </p>
+
+      <p>
+        <strong class="text-ink">It does not mean the target is right.</strong> The target itself
+        usually comes from a withdrawal rate applied to expected spending, and both of those
+        are guesses about a life you have not lived yet.{' '}
+        <a class="text-brand underline" href="/withdrawal-rate"
+          >Where the 4% rule comes from</a
+        > covers how much weight that conversion can actually bear.
+      </p>
+
+      <p>
+        <strong class="text-ink">It does not account for the order of returns.</strong> A coast
+        number is a single discount at a constant rate. Real returns arrive unevenly, and the
+        order matters: the same ten annual returns in opposite orders can leave a drawdown portfolio
+        <strong class="text-ink">$262,120.48</strong> apart. A smooth curve cannot show that,
+        and its confidence is a property of the arithmetic rather than of markets.
+      </p>
+
+      <p>
+        <strong class="text-ink">It does not include tax, fees or a pension.</strong>{' '}
+        Platform and fund charges reduce your real return, so they should be subtracted from
+        the rate you enter. State or workplace pensions arriving later reduce what the pot must
+        cover, which the model does not know about. Both move the honest answer, in opposite
+        directions.
+      </p>
+
+      <h2 class="text-ink section-head">Why it is still worth computing</h2>
+
+      <p>
+        Because it is the rare retirement number that depends on very few guesses. A full
+        retirement projection needs assumptions about future income, future saving rates,
+        career length, spending changes and market returns. A coast number needs three
+        inputs and one division.
+      </p>
+
+      <p>
+        That makes it useful for the thing it is actually good at: comparing scenarios
+        against each other. Whether an extra five years of contributions matters, what
+        happens if you assume 4% instead of 6%, how much the target moves if spending
+        drops by $5,000 a year. All of those are answerable, and all of them are more
+        honest questions than "when can I retire".
+      </p>
+
+      <p>
+        Our{' '}
+        <a class="text-brand underline" href="/finance/coast-fire-calculator"
+          >Coast FIRE calculator</a
+        > computes it year by year, shows the projection against the target, and exports the
+        table. Every figure on this page is reproducible with a pocket calculator, which is
+        the only reason to believe any of it.
+      </p>
+    </section>
+
+    <Rule class="mt-12" />
+
+    <section class="mt-10" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="section-head">Common questions</h2>
+      <dl class="mt-4 grid gap-x-8 gap-y-5 lg:grid-cols-2">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="section-head">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          Every figure here is <span class="numeric">target ÷ (1 + r)<sup>n</sup></span> on
+          a $1,000,000 target. The 30-year, 5% row — $231,377.45 — is the same figure the{
+            ' '
+          }
+          <a class="text-brand underline" href="/verify">verification page</a> asks readers
+          to reproduce with <code class="numeric">=1000000/1.05^30</code>, and the same
+          one our calculator returns.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper explains
+        how a calculation works and shows its working. It does not know your circumstances,
+        and nothing here recommends a return assumption, a savings target or a retirement date.
+        Nothing here is financial, tax or investment advice.
+      </p>
+    </aside>
+
+    <nav class="no-print mt-14" aria-label="Related">
+      <h2 class="section-head">Related</h2>
+      <ul class="text-ink-soft mt-3 space-y-1 text-sm">
+        <li>
+          <a class="text-brand underline" href="/finance/coast-fire-calculator"
+            >Coast FIRE calculator</a
+          > — computes this year by year, with the full projection.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/withdrawal-rate"
+            >Where the 4% rule comes from</a
+          > — how the target itself is derived, and what that rests on.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/verify">Check our arithmetic</a> — reproduce
+          $231,377.45 in a spreadsheet.
+        </li>
+      </ul>
+    </nav>
+  </article>
+</BaseLayout>

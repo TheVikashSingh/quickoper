@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-08, after PR #18.
+**Updated:** 2026-08-08, after PR #28.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -21,7 +21,7 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **No.** Nothing is deployed. The domain does not resolve to this site. |
-| Pages built | 14 (13 substantive — `/404` is not) |
+| Pages built | 16 (15 substantive — `/404` is not) |
 | Working calculators | 3 |
 | Tests | 136 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data |
@@ -38,18 +38,30 @@ changes the answer to "what exists" or "what is next".
   Debt entry, chart, full schedule, CSV, printable PDF, shareable URL.
 - `/finance/coast-fire-calculator` — coast number, year-by-year projection,
   three-series chart, CSV, printable PDF, shareable URL.
+- `/finance/mortgage-overpayment-calculator` — what an extra monthly payment
+  removes, baseline vs overpaid chart, full schedule, CSV, printable PDF,
+  shareable URL. Payment anchored to calculator.net's published figure (D39).
 
-Both complete under rule 8, and both carry an optional name for the printed
+Plus **`QuickCost`** on the homepage — a three-input teaser using the real debt
+engine, handing off to the full tool with the figures pre-filled (D34). It is
+the only reason the homepage ships JavaScript.
+
+All three complete under rule 8, and all carry an optional name for the printed
 report (local-only — never in the URL, never persisted).
 
 **Content and trust**
 
-`/` · `/finance` (cluster hub) · `/methodology` · `/verify` ·
-`/credit-card-interest` · `/monthly-return-rate` · `/about` ·
+`/` · `/finance` (cluster hub) · `/methodology` · `/verify` · `/about` ·
 `/privacy` · `/terms` · `/contact` · `/404`
 
-**Engines** (`src/lib/calc/`) — `money.ts`, `debt-payoff.ts`, `coast-fire.ts`.
-Pure, no DOM, no framework. Fixtures anchored to published figures (D7).
+**Derivations** — four pages, each tied to a tool that exists and each carrying
+figures computed here rather than transcribed:
+`/credit-card-interest` · `/monthly-return-rate` · `/withdrawal-rate` ·
+`/coast-number`
+
+**Engines** (`src/lib/calc/`) — `money.ts`, `debt-payoff.ts`, `coast-fire.ts`,
+`mortgage.ts`. Pure, no DOM, no framework. Fixtures anchored to published
+figures (D7) — the mortgage engine to calculator.net's own output, to the cent.
 
 **Shared UI** — `LineChart.tsx` (hand-rolled reactive SVG), `ScheduleTable.tsx`,
 `lib/csv.ts`, `lib/params.ts`, `lib/url-state.ts`.
@@ -112,31 +124,44 @@ Nothing in code depends on these, but launch does.
 
 ## Next
 
-Ordered. Nothing monetises until AdSense clears, and that needs 15 substantive
-pages.
-The build produces 14 pages, of which 13 are substantive.
-Two more needed. Content pages ship 0.53KB and need no budget work at all.
+**The content threshold is met.**
+The build produces 16 pages, of which 15 are substantive.
+None more needed for AdSense. Every remaining blocker is on the
+operator, not in the code — see the section above. **Nothing in this list is
+worth doing before the domain resolves**, because indexing lag gates everything
+downstream and that clock has not started.
 
-1. **Two more content pages**, each a derivation tied to a tool that already
-   exists, not filler to hit a threshold:
-   - where the 4% rule comes from (Bengen 1994, Trinity 1998) and what it does
-     not say
-   - what a coast number is and is not
+1. **Launch.** Mailbox, then DNS (`docs/DNS.md`), then Search Console and the
+   sitemap. This is the whole critical path and it is entirely operator work.
+2. **Export Search Console data** once there is any, to `.gsc/` (gitignored),
+   and tell the next session. **This is the first point in the project where
+   keyword decisions stop being guesswork.** Every topic so far was chosen by
+   what is provable from first principles (D2), not by what anybody searches —
+   defensible, but not the same thing as targeting. Queries at position 8–20 are
+   where a content edit realistically moves the needle.
+3. **AdSense application**, once indexed with impressions registering.
+4. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression, and D29,
+   D30 and D33 each measured by hand again — four defects that every gate passed.
+   Needs Playwright and a headless run, and it **must** resolve colours through a
+   canvas: `getComputedStyle` returns `oklch()` in Chrome, and parsing those
+   three numbers as RGB silently reports 1.29:1 for every element on the page.
+5. **Affiliate plumbing** (`/go/*`) before there is anything to put in it. This
+   is where the vertical actually earns; AdSense at achievable traffic is a
+   legitimacy checkbox more than a revenue line.
+6. **One 1200×630 PNG at `public/og.png`**, then flip `twitter:card` back to
+   `summary_large_image` (D31).
 
-   A third candidate — why a payoff date differs from the one on a statement —
-   is **blocked on verification**: the existing debt-payoff FAQ claims Reg Z
-   Appendix M1 "permits a margin of error of two months", and that claim has
-   never been checked against the regulation. Verify it before writing a page
-   on it, and correct the FAQ if it is wrong.
+**Blocked, not forgotten:** a content page on why a payoff date differs from a
+statement. The existing debt-payoff FAQ claims Reg Z Appendix M1 "permits a
+margin of error of two months" — that claim predates this session's work and
+**has never been checked against the regulation**. Verify it before building a
+page on it, and correct the FAQ if it is wrong. On a site whose entire argument
+is checkability, an unverified regulatory claim is the worst kind of debt.
 
-   Each needs the thing CLAUDE.md demands and a model cannot fake: a worked
-   example with real numbers, or a documented comparison against a named
-   competitor.
-3. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression and D29
-   measured by hand again. Needs Playwright and a headless run — and it must
-   resolve colours through a canvas, because `getComputedStyle` returns
-   `oklch()` and parsing those three numbers as RGB silently reports nonsense.
-4. **Affiliate plumbing** (`/go/*`) before there is anything to put in it.
+**Tools 4 and 5 are unassigned.** Three calculators exist. The original plan's
+tool #5 (equity comp) was killed by rule B — neither operator nor agent can
+verify its output. Any candidate must pass the same test: can someone with
+high-school mathematics check our figure against a published third-party result?
 
 ---
 
@@ -144,7 +169,7 @@ Two more needed. Content pages ship 0.53KB and need no budget work at all.
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **13** — two to go |
+| 15+ substantive pages | **15** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |
@@ -195,9 +220,51 @@ downstream, and that clock does not start until the domain resolves.
 - Branch protection is server-side with `enforce_admins: true`, so it binds the
   operator's account too — which is the point, since the agent authenticates
   with the operator's token.
-- **Always sync `main` before branching.** PRs are squash-merged, so a branch cut
-  from a previous feature branch diverges and conflicts. This has happened once
-  (PR #6).
-- **Verify in a browser, not only by the gates.** Several real defects — a wrong
-  chart axis, a dead null-coalesce, a contrast failure, 49 missing spaces —
-  passed every automated check and were found by looking at the rendered page.
+- **Always sync `main` before branching**, with `git checkout -b name origin/main`.
+  PRs are squash-merged, so a branch cut from a previous feature branch carries a
+  duplicate pre-squash commit and diverges. This has now happened **three times**
+  (PRs #6, #23, #26). It is the single most repeated mistake in this project's
+  history. The recovery is: re-cut from `origin/main`, cherry-pick your own
+  commit, open a fresh PR, close the old one — never force-push.
+- **Verify in a browser, not only by the gates.** Real defects that passed every
+  automated check and were found only by looking: a wrong chart axis, a dead
+  null-coalesce, four separate contrast failures, 49 missing spaces, slot
+  paragraphs sitting flush, and a strategy toggle that was clickable and inert.
+- **Do not prefix shell commands with `cd … &&`.** It makes every call a compound
+  command that no permission pattern matches, so it prompts the operator every
+  time. Use `git -C <path>` and `npm --prefix <path>`. Settings in
+  `.claude/settings.json` are read at session start, so editing them mid-session
+  changes nothing until a restart.
+- **Do not write long `node -e "…"` one-liners.** Bash ate the quoting three
+  times in one session — an apostrophe inside a template literal, a `$` read as a
+  variable, and a backtick executed as a command substitution that injected a
+  gate's own output into a documentation file. Write the script to a file, or use
+  the file-edit tools.
+
+---
+
+## Handoff notes for a new session
+
+Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
+file. That is the whole context; the git history and PR bodies carry the detail.
+
+**Where the project actually is.** Feature-complete for v1 content: three
+calculators, four derivation pages, five trust pages, 15 substantive pages, 153
+tests, eight CI gates. Nothing is deployed. The domain does not resolve.
+
+**What the next session should not do.** Not build tools 4 and 5 — they are
+unassigned and any candidate must pass rule B first. Not write more content — the
+threshold is met and further pages have no near-term purpose until Search Console
+says which queries are landing. Not raise the JS budget again; 19.5KB has 1.32KB
+of headroom and the next honest fix is structural (D10).
+
+**What it should do.** Help the operator through launch, in this order: the
+`hello@` mailbox, then the DNS migration in `docs/DNS.md` — export the Hostinger
+zone first, recreate every mail record in Cloudflare *before* switching
+nameservers, and treat send-and-receive as a gate rather than a step. Then Search
+Console and the sitemap.
+
+**The one honest caveat to carry forward.** Every topic on this site was chosen by
+what can be proved from first principles, not by search demand. That is
+defensible and it is not the same as keyword targeting. Until Search Console data
+exists, any claim about what will rank is inference.

@@ -1,0 +1,415 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Guilloche from '../components/ornament/Guilloche.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
+import Rule from '../components/ornament/Rule.astro';
+import { SITE } from '../lib/site';
+import { sourceRef } from '../lib/schema';
+
+const LAST_VERIFIED = '2026-08-08';
+
+const SOURCES = [
+  {
+    label: 'Bengen, W. (1994) — Determining Withdrawal Rates Using Historical Data',
+    url: 'https://www.financialplanningassociation.org/article/journal/JAN18-40-years-safe-withdrawal-rates',
+    retrieved: '2026-08-08',
+  },
+  {
+    label: 'Trinity Study (Cooley, Hubbard & Walz, 1998) — Retirement Savings',
+    url: 'https://www.aaii.com/journal/198802/feature.pdf',
+    retrieved: '2026-08-08',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * Every figure is 1/rate arithmetic on $40,000 of annual spending, or the
+ * sequence-of-returns simulation below. Nothing is transcribed from either
+ * paper: the papers are cited for what they studied, not for numbers we could
+ * not check ourselves.
+ */
+const RATES = [
+  { rate: 5, multiple: 20.0, target: 800_000 },
+  { rate: 4.5, multiple: 22.22, target: 888_888.89 },
+  { rate: 4, multiple: 25.0, target: 1_000_000 },
+  { rate: 3.5, multiple: 28.57, target: 1_142_857.14 },
+  { rate: 3, multiple: 33.33, target: 1_333_333.33 },
+  { rate: 2.5, multiple: 40.0, target: 1_600_000 },
+];
+
+const FAQ = [
+  {
+    q: 'What is the 4% rule?',
+    a: 'A research finding, not a law. Bengen (1994) tested historical US market data and found that withdrawing 4% of a portfolio in the first year of retirement, then adjusting that amount for inflation each year, survived a 30-year retirement even in the worst historical starting years he examined. The Trinity Study (1998) tested success rates across a range of portfolio mixes and withdrawal rates and reached broadly similar territory.',
+  },
+  {
+    q: 'How do I turn a withdrawal rate into a savings target?',
+    a: 'Divide 100 by the rate to get the multiple of annual spending. At 4% that is 25 times; at 3.5% it is 28.57 times; at 3% it is 33.33 times. For $40,000 of annual spending: $1,000,000, $1,142,857.14 and $1,333,333.33 respectively.',
+  },
+  {
+    q: 'Why does dropping from 4% to 3% raise the target so much?',
+    a: 'Because the multiple is 1 ÷ rate, which is a hyperbola, not a line. Going from 4% to 3% adds 8.33 times your annual spending to the target — a 33.3% increase in capital for a one-point change in the rate. The same one-point move from 5% to 4% adds only 5 times. Small changes at the low end are expensive.',
+  },
+  {
+    q: 'Does the 4% rule work for a retirement longer than 30 years?',
+    a: 'It was not tested for one. Bengen studied 30-year windows. A 45-year retirement is a different question with more chances to encounter a bad sequence, and the research does not answer it. Anyone quoting 4% for an early retirement is extending a finding past the horizon it was measured over.',
+  },
+  {
+    q: 'What is sequence-of-returns risk?',
+    a: 'The order returns arrive in changes the outcome, even when the average is identical. Two portfolios drawing $40,000 a year from $1,000,000, given exactly the same ten annual returns in opposite orders — a 10% arithmetic mean either way — end $262,120.48 apart. A constant-rate projection cannot show this, which is the single biggest thing it hides.',
+  },
+  {
+    q: 'Does QuickOper recommend a withdrawal rate?',
+    a: 'No. The Coast FIRE calculator takes the rate as your input, uses it to convert spending into a target, and shows the arithmetic. Which rate is appropriate depends on your horizon, your portfolio, your tax position and your tolerance for running out — none of which a calculator knows.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Where the 4% rule comes from, and what it does not say',
+    url: `${SITE.url}/withdrawal-rate`,
+    description:
+      'A withdrawal rate converts spending into a savings target by dividing 100 by the rate. Where the 4% figure came from, why 3% costs 33% more capital, and the sequence risk a constant rate hides.',
+    author: { '@id': `${SITE.url}/about#person` },
+    publisher: { '@id': `${SITE.url}#organization` },
+    dateModified: LAST_VERIFIED,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Withdrawal rates',
+        item: `${SITE.url}/withdrawal-rate`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+
+const money = (n: number) =>
+  `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+---
+
+<BaseLayout
+  title="Where the 4% rule comes from, and what it does not say | QuickOper"
+  description="A withdrawal rate converts spending into a target by dividing 100 by the rate: 4% is 25×, 3% is 33.33×. Where the figure came from, why one point costs 33% more capital, and the sequence risk it hides."
+  structuredData={structuredData}
+>
+  <article>
+    <div class="relative">
+      <Guilloche
+        size={280}
+        class="text-brand pointer-events-none absolute -top-14 -right-14 hidden opacity-[0.10] sm:block"
+      />
+
+      <p class="engraved-fine text-ink-mute relative">Derivation</p>
+
+      <h1 class="relative mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Where the 4% rule comes from, and what it does not say
+      </h1>
+
+      <p class="text-ink-soft relative mt-4 text-lg">
+        It is a research finding about 30-year windows in US market history — not a law,
+        and not a promise. The arithmetic it implies is exact. What it was measured over
+        is narrower than almost anyone quoting it says.
+      </p>
+    </div>
+
+    <NoteFrame class="mt-8" corners={false}>
+      <p class="engraved text-ink-mute text-xs">The short version</p>
+      <p class="text-ink-soft mt-2 text-sm">
+        A withdrawal rate turns spending into a target by dividing 100 by the rate. 4% is{
+          ' '
+        }
+        <strong class="text-ink">25×</strong> annual spending; 3% is{' '}
+        <strong class="text-ink">33.33×</strong>. That one-point difference is{' '}
+        <strong class="text-ink">33.3% more capital</strong>. The rule was tested over 30
+        years of US history, on specific portfolios, before fees and tax — and it cannot
+        express the risk that returns arrive in a bad order.
+      </p>
+    </NoteFrame>
+
+    <section class="prose-like text-ink-soft mt-12 space-y-4">
+      <h2 class="text-ink section-head">The arithmetic is the easy part</h2>
+
+      <p>
+        A withdrawal rate does one job: it converts a spending figure into a pot. If you
+        intend to draw 4% of the pot in your first year, then the pot has to be 25 times
+        that first year's spending, because 1 ÷ 0.04 = 25. That is the whole conversion.
+      </p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        multiple = 1 ÷ withdrawal rate
+        <br />
+        target = annual spending × multiple
+      </p>
+
+      <p>On $40,000 of annual spending:</p>
+    </section>
+
+    <div class="not-prose mt-4 overflow-x-auto">
+      <table class="border-line w-full border-collapse border text-sm">
+        <thead>
+          <tr class="bg-sunken">
+            <th class="border-line border p-2 text-left">Withdrawal rate</th>
+            <th class="border-line border p-2 text-right">Multiple of spending</th>
+            <th class="border-line border p-2 text-right">Target</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            RATES.map((row) => (
+              <tr class={row.rate === 4 ? 'bg-brand-soft' : ''}>
+                <td class="border-line border p-2">{row.rate}%</td>
+                <td class="numeric border-line border p-2 text-right">
+                  {row.multiple.toFixed(2)}×
+                </td>
+                <td class="numeric border-line border p-2 text-right">
+                  {money(row.target)}
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <section class="prose-like text-ink-soft mt-6 space-y-4">
+      <p>
+        Notice the shape. The multiple is <span class="numeric">1 ÷ rate</span>, which is
+        a hyperbola — so the cost of lowering the rate accelerates. Moving from 5% to 4%
+        adds 5× your spending to the target. Moving from 4% to 3% adds{' '}
+        <strong class="text-ink">8.33×</strong>, which on $40,000 of spending is
+        <strong class="text-ink">$333,333.33</strong> more capital for the same one percentage
+        point. Caution is not linearly priced.
+      </p>
+
+      <h2 class="text-ink section-head">Where the 4% figure came from</h2>
+
+      <p>
+        In 1994 William Bengen published <em
+          >Determining Withdrawal Rates Using Historical Data</em
+        > in the Journal of Financial Planning. He took historical US market data and asked
+        a specific question: if a retiree withdraws a fixed percentage in year one and then
+        increases that dollar amount by inflation every year after, what is the highest starting
+        percentage that would have survived a{' '}
+        <strong class="text-ink">30-year</strong> retirement beginning in any historical year
+        he tested? The answer landed near 4%.
+      </p>
+
+      <p>
+        The Trinity Study — Cooley, Hubbard and Walz, 1998 — approached it from another
+        direction, reporting success rates across a range of stock and bond mixes,
+        withdrawal rates and horizons. Between them these two papers are why a number
+        picked from mid-century American market history became a global rule of thumb.
+      </p>
+
+      <p>
+        Both are serious pieces of work. Neither claims what the phrase "the 4% rule"
+        implies.
+      </p>
+
+      <h2 class="text-ink section-head">What it does not say</h2>
+
+      <p>
+        <strong class="text-ink"
+          >It does not say 4% is safe for any retirement length.</strong
+        >{' '}
+        The window studied was thirty years. A retirement beginning at 45 might run fifty, which
+        is a different question with more opportunities to meet a bad sequence. Quoting 4% for
+        an early retirement extends a finding past the horizon it was measured over.
+      </p>
+
+      <p>
+        <strong class="text-ink">It does not say anything about your market.</strong> The data
+        is US, and covers a period in which US equities did unusually well relative to most
+        of the world. A rule calibrated on the best-performing large market of the twentieth
+        century is not obviously portable.
+      </p>
+
+      <p>
+        <strong class="text-ink">It does not include fees or tax.</strong> Platform charges,
+        fund fees and tax on withdrawals all come out of the same pot and none of them is in
+        the model. A 0.5% annual fee against a 4% withdrawal is an eighth of the income.
+      </p>
+
+      <p>
+        <strong class="text-ink">It does not describe how anyone actually spends.</strong
+        >{' '}
+        The model draws a constant inflation-adjusted amount for thirty years regardless of
+        what markets do. Real retirees cut back in bad years, which is both obvious and the
+        reason the historical failure rates are pessimistic in one direction and the rigid-spending
+        assumption is unrealistic in the other.
+      </p>
+
+      <h2 class="text-ink section-head">The risk a constant rate cannot express</h2>
+
+      <p>
+        This is the important one, and it is demonstrable rather than arguable. Take
+        <strong class="text-ink">$1,000,000</strong>, withdraw
+        <strong class="text-ink">$40,000</strong> at the start of each year, and apply ten annual
+        returns. Now apply <em>exactly the same ten returns in the reverse order</em>.
+      </p>
+
+      <p>
+        The arithmetic mean is <strong class="text-ink">10%</strong> either way. The same numbers.
+        Only the order differs:
+      </p>
+
+      <div class="not-prose overflow-x-auto">
+        <table class="border-line w-full border-collapse border text-sm">
+          <thead>
+            <tr class="bg-sunken">
+              <th class="border-line border p-2 text-left">Order</th>
+              <th class="border-line border p-2 text-right">After ten years</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border-line border p-2">Bad years first (−15%, −10%, …)</td>
+              <td class="numeric border-line text-caution border p-2 text-right">
+                $1,573,834.11
+              </td>
+            </tr>
+            <tr>
+              <td class="border-line border p-2">Good years first (+25%, +15%, …)</td>
+              <td class="numeric border-line text-positive border p-2 text-right">
+                $1,835,954.59
+              </td>
+            </tr>
+            <tr>
+              <td class="border-line border p-2 font-semibold">Difference</td>
+              <td class="numeric border-line border p-2 text-right font-semibold">
+                $262,120.48
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="mt-4">
+        <strong class="text-ink">$262,120.48 of difference from ordering alone.</strong>{
+          ' '
+        }
+        The reason is that a withdrawal taken during a downturn sells more units to raise the
+        same cash, and those units are not there to recover. Losses early in a drawdown do permanent
+        damage; the same losses later do far less.
+      </p>
+
+      <p>
+        This is <strong class="text-ink">sequence-of-returns risk</strong>, and no
+        constant-rate projection can show it — including ours. A smooth curve at 5% a year
+        is a way to compare scenarios against each other. It is not a forecast, and its
+        confidence is an artefact of the arithmetic rather than a property of markets.
+      </p>
+
+      <h2 class="text-ink section-head">How we use the rate</h2>
+
+      <p>
+        Our{' '}
+        <a class="text-brand underline" href="/finance/coast-fire-calculator"
+          >Coast FIRE calculator</a
+        > takes the withdrawal rate as <em>your input</em>, not our recommendation. It
+        uses it for exactly the conversion at the top of this page — spending into a
+        target — and then discounts that target back to today. It defaults to 4% because
+        that is the convention a reader will recognise, and the field is editable because
+        the convention is contested.
+      </p>
+
+      <p>
+        Every figure on this page can be reproduced with a calculator, and the{' '}
+        <a class="text-brand underline" href="/verify">verification page</a> shows how we check
+        the ones the tool produces.
+      </p>
+    </section>
+
+    <Rule class="mt-12" />
+
+    <section class="mt-10" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="section-head">Common questions</h2>
+      <dl class="mt-4 grid gap-x-8 gap-y-5 lg:grid-cols-2">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="section-head">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          The papers are cited for <em>what they studied</em>. Every number on this page
+          is computed here — the multiples from 1 ÷ rate, and the sequence comparison from
+          ten annual returns applied in both orders to a $1,000,000 portfolio drawing
+          $40,000 a year. No figure is transcribed from either study.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper explains
+        how a calculation works and shows its working. Nothing here recommends a withdrawal
+        rate, a portfolio or a retirement date, and nothing here is financial, tax or investment
+        advice. Past market history is not a prediction.
+      </p>
+    </aside>
+
+    <nav class="no-print mt-14" aria-label="Related">
+      <h2 class="section-head">Related</h2>
+      <ul class="text-ink-soft mt-3 space-y-1 text-sm">
+        <li>
+          <a class="text-brand underline" href="/coast-number">What a coast number is</a> —
+          and what it is not.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/finance/coast-fire-calculator"
+            >Coast FIRE calculator</a
+          > — the rate is your input.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/monthly-return-rate"
+            >Why a 7% return is not 0.583% a month</a
+          > — the conversion most projections get wrong.
+        </li>
+      </ul>
+    </nav>
+  </article>
+</BaseLayout>

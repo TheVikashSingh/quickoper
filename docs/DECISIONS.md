@@ -642,6 +642,43 @@ Four assertions in the fixture were corrected **from measured failures**, using
 D7's technique — write the guess, read the truth off the failure, assert that.
 Every one is exact; no tolerances.
 
+### D40 — The last two derivations, and citing a paper without quoting it
+
+`/withdrawal-rate` and `/coast-number` complete the Coast FIRE cluster and take
+the site to **15 substantive pages — the AdSense threshold, met.**
+
+**The rule followed on citation, and it is worth stating as policy.** Both pages
+cite Bengen (1994) and the Trinity Study (1998), and **neither quotes a number
+from either paper.** The papers are cited for *what they studied*; every figure
+on the pages is computed here from stated inputs. That is the only honest way to
+reference research this project cannot independently reproduce, and it is what
+"never invent a figure" means in practice when a source exists but is not to
+hand: cite the study for its scope, derive the arithmetic yourself.
+
+**The strongest thing on either page is a demonstration, not a claim.** Applying
+the same ten annual returns in opposite orders to a $1,000,000 portfolio drawing
+$40,000 a year:
+
+| Order | After ten years |
+|---|---|
+| Bad years first | $1,573,834.11 |
+| Good years first | $1,835,954.59 |
+| **Difference** | **$262,120.48** |
+
+Identical multiset, identical 10% arithmetic mean, **$262,120.48 apart.** That is
+sequence-of-returns risk made concrete, it is fully derivable, and it indicts our
+own Coast FIRE projection — which is a constant-rate model and therefore cannot
+express it. Both pages say so.
+
+Both also state the **coast number's real weakness** rather than burying it: the
+same $1,000,000 target thirty years out needs $131,367.12 at 7% and $411,986.76
+at 3%. More than three times the capital, from the assumption alone. A page that
+only flattered the tool would not be worth citing.
+
+The 30-year, 5% figure — **$231,377.45** — is deliberately the same one `/verify`
+asks readers to reproduce with `=1000000/1.05^30` and the same one the calculator
+returns. Three surfaces, one number, by construction.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
