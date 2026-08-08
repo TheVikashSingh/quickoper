@@ -679,6 +679,37 @@ The 30-year, 5% figure — **$231,377.45** — is deliberately the same one `/ve
 asks readers to reproduce with `=1000000/1.05^30` and the same one the calculator
 returns. Three surfaces, one number, by construction.
 
+### D41 — The mortgage calculator shipped orphaned, and now orphans fail the build
+
+`/finance/mortgage-overpayment-calculator` merged in PR #27 linked from
+**nothing**. Not the homepage, not the `/finance` hub, not the navigation. It was
+in the sitemap and reachable by typing the URL, and that was the entire route to
+it. The operator counted the tools on the landing page, got two, and asked where
+the third was. He was right and every gate was green.
+
+**Why nothing caught it.** `check-links.mjs` asked *"does every link resolve"* and
+never *"is every page linked"*. Those are different questions, and only the
+second finds a page nobody can reach. Seventh time a real defect surfaced because
+a check was asked a question it had not been asked before (D18, D26, D31).
+
+**Why it is expensive, not untidy.** Three separate harms: a visitor cannot find
+the tool at all; the page accumulates almost no internal link equity so it will
+not rank whatever its quality; and "every page reachable within two clicks" is an
+explicit AdSense criterion. A tool that took a whole session to build and verify
+was, in traffic terms, not shipped.
+
+`check-links.mjs` now collects every internal `href` across the build and fails
+on any page absent from that set. `/404` is exempt — it is reached by failing,
+not by linking. Proven by stripping the inbound links from the built HTML: exit
+1 naming the route, exit 0 restored.
+
+**Also in this pass, at the operator's request:** the homepage tool row is now
+solid dark buttons (`bg-masthead`, which is darker than the page in *both*
+themes) rather than outlined text. The border is `--color-brand` rather than
+`--color-masthead-line`, because in the dark theme a dark border on a dark page
+is the same invisible-boundary failure D30 fixed for the masthead — brand
+inverts with the theme and stays crisp against both.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

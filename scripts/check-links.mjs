@@ -152,6 +152,53 @@ if (contradictions.length > 0) {
   process.exit(1);
 }
 
+// ── Orphans ──────────────────────────────────────────────────────────────────
+//
+// The mortgage overpayment calculator shipped linked from NOTHING. It was in
+// the sitemap and reachable by typing the URL, and that was all: not on the
+// homepage, not on the /finance hub, not in the navigation. The operator
+// counted the tools on the landing page, got two, and asked where the third
+// was. He was right.
+//
+// Nothing failed, because this file only asked "does every link resolve" —
+// never "is every page linked". Those are different questions and only the
+// second one catches a page nobody can find.
+//
+// It matters three ways: a visitor cannot reach it, it accumulates almost no
+// internal link equity so it will not rank, and "every page reachable within
+// two clicks" is an explicit AdSense criterion.
+//
+// /404 is exempt — it is reached by failing, not by linking.
+
+const linkedTo = new Set();
+for (const page of pages) {
+  const html = await readFile(page, 'utf8');
+  for (const [, raw] of html.matchAll(HREF)) {
+    const pathname = (raw.split('#')[0] ?? '').split('?')[0] ?? '';
+    if (pathname !== '') linkedTo.add(pathname.replace(/\/$/, '') || '/');
+  }
+}
+
+const orphans = [];
+for (const page of pages) {
+  const route = ('/' + relative(DIST, page).split(sep).join('/'))
+    .replace(/index\.html$/, '')
+    .replace(/\/$/, '');
+  if (route === '' || page.endsWith('404.html')) continue;
+  if (!linkedTo.has(route)) orphans.push(route);
+}
+
+if (orphans.length > 0) {
+  console.error(
+    `FAIL: ${orphans.length} page(s) are in the build but linked from nowhere:\n`,
+  );
+  for (const route of orphans) console.error(`    ${route}`);
+  console.error('');
+  console.error('  A page nobody links to cannot be found, earns no internal link');
+  console.error('  equity, and breaks "every page reachable within two clicks".');
+  process.exit(1);
+}
+
 if (broken.length > 0) {
   console.error(`FAIL: ${broken.length} internal link(s) point at nothing:\n`);
   for (const link of broken)
