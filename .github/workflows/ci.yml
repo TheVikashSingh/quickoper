@@ -75,11 +75,13 @@ jobs:
       - name: Structured data
         run: npm run schema
 
-      # Cloudflare parses public/_headers at DEPLOY time, which is after CI. The
-      # first deploy this project attempted failed on an empty header value for
-      # an /embed/* route that has never existed. Green pipeline, failed release.
-      - name: Headers config
-        run: npm run headers
+      # Configuration Cloudflare reads that no other gate sees. _headers is
+      # parsed at DEPLOY time, after CI — the first deploy failed on an empty
+      # header value for an /embed/* route that never existed. And html_handling
+      # must agree with Astro's trailingSlash, or every page is a 307 whose
+      # canonical contradicts it, which is what the first deploy actually did.
+      - name: Deploy config
+        run: npm run deploy-config
 
   secret-scan:
     name: secret-scan

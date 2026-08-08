@@ -22,4 +22,4 @@
 #      that fails loudly at deploy time and silently the rest of the time.
 #
 # If an embeddable widget is built, its headers ship in the same pull request
-# as the route, and scripts/check-headers.mjs will require exactly that.
+# as the route, and scripts/check-deploy-config.mjs will require exactly that.

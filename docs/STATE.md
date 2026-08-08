@@ -82,10 +82,11 @@ invariant), `check-spacing.mjs` (missing spaces in rendered prose),
 `check-state.mjs` (the counts in this file match the build),
 `check-slots.mjs` (every prose slot an island declares reaches its page),
 `check-schema.mjs` (Organization + Person + WebSite on every page, breadcrumbs,
-WebApplication on tool pages), `check-headers.mjs` (`public/_headers` parses, and
-every rule matches a route the build produces — Cloudflare parses that file at
-deploy time, which is after CI, so an error there is a green pipeline and a
-failed release; D45).
+WebApplication on tool pages), `check-deploy-config.mjs` (the configuration
+Cloudflare reads that no other gate sees: `public/_headers` parses and every rule
+matches a real route (D45), and `wrangler.toml`'s `html_handling` agrees with
+Astro's `trailingSlash` (D46) — both are consumed at deploy or request time,
+which is after CI, so an error in either is a green pipeline and a broken site).
 
 Every gate has been deliberately broken once to prove it exits non-zero. A gate
 that has never failed is not a gate.
@@ -263,9 +264,10 @@ file. That is the whole context; the git history and PR bodies carry the detail.
 **Where the project actually is.** Feature-complete for v1 content: three
 calculators, four derivation pages, five trust pages, 15 substantive pages, 153
 tests, ten CI gates. The apex serves an unrelated earlier application from
-Vercel, which is retired as part of launch. The site itself deploys to Cloudflare
-Workers — the first attempt failed on `public/_headers` (D45), which is exactly
-what deploying before the DNS move is for.
+Vercel, which is retired as part of launch. **The site is live on Cloudflare
+Workers at `quickoper.quickoper.workers.dev`**, awaiting the DNS move. Deploying
+before touching DNS found two defects nothing else could have (D45, D46), which
+is exactly what that ordering is for.
 
 **What the next session should not do.** Not build tools 4 and 5 — they are
 unassigned and any candidate must pass rule B first. Not write more content — the

@@ -15,3 +15,18 @@ compatibility_date = "2026-08-07"
 directory = "./dist"
 # 404.html is served for unmatched paths; everything else is a static file.
 not_found_handling = "404-page"
+
+# MUST agree with `trailingSlash` in astro.config.mjs, which is 'never' (D46).
+#
+# Cloudflare's default is "auto-trailing-slash", which ADDS a trailing slash and
+# 307-redirects to it. Astro builds slash-less URLs, the sitemap lists slash-less
+# URLs, and every <link rel="canonical"> is slash-less — so on the default,
+# EVERY page on the site was a redirect: Google crawls /about from the sitemap,
+# gets a 307 to /about/, and lands on a page whose canonical says /about.
+#
+# "drop-trailing-slash" serves /about directly from about/index.html and
+# redirects /about/ to /about, which is what Astro's config already asserts.
+#
+# Enforced by scripts/check-deploy-config.mjs, because the two files that have to
+# agree here are read by two different tools and neither validates the other.
+html_handling = "drop-trailing-slash"
