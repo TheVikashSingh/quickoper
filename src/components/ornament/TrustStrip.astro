@@ -1,0 +1,60 @@
+---
+/**
+ * Three facts, on one line, immediately under the heading of a tool page.
+ *
+ * A visitor landing on a calculator from search has already decided they want a
+ * calculator — the bounce risk is not "what is this site", it is "can I trust
+ * this one". The homepage answers that below the fold with a computed curve;
+ * a tool page has to answer it in the space above the tool, without pushing the
+ * tool down.
+ *
+ * So: horizontal, one line on any screen wider than a phone, and every claim
+ * either structurally true or linked to the page that proves it. No adjectives.
+ * "Trusted" and "accurate" are what a site says when it cannot say anything
+ * checkable.
+ *
+ * `.astro`, zero JavaScript. The calculator pages have 0.52KB of budget spare
+ * and none of it is going on a badge.
+ */
+import Rosette from './Rosette.astro';
+
+interface Item {
+  readonly label: string;
+  readonly href?: string;
+}
+
+interface Props {
+  readonly items: readonly Item[];
+  readonly class?: string;
+}
+
+const { items, class: className = '' } = Astro.props;
+---
+
+<div
+  class={`border-line-strong bg-sunken rounded-panel flex flex-wrap items-center gap-x-3 gap-y-2 border px-3 py-2 ${className}`}
+>
+  <Rosette size={18} petals={12} class="text-brand hidden shrink-0 opacity-70 sm:block" />
+
+  {
+    items.map((item, index) => (
+      <>
+        {index > 0 && (
+          <span
+            class="bg-line-strong hidden h-3 w-px shrink-0 sm:block"
+            aria-hidden="true"
+          />
+        )}
+        <span class="text-ink-soft text-xs">
+          {item.href === undefined ? (
+            item.label
+          ) : (
+            <a class="text-brand underline" href={item.href}>
+              {item.label}
+            </a>
+          )}
+        </span>
+      </>
+    ))
+  }
+</div>
