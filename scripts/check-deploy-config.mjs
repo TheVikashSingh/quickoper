@@ -1,5 +1,17 @@
 #!/usr/bin/env node
 /**
+ * The configuration Cloudflare reads that CI otherwise never sees.
+ *
+ * Two things live here, and they share one property: both are consumed at
+ * DEPLOY time or by the CDN at request time, so neither can fail in a way any
+ * other gate would notice. Both have already shipped broken.
+ *
+ *   1. public/_headers — parses, and every rule matches a real route (D45).
+ *   2. wrangler.toml's html_handling agrees with astro.config.mjs's
+ *      trailingSlash (D46).
+ *
+ * ── 1. _headers ──────────────────────────────────────────────────────────────
+ *
  * Is public/_headers valid, and does every rule in it apply to a route that
  * actually exists?
  *
@@ -38,6 +50,22 @@
  *
  * WHAT IT DOES NOT CHECK: whether the header *values* are sensible. Whether
  * HSTS should be a year is a judgement call, not a fact derivable from dist/.
+ *
+ * ── 2. Trailing slashes ──────────────────────────────────────────────────────
+ *
+ * astro.config.mjs sets `trailingSlash: 'never'`. Every internal link, every
+ * sitemap <loc> and every <link rel="canonical"> is therefore slash-less.
+ *
+ * Cloudflare's DEFAULT html_handling is "auto-trailing-slash", which ADDS a
+ * slash and 307-redirects to it. On the first real deployment that made **every
+ * content page on the site a redirect** — Google crawls /about from the
+ * sitemap, receives a 307 to /about/, and arrives at a page whose canonical
+ * says /about. A contradictory signal on every URL, plus a wasted round trip on
+ * every internal click.
+ *
+ * Nothing could have caught it before a deploy: both files were individually
+ * correct, and no tool reads both. That is the whole category this script is
+ * for.
  */
 
 import { readdir, readFile, stat } from 'node:fs/promises';
@@ -184,8 +212,6 @@ for (const rule of rules) {
   }
 }
 
-// ── Report ───────────────────────────────────────────────────────────────────
-
 if (problems.length > 0) {
   console.error(`FAIL: ${HEADERS} has ${problems.length} problem(s):\n`);
   for (const problem of problems.sort((a, b) => a.lineNo - b.lineNo)) {
@@ -197,8 +223,62 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
+// ── Trailing slashes: astro.config.mjs vs wrangler.toml ──────────────────────
+
+const ASTRO_CONFIG = 'astro.config.mjs';
+const WRANGLER = 'wrangler.toml';
+
+/** What Cloudflare must be told, for each thing Astro can be set to. */
+const REQUIRED = {
+  never: 'drop-trailing-slash',
+  always: 'force-trailing-slash',
+};
+
+const astroSource = await readFile(ASTRO_CONFIG, 'utf8');
+const wranglerSource = await readFile(WRANGLER, 'utf8');
+
+const astroMatch = astroSource.match(/trailingSlash\s*:\s*['"](\w+)['"]/);
+const wranglerMatch = wranglerSource.match(/^\s*html_handling\s*=\s*['"]([\w-]+)['"]/m);
+
+const trailingSlash = astroMatch?.[1];
+const htmlHandling = wranglerMatch?.[1];
+
+if (!trailingSlash) {
+  console.error(`FAIL: no trailingSlash found in ${ASTRO_CONFIG}.`);
+  console.error('  This check cannot verify the pair. Update the pattern here.');
+  process.exit(1);
+}
+
+// 'ignore' means Astro is not asserting a form, so any CDN behaviour is
+// defensible and there is nothing to agree with.
+const required = REQUIRED[trailingSlash];
+
+if (required && htmlHandling !== required) {
+  console.error(`FAIL: ${WRANGLER} and ${ASTRO_CONFIG} disagree on trailing slashes.\n`);
+  console.error(`    ${ASTRO_CONFIG}   trailingSlash: '${trailingSlash}'`);
+  console.error(`    ${WRANGLER}      html_handling = ${htmlHandling ?? '(unset)'}`);
+  console.error(`    required           html_handling = "${required}"`);
+  console.error('');
+  if (!htmlHandling) {
+    console.error('  Unset means Cloudflare uses "auto-trailing-slash", which ADDS a');
+    console.error('  slash and 307-redirects. Astro builds slash-less URLs, so every');
+    console.error('  page becomes a redirect whose canonical points back at the URL');
+    console.error('  the crawler was just sent away from.');
+  } else {
+    console.error('  Every content page becomes a redirect, and the canonical tag');
+    console.error('  contradicts the URL actually being served.');
+  }
+  process.exit(1);
+}
+
+// ── Report ───────────────────────────────────────────────────────────────────
+
 const total = rules.reduce((sum, rule) => sum + rule.headers, 0);
 console.log(
   `PASS: ${HEADERS} — ${rules.length} rule(s), ${total} header(s), ` +
     `every rule matches a route the build produces.`,
+);
+console.log(
+  `PASS: trailingSlash '${trailingSlash}' agrees with html_handling ` +
+    `"${htmlHandling ?? '(not required)'}".`,
 );

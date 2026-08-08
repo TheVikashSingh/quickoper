@@ -883,6 +883,58 @@ does not exist. Exit 1; exit 0 once the block is removed.
 **What it deliberately does not check:** whether the header *values* are wise.
 Whether HSTS should be a year is a judgement, not a fact derivable from `dist/`.
 
+### D46 — Every page was a 307, and two correct config files were the cause
+
+The first successful deployment served the whole site. Every content page
+returned **307 Temporary Redirect**:
+
+```
+GET /about                              307 → /about/
+GET /finance/debt-payoff-calculator     307 → /finance/debt-payoff-calculator/
+```
+
+`astro.config.mjs` sets `trailingSlash: 'never'`. Every internal link, every
+sitemap `<loc>` and every `<link rel="canonical">` is slash-less. Cloudflare's
+default `html_handling` is `"auto-trailing-slash"`, which **adds** a slash and
+redirects to it.
+
+So the served URL and the canonical tag disagreed on every page in the site:
+
+```
+Location: /about/
+<link rel="canonical" href="https://quickoper.com/about">
+```
+
+**Why that is expensive rather than untidy.** Google reads a sitemap of 15
+slash-less URLs, is redirected on every one, and arrives at a page whose
+canonical points back at the URL it was just sent away from. Contradictory
+signals on a domain with no history, plus a wasted round trip on every internal
+click, on a site whose measured advantage is that it is fast.
+
+Fixed with `html_handling = "drop-trailing-slash"`, which serves `/about` from
+`about/index.html` and redirects `/about/` to `/about` — the form Astro's config
+already asserts. The value was read out of the installed `wrangler` 4.120.0
+rather than written from memory, per CLAUDE.md's version reality check.
+
+**Neither file was wrong.** `astro.config.mjs` was right about what the site
+builds. `wrangler.toml` was silent, which is a legitimate default. The defect
+existed only in the *relationship* between them, and no tool reads both — Astro
+does not know Cloudflare exists, and wrangler does not read Astro's config.
+
+That is the same shape as D45 and it is why both now live in one gate,
+`scripts/check-deploy-config.mjs`: **configuration consumed after CI, by
+something CI has never run.** `check-headers.mjs` was renamed rather than joined
+by a sibling, because a file called `check-headers` that also checks trailing
+slashes is the kind of small incoherence this project cannot afford.
+
+Proven by removing the line and re-running — exit 1, naming both files, the
+required value, and what the default silently does. Exit 0 restored.
+
+**Two defects, one deploy, zero cost**, because the domain was still on
+Hostinger. D43 argued for deploying before touching DNS on the grounds that a
+first deploy should not be debugged against a live domain. It has now paid for
+itself twice before the nameservers have moved at all.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
