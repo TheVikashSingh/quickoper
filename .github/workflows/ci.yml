@@ -69,6 +69,12 @@ jobs:
       - name: Island prose slots
         run: npm run slots
 
+      # Person schema was absent from every page for seventeen PRs while
+      # CLAUDE.md required it. On a YMYL site that is the trust signal, and
+      # its absence is silent.
+      - name: Structured data
+        run: npm run schema
+
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-latest
