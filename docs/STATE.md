@@ -25,7 +25,7 @@ changes the answer to "what exists" or "what is next".
 | Working calculators | 2 |
 | Tests | 136 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data |
-| Worst-page JS | 17.48 KB of 18 KB (0.52 KB spare) |
+| Worst-page JS | 17.51 KB of 18 KB (0.49 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only) |
 
 ---
@@ -57,7 +57,8 @@ Pure, no DOM, no framework. Fixtures anchored to published figures (D7).
 **Ornament** (`src/components/ornament/`) — `Guilloche.astro` (lens, behind
 headings), `Rosette.astro` (radial medallion, legible down to 28px),
 `LatheBand.astro` (tiled braided wave), `NoteFrame.astro` (double rule +
-corner rosettes), `ProofChart.astro` (a real payoff curve, computed at build time by the engine
+corner rosettes), `TrustStrip.astro` (three checkable facts above a tool),
+`ProofChart.astro` (a real payoff curve, computed at build time by the engine
 itself), `Rule.astro`. Build-time SVG, zero JavaScript, `currentColor`.
 The banknote identity is applied site-wide through `BaseLayout` (D29), not page
 by page as it was under D25. The masthead and footer are bands of dark ink with

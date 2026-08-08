@@ -436,6 +436,61 @@ nothing is arbitrary. It is explicitly **not** the value proposition and should
 not be asked to carry one — nobody reads a masthead strapline in three seconds.
 The H1 and the curve do that work.
 
+### D33 — Readability first, and the dark default is a product call, not an accessible one
+
+Four requests from the operator, and they do not all pull the same way.
+
+**Type scale — the clear win.** The root is now `106.25%` of the *reader's own*
+default rather than a fixed pixel size, so someone who has enlarged text in
+their browser keeps that enlargement and gets 6.25% on top. A px value here
+would have overridden their setting, which is the opposite of the intent.
+
+`--text-xs` went 0.75rem → 0.8125rem and `.engraved-fine` 0.625rem → 0.75rem.
+The second was rendering at **10px** and carried field hints, stat labels and
+the footer line. 10px is indefensible for a reader with presbyopia, and "they
+can zoom" is not an answer when the page is built out of it. Body leading is
+1.65.
+
+**`prose-like` did nothing.** It was applied on five pages and defined in no
+stylesheet. It now caps the measure at 68ch and sets 1.75 leading on paragraphs
+— which is what makes widening the shell safe.
+
+**Layout — wider shell, same measure.** `max-w-3xl` → `max-w-4xl` (952px at the
+new root), FAQ answers in two columns above `lg`. That is the honest reading of
+"less scrolling": more content per row where content tolerates it, never a
+horizontal scrollbar, and sentences still capped at a length the eye can track
+back from. Horizontal *scrolling* was not implemented and should not be — it is
+an anti-pattern on the phones that will be most of the traffic.
+
+**Dark by default — and this one is a trade, stated openly.** `prefers-color-scheme`
+is no longer consulted: a visitor whose system says light still lands in dark,
+until they use the toggle.
+
+That is a legitimate product decision and it was asked for. It is **not** the
+accessible choice for the audience the same request wanted to protect. A bright
+field constricts the pupil, which deepens focus and directly helps hypermetropia
+and presbyopia; light text on a dark ground haloes for the astigmatism that
+usually accompanies them. Dark helps light sensitivity and migraine instead.
+Different readers, opposite answers.
+
+Mitigated by a toggle on every page that persists for ever after. Reverting is
+one edit — restore the `@media (prefers-color-scheme: dark)` wrapper in
+`global.css` and the site respects the system again.
+
+**A bug this nearly shipped:** the print stylesheet forced light via `:root`,
+which now loses specificity to `:root:not([data-theme='light'])`. Every printed
+schedule and saved PDF would have come out white-on-black — a full cartridge,
+on a feature the site advertises. The print reset now carries the same
+specificity.
+
+**Tool pages got the homepage treatment.** An engraved eyebrow, a larger H1, and
+`TrustStrip.astro`: three facts on one line above the calculator. A visitor
+arriving from search has already decided they want a calculator — the question
+is whether to trust *this* one, and it has to be answered without pushing the
+tool down the page. Every claim is structurally true or links to the page that
+proves it. No adjectives; "trusted" and "accurate" are what a site says when it
+cannot say anything checkable.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
