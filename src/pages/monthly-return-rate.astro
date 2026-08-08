@@ -1,0 +1,390 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Guilloche from '../components/ornament/Guilloche.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
+import Rule from '../components/ornament/Rule.astro';
+import { SITE } from '../lib/site';
+import { sourceRef } from '../lib/schema';
+
+const LAST_VERIFIED = '2026-08-08';
+
+const SOURCES = [
+  {
+    label: 'US Securities and Exchange Commission — Compound Interest Calculator',
+    url: 'https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator',
+    retrieved: '2026-08-08',
+  },
+  {
+    label: 'Microsoft — FV function (Excel)',
+    url: 'https://support.microsoft.com/en-us/office/fv-function-2eef9f44-a084-4c61-bdd8-4fe4bb1b71b3',
+    retrieved: '2026-08-08',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * Every figure computed from 7% annual on $100,000 over 30 years, and from an
+ * 8% nominal return against 3% inflation. Nothing transcribed. The reader can
+ * reproduce all of it with `=FV()` in a spreadsheet — /verify covers how.
+ */
+const FAQ = [
+  {
+    q: 'What is the monthly equivalent of a 7% annual return?',
+    a: '0.565415% a month, which is (1.07)^(1/12) − 1. It is not 7% ÷ 12 = 0.583333%. The two differ by less than two hundredths of a percentage point per month, and that gap compounds into $50,424 over thirty years on $100,000.',
+  },
+  {
+    q: 'Why is dividing an annual return by twelve wrong?',
+    a: 'Because compounding a monthly rate of r/12 twelve times does not give you r. At 7%, (1 + 0.07/12)^12 − 1 = 7.2290%. So a projection built on r/12 is quietly modelling a 7.229% return while its input box says 7%, and the error is always in the flattering direction.',
+  },
+  {
+    q: 'Is APR ÷ 12 wrong too, then?',
+    a: 'No, and this is the part that catches people. A lender quoting an APR is quoting a nominal annual rate that is defined as twelve times the monthly rate — dividing by twelve recovers exactly what the contract says. An investment return of 7% a year means the balance grew 7% over the year, which is a different statement. Same arithmetic, different meaning, so the correct conversion differs.',
+  },
+  {
+    q: 'What is the difference between a real and a nominal return?',
+    a: 'A nominal return is the number before inflation; a real return is what is left of it in purchasing power. They are not subtracted, they are divided: at 8% nominal and 3% inflation the real return is (1.08 ÷ 1.03) − 1 = 4.854%, not 5%. Over thirty years on $100,000 that 0.146 point of difference is $17,626.',
+  },
+  {
+    q: 'Which convention does QuickOper use?',
+    a: 'Both, deliberately. The debt payoff calculator divides an APR by twelve because that is how a lender computes a month of interest. The Coast FIRE calculator uses (1 + r)^(1/12) − 1 because a stated annual return compounds to that figure. Each engine has a test asserting its own convention, so neither can drift into the other.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Why a 7% return is not 0.583% a month',
+    url: `${SITE.url}/monthly-return-rate`,
+    description:
+      'Dividing an annual return by twelve overstates a thirty-year projection by 6.62%. The correct conversion, why APR is the exception, and how real returns differ from nominal ones.',
+    author: { '@id': `${SITE.url}/about#person` },
+    publisher: { '@id': `${SITE.url}#organization` },
+    dateModified: LAST_VERIFIED,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Monthly return rates',
+        item: `${SITE.url}/monthly-return-rate`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="Why a 7% return is not 0.583% a month | QuickOper"
+  description="Dividing an annual return by twelve overstates a thirty-year projection by 6.62% — $50,424 on $100,000. The correct conversion, why an APR is the exception, and why real returns are divided rather than subtracted."
+  structuredData={structuredData}
+>
+  <article>
+    <div class="relative">
+      <Guilloche
+        size={280}
+        class="text-brand pointer-events-none absolute -top-14 -right-14 hidden opacity-[0.10] sm:block"
+      />
+
+      <p class="engraved-fine text-ink-mute relative">Derivation</p>
+
+      <h1 class="relative mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Why a 7% return is not 0.583% a month
+      </h1>
+
+      <p class="text-ink-soft relative mt-4 text-lg">
+        The most common error in retirement projections is one division. It moves a
+        thirty-year figure by <strong class="text-ink">$50,424</strong>, and it moves it
+        upward every time.
+      </p>
+    </div>
+
+    <NoteFrame class="mt-8" corners={false}>
+      <p class="engraved text-ink-mute text-xs">The short version</p>
+      <p class="text-ink-soft mt-2 text-sm">
+        A 7% annual return is <span class="numeric">0.565415%</span> a month, not{' '}
+        <span class="numeric">0.583333%</span>. The correct conversion is{' '}
+        <span class="numeric">(1 + r)<sup>1/12</sup> − 1</span>, because twelve monthly
+        steps have to multiply back to the annual figure. Dividing instead gives an
+        effective <span class="numeric">7.229%</span> — a projection quietly modelling a return
+        its own input box does not claim.
+      </p>
+    </NoteFrame>
+
+    <section class="prose-like text-ink-soft mt-12 space-y-4">
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">The two candidates</h2>
+
+      <p>
+        You have an annual return and you need a monthly one, because the projection steps
+        month by month. There are two obvious ways to get it, and only one of them is
+        consistent with what the annual figure means.
+      </p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        divide: 7% ÷ 12 = 0.583333% per month
+        <br />
+        root: (1.07)<sup>1/12</sup> − 1 = 0.565415% per month
+      </p>
+
+      <p>
+        The gap is <strong class="text-ink numeric">0.017919</strong> percentage points a month.
+        It looks like nothing. It is not nothing, because it is applied 360 times and each application
+        multiplies.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        The test that settles it
+      </h2>
+
+      <p>
+        Ask what each monthly rate actually produces over one year. That is the whole
+        argument, and it takes one line:
+      </p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        (1 + 0.07/12)<sup>12</sup> − 1 = 7.2290%
+        <br />
+        (1 + 0.00565415)<sup>12</sup> − 1 = 7.0000%
+      </p>
+
+      <p>
+        A monthly rate of <span class="numeric">r ÷ 12</span> compounds to{' '}
+        <strong class="text-ink">7.229%</strong> over the year, not 7%. So a projection built
+        on it is modelling a return nobody entered. The root conversion is defined by the requirement
+        that twelve steps multiply back to exactly the annual figure, which is why it is the
+        correct one for a stated <em>return</em>.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">What it costs</h2>
+
+      <p>
+        $100,000 invested for thirty years at a stated 7% a year, with no contributions,
+        under each convention:
+      </p>
+    </section>
+
+    <div class="not-prose mt-4 overflow-x-auto">
+      <table class="border-line w-full border-collapse border text-sm">
+        <thead>
+          <tr class="bg-sunken">
+            <th class="border-line border p-2 text-left">Monthly rate used</th>
+            <th class="border-line border p-2 text-right">After 30 years</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="border-line border p-2">
+              7% ÷ 12 <span class="text-ink-mute">— the common error</span>
+            </td>
+            <td class="numeric border-line text-caution border p-2 text-right">
+              $811,649.75
+            </td>
+          </tr>
+          <tr>
+            <td class="border-line border p-2">
+              (1.07)<sup>1/12</sup> − 1 <span class="text-ink-mute">— correct</span>
+            </td>
+            <td class="numeric border-line text-positive border p-2 text-right">
+              $761,225.50
+            </td>
+          </tr>
+          <tr>
+            <td class="border-line border p-2 font-semibold">Overstatement</td>
+            <td class="numeric border-line border p-2 text-right font-semibold">
+              $50,424.24 — 6.62%
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section class="prose-like text-ink-soft mt-6 space-y-4">
+      <p>
+        <strong class="text-ink">$761,225.50 is the checkable figure.</strong> It is what Excel's
+        <code class="numeric">=FV(0.07, 30, 0, -100000)</code> returns, and what the SEC's own
+        compound interest calculator returns for the same inputs. If a projection tells you
+        $811,649, it is not using a different opinion — it is using a different rate from the
+        one you typed.
+      </p>
+
+      <p>
+        Note the direction. The error is <em>always</em> flattering. Nobody discovers their
+        retirement projection was accidentally pessimistic.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        Why an APR is the exception
+      </h2>
+
+      <p>
+        Here is where it gets genuinely confusing, and where most explanations stop too
+        early: for a credit card or a loan, dividing by twelve is <strong class="text-ink"
+          >correct</strong
+        >.
+      </p>
+
+      <p>
+        The reason is that the two numbers are different kinds of statement. A lender's
+        APR is a <em>nominal</em> annual rate, defined as twelve times the monthly rate it charges
+        — dividing recovers exactly what the contract says. An investment return of 7% a year
+        is a statement about how much the balance grew over the year, which is a compounded
+        outcome. Same arithmetic, opposite direction.
+      </p>
+
+      <p>
+        This is why our{' '}
+        <a class="text-brand underline" href="/finance/debt-payoff-calculator"
+          >debt payoff calculator</a
+        > divides by twelve and our{' '}
+        <a class="text-brand underline" href="/finance/coast-fire-calculator"
+          >Coast FIRE calculator</a
+        > takes the twelfth root. It is not an inconsistency; it would be an error to do either
+        one the other way. Both engines carry a test asserting their own convention, so neither
+        can drift into the other unnoticed.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        The same mistake, one level up: real and nominal
+      </h2>
+
+      <p>
+        Inflation gets the identical treatment. A real return is not a nominal return
+        minus inflation — it is a nominal return <em>divided</em> by inflation.
+      </p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        subtract: 8% − 3% = 5.000000%
+        <br />
+        divide: (1.08 ÷ 1.03) − 1 = 4.854369%
+      </p>
+
+      <p>
+        A gap of <span class="numeric">0.145631</span> percentage points. On $100,000 over thirty
+        years that is <strong class="text-ink">$432,194.24</strong> against{' '}
+        <strong class="text-ink">$414,568.14</strong> — an overstatement of{' '}
+        <strong class="text-ink">$17,626.10</strong>, or 4.25%. Again upward.
+      </p>
+
+      <p>
+        The subtraction is close enough at small numbers that it survives as a rule of
+        thumb, and it degrades exactly where it matters most: long horizons and high
+        rates.
+      </p>
+
+      <h2 class="text-ink text-2xl font-semibold tracking-tight">
+        What this does and does not tell you
+      </h2>
+
+      <p>
+        <strong class="text-ink">It tells you</strong> that a projection's arithmetic can be
+        wrong in a way that is invisible from the outside — the input box says 7%, the output
+        is computed at 7.229%, and nothing on the page indicates it.
+      </p>
+
+      <p>
+        <strong class="text-ink">It does not tell you</strong> that 7% is the right assumption,
+        or that any constant rate resembles reality. Real returns arrive in an uneven order,
+        and a smooth curve hides that completely. Getting the conversion right makes a projection
+        internally consistent. It does not make it a forecast.
+      </p>
+
+      <p>
+        You can{' '}
+        <a class="text-brand underline" href="/verify"
+          >reproduce every figure on this page in a spreadsheet</a
+        >, which is the only reason to believe any of it.
+      </p>
+    </section>
+
+    <Rule class="mt-12" />
+
+    <section class="mt-10" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="text-2xl font-semibold tracking-tight">
+        Common questions
+      </h2>
+      <dl class="mt-4 space-y-5">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="text-2xl font-semibold tracking-tight">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          Every figure here is computed from 7% annual on $100,000 over 30 years, and from
+          8% nominal against 3% inflation. Nothing is transcribed from a third party. The
+          $761,225.50 anchor is independently produced by Excel's <code class="numeric"
+            >FV</code
+          > and by the SEC calculator linked above.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper explains
+        how a calculation works and shows its working. It does not know your circumstances and
+        cannot tell you what to do with your money. Nothing here is financial, tax or investment
+        advice, and no return assumption on this page is a prediction.
+      </p>
+    </aside>
+
+    <nav class="no-print mt-14" aria-label="Related">
+      <h2 class="text-lg font-semibold">Related</h2>
+      <ul class="text-ink-soft mt-2 space-y-1 text-sm">
+        <li>
+          <a class="text-brand underline" href="/finance/coast-fire-calculator"
+            >Coast FIRE calculator</a
+          > — uses the twelfth-root conversion, with a test asserting it.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/credit-card-interest"
+            >How credit card interest is calculated</a
+          > — the other side of the same distinction, where dividing is correct.
+        </li>
+        <li>
+          <a class="text-brand underline" href="/verify">Check our arithmetic</a> — reproduce
+          $761,225.50 yourself.
+        </li>
+      </ul>
+    </nav>
+  </article>
+</BaseLayout>

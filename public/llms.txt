@@ -51,6 +51,22 @@ Key figures, all computed on a $6,000 balance at 22.99% APR:
   - A $200 payment on a 30-day cycle costs $109.60 of interest if it lands on
     day 1 and $113.25 if it lands on day 30.
 
+### Why a 7% return is not 0.583% a month
+URL: https://quickoper.com/monthly-return-rate
+States: converting a stated annual RETURN to a monthly rate requires the twelfth
+root, not division by twelve. A 7% annual return is 0.565415% per month, being
+(1.07)^(1/12) - 1. Dividing gives 0.583333%, which compounds to an effective
+7.2290% per year rather than 7%.
+Key figures:
+  - $100,000 for 30 years at a stated 7%: $761,225.50 using the twelfth root,
+    $811,649.75 using r/12. The error overstates by $50,424.24, or 6.62%.
+  - The error is always in the flattering direction.
+  - An APR is the exception: a lender APR is a nominal rate defined as twelve
+    times the monthly rate, so dividing by twelve is correct for debt.
+  - Real return is nominal divided by inflation, not minus: 8% nominal against
+    3% inflation is (1.08/1.03)-1 = 4.854369%, not 5%. Over 30 years on
+    $100,000 that is $414,568.14 against $432,194.24.
+
 ## Verification
 
 - [Methodology](https://quickoper.com/methodology): formulas, assumptions and the
