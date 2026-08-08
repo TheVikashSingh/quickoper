@@ -75,6 +75,12 @@ jobs:
       - name: Structured data
         run: npm run schema
 
+      # Cloudflare parses public/_headers at DEPLOY time, which is after CI. The
+      # first deploy this project attempted failed on an empty header value for
+      # an /embed/* route that has never existed. Green pipeline, failed release.
+      - name: Headers config
+        run: npm run headers
+
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-latest
