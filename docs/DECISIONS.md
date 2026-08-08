@@ -358,6 +358,43 @@ resolve colours through a canvas: `getComputedStyle` returns `oklch()` in
 Chrome, and the first version of this check reported 1.29:1 for every element on
 the page because it parsed those three numbers as RGB.
 
+### D31 — The entity graph, and the trust signal that was never emitted
+
+CLAUDE.md has required `Organization + Person (author, with sameAs)` site-wide
+since the first commit. **`Person` was on zero of ten pages for seventeen pull
+requests**, and `Organization` carried no `sameAs` either. Found by auditing the
+built output rather than by anything failing, which is the sixth time that has
+been how a real defect surfaced (D18, D26).
+
+This one is expensive rather than untidy. The site is YMYL content on a domain
+with no history, and its entire pitch is that the arithmetic is checkable by a
+named person. A search engine cannot attach credibility to an author it cannot
+resolve to an entity — the missing node was the one carrying the answer to the
+first question anyone asks of financial content from an unknown name.
+
+Now emitted on every page, and **linked rather than merely present**: `@id` on
+each node, `founder` from Organization to Person, `publisher` from WebSite to
+Organization. A bare Person beside a bare Organization is two orphans; the
+cross-references are what make it a graph a consumer can traverse.
+
+`knowsAbout` claims **deterministic financial arithmetic, amortisation, compound
+interest and rounding policy** — not financial expertise. Claiming the latter
+would be false and is exactly what D1 forbids. `sameAs` carries the one identity
+claim that can be verified by following a link, and nothing invented.
+
+`scripts/check-schema.mjs` now enforces it, including that Person has a
+`sameAs` — an identity asserted with no way to confirm it is worth little.
+Proven to fail by removing the Person node and rebuilding: **exit 1**, ten pages
+named; exit 0 once restored.
+
+**Also: `twitter:card` was lying.** Every page declared `summary_large_image`
+and no page supplied an `og:image`, so the card rendered as an empty box
+everywhere the site was shared. Downgraded to `summary`, which is accurate.
+Restoring the large card needs a real 1200×630 raster: SVG is not accepted by
+card renderers, and generating a PNG at build time means satori or sharp — a
+dependency against rule 4 for a social preview. Recorded as an operator task
+rather than left as a silent defect.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import LatheBand from '../components/ornament/LatheBand.astro';
 import Rosette from '../components/ornament/Rosette.astro';
+import { SITE } from '../lib/site';
 
 interface Props {
   title: string;
@@ -24,18 +25,73 @@ const {
 
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, Astro.site).href;
 
-// Organization and Person are site-wide E-E-A-T signals, not decoration.
-// The expertise claimed here is computational, not advisory — stated honestly.
+/**
+ * The entity graph — Organization, Person and WebSite, on every page.
+ *
+ * These are site-wide E-E-A-T signals, not decoration. CLAUDE.md has required
+ * `Organization + Person (author, with sameAs)` since the beginning; only
+ * Organization was ever emitted, and it had no `sameAs` either. For a
+ * Your-Money-Your-Life site that is the expensive omission: a search engine
+ * cannot attach credibility to an author it cannot resolve to an entity, and
+ * "who wrote this and can it be verified" is the first question asked of
+ * financial content from an unknown domain.
+ *
+ * `@id` and cross-references matter more than the individual nodes. A bare
+ * Person floating beside a bare Organization is two orphans; linking them with
+ * `founder`, `publisher` and `author` is what makes them one graph that a
+ * consumer — Google or a retrieval system — can actually traverse.
+ *
+ * THE CLAIM IS COMPUTATIONAL, NOT ADVISORY, and `knowsAbout` says so. Claiming
+ * financial expertise here would be false and is exactly what D1 forbids.
+ */
+const personId = `${SITE.url}/about#person`;
+const orgId = `${SITE.url}#organization`;
+
+const person = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  '@id': personId,
+  name: SITE.author.name,
+  url: `${SITE.url}/about`,
+  // The only identity claims that can be verified by following a link. No
+  // invented credentials, no fabricated profiles.
+  sameAs: [SITE.author.github],
+  jobTitle: 'Software engineer',
+  knowsAbout: [
+    'Deterministic financial arithmetic',
+    'Amortisation schedules',
+    'Compound interest',
+    'Rounding policy in currency calculations',
+  ],
+  description:
+    'Software engineer, not a financial adviser. Builds and verifies the calculation engines behind QuickOper; the expertise claimed is computational rather than advisory.',
+};
+
 const organization = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'QuickOper',
-  url: 'https://quickoper.com',
+  '@id': orgId,
+  name: SITE.name,
+  url: SITE.url,
+  email: SITE.email,
+  founder: { '@id': personId },
+  sameAs: [SITE.repo],
   description:
     'Verified-calculation tools for personal money decisions. Every calculation runs in the browser; nothing is transmitted.',
 };
 
-const graph = [organization, ...structuredData];
+const website = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${SITE.url}#website`,
+  url: SITE.url,
+  name: SITE.name,
+  description: SITE.tagline,
+  publisher: { '@id': orgId },
+  inLanguage: 'en',
+};
+
+const graph = [organization, person, website, ...structuredData];
 ---
 
 <!doctype html>
@@ -53,8 +109,23 @@ const graph = [organization, ...structuredData];
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:site_name" content="QuickOper" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:site_name" content={SITE.name} />
+
+    {
+      /*
+      `summary`, not `summary_large_image`. Every page declared the large-image
+      card and no page supplied an og:image, so the card rendered as an empty
+      grey box everywhere the site was shared — announcing a picture and then
+      failing to produce one is worse than not asking for the slot.
+
+      Turning it back on needs a real raster asset. SVG is not accepted by the
+      card renderers, and generating a PNG at build time means satori or sharp,
+      which is a dependency against CLAUDE.md rule 4 for a social preview. The
+      cheap route is one hand-made 1200x630 PNG committed to public/ — recorded
+      in STATE.md as an operator task rather than left as a silent defect.
+    */
+    }
+    <meta name="twitter:card" content="summary" />
 
     <link rel="sitemap" href="/sitemap-index.xml" />
 

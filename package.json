@@ -19,7 +19,8 @@
     "spacing": "node scripts/check-spacing.mjs",
     "state": "node scripts/check-state.mjs",
     "slots": "node scripts/check-slots.mjs",
-    "verify": "npm run typecheck && npm run test && npm run build && npm run budget && npm run links && npm run spacing && npm run state && npm run slots",
+    "schema": "node scripts/check-schema.mjs",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run budget && npm run links && npm run spacing && npm run state && npm run slots && npm run schema",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
