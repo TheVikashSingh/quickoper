@@ -10,8 +10,16 @@
 /_assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-# The embeddable widget is the one route that must be framable — it is the
-# highest link-per-hour distribution tactic available (charter §14).
-/embed/*
-  X-Frame-Options:
-  Content-Security-Policy: frame-ancestors *;
+# There was an /embed/* rule here, framable via an empty `X-Frame-Options:`.
+# It is gone, and both halves of it were wrong (D45):
+#
+#   1. Cloudflare rejects an empty header value outright — it failed the deploy
+#      with "Line 16: Invalid header format [code: 100324]", which is how this
+#      file was discovered to have never been served by anything. The unset
+#      syntax is `! X-Frame-Options`, not a blank value.
+#   2. There is no /embed/ route. It came from "charter §14", a document that
+#      is not in this repository. Config for a route that 404s is dead weight
+#      that fails loudly at deploy time and silently the rest of the time.
+#
+# If an embeddable widget is built, its headers ship in the same pull request
+# as the route, and scripts/check-headers.mjs will require exactly that.

@@ -837,6 +837,52 @@ site ever has more than one person behind it.
 `Organization` structured data, and nothing has ever received at it. An address
 that bounces is worse than none, and AdSense checks the contact route works.
 
+### D45 — The first deploy failed on a file nothing had ever read
+
+`npx wrangler deploy`, the first deployment this project has ever attempted,
+uploaded all 32 assets and then died:
+
+```
+Invalid _headers configuration:
+Line 16: Invalid header format [code: 100324]
+```
+
+Line 16 was `X-Frame-Options:` — an empty value, meant to unset the header for an
+`/embed/*` rule. **Both halves of that rule were wrong.**
+
+An empty value is not how a header is removed; the unset form is
+`! X-Frame-Options`. And **there is no `/embed/` route** — no page, no build
+output, nothing. The rule cited "charter §14", a document that is not in this
+repository, the same phantom reference `docs/DNS.md` carried for §13 until it was
+replaced.
+
+**So the fix is deletion, not repair.** Correcting the syntax would ship working
+headers for a route that 404s, and re-arm the identical breakage the day someone
+builds `/embed/`. Headers for a route ship in the same pull request as the route.
+
+**This is the argument for D43's ordering, tested on the first attempt.** D43 moved
+the deploy ahead of every DNS change on the reasoning that a first-ever deploy
+should not be debugged with the real domain pointing at it, and noted explicitly
+that `public/_headers` "has never been served by anything — its behaviour on
+Workers static assets is currently assumed, not known". It was assumed, it was
+wrong, and it cost nothing because the domain was still on Hostinger.
+
+**Why every gate was green.** Ten checks read `dist/`; none had ever read
+`_headers`. Cloudflare parses it at **deploy time, which is after CI** — so a
+syntax error there is a green pipeline and a failed release, and there was no
+point in the pipeline where it could surface. Eighth time a real defect appeared
+because a check was asked a question it had not been asked before (D18, D26,
+D31, D41).
+
+`scripts/check-headers.mjs` now asks it: every header line parses as
+`Name: value` or `! Name`, and every path rule matches something the build
+produced. Proven against the committed state of `main` before the fix — it fails
+at **line 16**, the same line Cloudflare named, plus line 15 for the route that
+does not exist. Exit 1; exit 0 once the block is removed.
+
+**What it deliberately does not check:** whether the header *values* are wise.
+Whether HSTS should be a year is a judgement, not a fact derivable from `dist/`.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
