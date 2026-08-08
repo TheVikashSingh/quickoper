@@ -808,6 +808,35 @@ failure is mail that bounces while MX is wrong — the message is gone and the
 sender gets a rejection the operator never sees. Everything in the ordering
 exists to isolate that.
 
+### D44 — The published contact address is the author's, not a role address
+
+`SITE.email` was `hello@quickoper.com` and had been since the first commit. The
+mailbox that actually exists is `vikash@quickoper.com`, on Hostinger Starter
+Business Email, which includes one mailbox.
+
+So the choice was: buy a second mailbox to match the code, or change the code to
+match reality. Changed the code — and it is the better answer on its own terms,
+not merely the cheaper one.
+
+**A role address is the anonymous option, and anonymity is what this site argues
+against.** D31 spent a whole pull request establishing a `Person` node with
+`sameAs`, because a search engine cannot attach credibility to an author it
+cannot resolve to an entity, and because YMYL content from an unknown name is
+answering "who says so?" before anything else. `hello@` answers that question
+with "a company", which is not true here — there is one person, he is named on
+`/about`, and his GitHub is linked. `vikash@` is consistent with all of it.
+
+The counter-argument is scale: a role address survives a second author, a
+handover, or a decision to depersonalise. That is a real advantage and it is
+speculative, whereas the trust signal is present today. `SITE.email` is one
+constant feeding five call sites, so reversing this is a one-line change if the
+site ever has more than one person behind it.
+
+**It also removes the last non-DNS launch blocker.** The address bounced —
+`hello@` was published on `/about`, `/contact`, `/terms`, `/privacy` and in the
+`Organization` structured data, and nothing has ever received at it. An address
+that bounces is worse than none, and AdSense checks the contact route works.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

@@ -78,18 +78,18 @@ Both are replaced automatically when the Worker custom domain is attached
 
 ## Procedure
 
-### 1. Create the mailbox, while DNS is still at Hostinger
+### 1. Baseline the mailbox, while DNS is still at Hostinger
 
-`hello@quickoper.com` is published on three pages and in the structured data.
-Hostinger panel → Emails → `quickoper.com` → create the mailbox.
+`vikash@quickoper.com` already exists on Hostinger Starter Business Email and is
+what the site publishes (D44). Nothing to create.
 
-Doing this *before* the migration is deliberate. It establishes a **known-good
-baseline**: if mail breaks after the nameserver switch, the switch caused it.
-Without the baseline, two possible causes are being debugged at once.
+Test it *before* the migration. This is deliberate: it establishes a **known-good
+baseline**, so that if mail breaks after the nameserver switch, the switch caused
+it. Without the baseline, two possible causes are being debugged at once.
 
-**Gate:** send a message to `hello@` from an external account, and reply from
-`hello@` back out. In Gmail, open the reply → ⋮ → **Show original** and confirm
-`SPF: PASS`, `DKIM: PASS`, `DMARC: PASS`. Keep that screenshot. It is the
+**Gate:** send a message to `vikash@quickoper.com` from an external account, and
+reply from it back out. In Gmail, open the reply → ⋮ → **Show original** and
+confirm `SPF: PASS`, `DKIM: PASS`, `DMARC: PASS`. Keep that screenshot. It is the
 reference the post-migration test is compared against.
 
 ### 2. Export the live Hostinger zone

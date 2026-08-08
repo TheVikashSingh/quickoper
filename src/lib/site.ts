@@ -25,12 +25,16 @@ export const SITE = {
   strapline: 'Quickly operate',
 
   /**
-   * MUST exist before launch. The domain already carries Hostinger mail (MX,
-   * SPF, DKIM), so this is a mailbox to create rather than infrastructure to
-   * build — but publishing an address that bounces is worse than publishing
-   * none, and AdSense checks that the contact route works.
+   * The author's own address, not a role address like `hello@`, and that is
+   * deliberate (D44). This site's credibility rests on a named person being
+   * answerable for the arithmetic — the Person entity in the structured data
+   * exists for exactly that reason (D31). A role address is the anonymous
+   * option, and anonymity is the thing the site argues against.
+   *
+   * It is a real, working mailbox on Hostinger. Publishing an address that
+   * bounces is worse than publishing none, and AdSense checks the contact route.
    */
-  email: 'hello@quickoper.com',
+  email: 'vikash@quickoper.com',
 
   author: {
     name: 'Vikash Singh',
