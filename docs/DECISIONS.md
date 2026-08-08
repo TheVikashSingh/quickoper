@@ -395,6 +395,47 @@ card renderers, and generating a PNG at build time means satori or sharp — a
 dependency against rule 4 for a social preview. Recorded as an operator task
 rather than left as a silent defect.
 
+### D32 — The homepage proves rather than claims, and the proof is computed
+
+The operator: *"looks very bland", "the user has like 3 seconds to decide".*
+Both fair. The homepage led with three abstract trust claims and put the
+calculators below them — so a visitor who arrived wanting a debt calculator had
+to scroll past an argument about why we are trustworthy before reaching one.
+
+Three changes, in order of how much they matter:
+
+**1. The tools moved above the fold.** Two buttons in the hero, primary and
+secondary. This is the largest bounce-rate lever on the page and it is pure
+information architecture, not copy.
+
+**2. A real curve replaced the empty space.** `ProofChart.astro` draws the
+balance falling to zero — and the page *computes it at build time by importing
+the actual engine* and running the calculator's own default scenario. 19 months
+against 77, $5,021.37 saved, all produced by the same code the tool runs.
+
+It is not a stock illustration and it cannot go stale: change the engine and the
+homepage changes with it. It also cannot overclaim, because the homepage has no
+way to state a saving the product does not produce. Zero client JavaScript —
+`.astro` frontmatter never reaches the browser, and the page still measures
+0.53KB.
+
+**3. The copy names the differentiator instead of asserting quality.** "What the
+big comparison sites will not give you" is about *incentives*, which is checkable,
+rather than about accuracy, which is not. A lead-generation site needs an email;
+this one has no backend to send anything to. That is a structural difference a
+large publisher cannot copy without cannibalising its own revenue.
+
+**What was deliberately not done:** no illustration library, no icon set, no
+stock imagery. The visual interest comes from the thing the site actually makes.
+A calculator site whose homepage shows a drawing of a calculator is decorating;
+one that shows its own output is demonstrating.
+
+**On the strapline.** "Quickly operate" now sits under the wordmark, because an
+unexplained coinage reads as arbitrary on a site whose whole argument is that
+nothing is arbitrary. It is explicitly **not** the value proposition and should
+not be asked to carry one — nobody reads a masthead strapline in three seconds.
+The H1 and the curve do that work.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

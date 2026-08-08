@@ -1,0 +1,116 @@
+---
+/**
+ * A real payoff curve, computed at build time and drawn as engraved SVG.
+ *
+ * NOT DECORATION, AND NOT A STOCK ILLUSTRATION. The page that mounts this
+ * imports the actual calculation engine, runs the actual default scenario, and
+ * hands the actual monthly balances here. What a visitor sees in the first
+ * three seconds is the product's own output, not a picture of one.
+ *
+ * That matters for the thing it is there to fix. A visitor deciding whether to
+ * stay does not read a value proposition; they look for evidence that the site
+ * does something. A curve dropping from $9,400 to zero in nineteen months
+ * against a baseline still at $6,000 is that evidence, and it is legible
+ * without a single word being read.
+ *
+ * `.astro`, so it renders at build and ships ZERO JavaScript — the same
+ * constraint that rules out a charting library on the calculator islands
+ * (D10) rules one out here, and for a static curve none is needed.
+ *
+ * Stroked in `currentColor` where possible so it inherits the theme, with the
+ * emphasised series taking the brand accent. Labelled for screen readers with
+ * the figures rather than the shape, because "a line going down" helps nobody.
+ */
+interface Series {
+  readonly label: string;
+  /** Balances in minor units, one per month, oldest first. */
+  readonly points: readonly number[];
+  /** The one the eye should land on. */
+  readonly emphasis?: boolean;
+}
+
+interface Props {
+  readonly series: readonly Series[];
+  readonly caption: string;
+  readonly class?: string;
+}
+
+const { series, caption, class: className = '' } = Astro.props;
+
+const W = 640;
+const H = 200;
+const PAD = { top: 10, right: 8, bottom: 4, left: 8 };
+
+const maxLen = Math.max(...series.map((s) => s.points.length));
+const maxVal = Math.max(...series.flatMap((s) => [...s.points]));
+
+const x = (i: number) =>
+  PAD.left + (i / Math.max(1, maxLen - 1)) * (W - PAD.left - PAD.right);
+const y = (v: number) =>
+  PAD.top + (1 - v / Math.max(1, maxVal)) * (H - PAD.top - PAD.bottom);
+
+/** A polyline is enough; a smoothed spline would misrepresent monthly steps. */
+const path = (points: readonly number[]) =>
+  points
+    .map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`)
+    .join(' ');
+
+/** Filled area under the emphasised curve, to give the eye a mass to read. */
+const area = (points: readonly number[]) =>
+  `${path(points)} L${x(points.length - 1).toFixed(1)} ${y(0).toFixed(1)} L${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
+
+const gridY = [0.25, 0.5, 0.75].map((f) => PAD.top + f * (H - PAD.top - PAD.bottom));
+---
+
+<figure class={className}>
+  <svg
+    viewBox={`0 0 ${W} ${H}`}
+    width="100%"
+    height="auto"
+    role="img"
+    aria-label={caption}
+    class="block"
+    preserveAspectRatio="none"
+  >
+    <g class="text-engrave-strong" stroke="currentColor" stroke-width="0.5" opacity="0.5">
+      {gridY.map((gy) => <line x1={PAD.left} x2={W - PAD.right} y1={gy} y2={gy} />)}
+    </g>
+
+    {
+      series.map((s) =>
+        s.emphasis === true ? (
+          <>
+            <path
+              d={area(s.points)}
+              class="text-brand"
+              fill="currentColor"
+              opacity="0.10"
+            />
+            <path
+              d={path(s.points)}
+              class="text-brand"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linejoin="round"
+              vector-effect="non-scaling-stroke"
+            />
+          </>
+        ) : (
+          <path
+            d={path(s.points)}
+            class="text-ink-mute"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.25"
+            stroke-dasharray="4 3"
+            stroke-linejoin="round"
+            vector-effect="non-scaling-stroke"
+          />
+        ),
+      )
+    }
+  </svg>
+
+  <figcaption class="sr-only">{caption}</figcaption>
+</figure>

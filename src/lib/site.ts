@@ -13,6 +13,18 @@ export const SITE = {
   tagline: 'Calculators that show their working.',
 
   /**
+   * Sits under the wordmark in the masthead.
+   *
+   * The name is a contraction of "quickly operate", and without saying so it
+   * reads as an arbitrary coinage — which costs a little trust on a site whose
+   * whole argument is that nothing here is arbitrary. One line is enough.
+   *
+   * It is NOT the value proposition and should not be asked to do that job:
+   * a visitor deciding whether to stay reads the H1, not the strapline.
+   */
+  strapline: 'Quickly operate',
+
+  /**
    * MUST exist before launch. The domain already carries Hostinger mail (MX,
    * SPF, DKIM), so this is a mailbox to create rather than infrastructure to
    * build — but publishing an address that bounces is worse than publishing
