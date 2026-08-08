@@ -206,8 +206,18 @@ const graph = [organization, person, website, ...structuredData];
             /* One word in two colours. data-tight tells the spacing checker
               this adjacency is deliberate. */
           }
-          <span class="engraved text-masthead-ink text-base sm:text-lg">
-            Quick<span class="text-masthead-accent" data-tight>Oper</span>
+          <span class="leading-none">
+            <span class="engraved text-masthead-ink block text-base sm:text-lg">
+              Quick<span class="text-masthead-accent" data-tight>Oper</span>
+            </span>
+            {
+              /* The name is a contraction of "quickly operate". Stated in the
+                masthead because an unexplained coinage reads as arbitrary, and
+                nothing else on this site is. */
+            }
+            <span class="engraved-fine text-masthead-mute mt-0.5 block">
+              {SITE.strapline}
+            </span>
           </span>
         </a>
 

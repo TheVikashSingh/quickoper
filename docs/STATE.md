@@ -57,7 +57,8 @@ Pure, no DOM, no framework. Fixtures anchored to published figures (D7).
 **Ornament** (`src/components/ornament/`) — `Guilloche.astro` (lens, behind
 headings), `Rosette.astro` (radial medallion, legible down to 28px),
 `LatheBand.astro` (tiled braided wave), `NoteFrame.astro` (double rule +
-corner rosettes), `Rule.astro`. Build-time SVG, zero JavaScript, `currentColor`.
+corner rosettes), `ProofChart.astro` (a real payoff curve, computed at build time by the engine
+itself), `Rule.astro`. Build-time SVG, zero JavaScript, `currentColor`.
 The banknote identity is applied site-wide through `BaseLayout` (D29), not page
 by page as it was under D25. The masthead and footer are bands of dark ink with
 their own token set, ruled in brand (D30).

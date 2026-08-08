@@ -2,142 +2,285 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 import Guilloche from '../components/ornament/Guilloche.astro';
-import LatheBand from '../components/ornament/LatheBand.astro';
 import NoteFrame from '../components/ornament/NoteFrame.astro';
+import ProofChart from '../components/ornament/ProofChart.astro';
 import Rule from '../components/ornament/Rule.astro';
+
+import { compareStrategies } from '../lib/calc/debt-payoff';
+import { format, fromMajor } from '../lib/calc/money';
+
+/**
+ * THE HERO FIGURES ARE COMPUTED, NOT WRITTEN.
+ *
+ * This runs the real engine, at build time, on the calculator's own default
+ * scenario. The curve and every number beside it come out of the same code the
+ * tool runs — so the homepage cannot claim a saving the product does not
+ * produce, and it cannot go stale when the engine changes. It is zero client
+ * JavaScript, because .astro frontmatter never reaches the browser.
+ *
+ * This is the answer to "the visitor has three seconds". Nobody reads a value
+ * proposition in three seconds; they look for evidence the site does something.
+ * A curve reaching zero in 19 months against a baseline still climbing is that
+ * evidence, and it needs no words at all.
+ */
+const DEMO_DEBTS = [
+  {
+    id: 'd1',
+    name: 'Store card',
+    balance: fromMajor(900),
+    annualRate: 0.2999,
+    minimumPayment: fromMajor(30),
+  },
+  {
+    id: 'd2',
+    name: 'Credit card',
+    balance: fromMajor(6000),
+    annualRate: 0.2299,
+    minimumPayment: fromMajor(150),
+  },
+  {
+    id: 'd3',
+    name: 'Personal loan',
+    balance: fromMajor(2500),
+    annualRate: 0.0699,
+    minimumPayment: fromMajor(120),
+  },
+];
+
+const demo = compareStrategies(DEMO_DEBTS, fromMajor(600));
+
+const opening = DEMO_DEBTS.reduce((sum, d) => sum + d.balance, 0);
+const curve = (result: (typeof demo)['avalanche']) => [
+  opening,
+  ...result.schedule.map((m) => m.totalRemaining),
+];
+
+const CURRENCY = 'USD';
+const saved = format(demo.interestSavedVsMinimums, CURRENCY);
+const monthsSaved = demo.monthsSavedVsMinimums;
+const fastMonths = demo.avalanche.months;
+const slowMonths = demo.minimumsOnly.months;
 ---
 
 <BaseLayout
   title="QuickOper — calculators that show their working"
-  description="Verified-calculation tools for personal money decisions. Every calculation runs in your browser, shows its formula, and exports a full schedule. Nothing you type leaves your device."
+  description="Money calculators that give you the whole schedule, not just a number: the formula, every period, a chart, and a CSV. Nothing you type is sent anywhere, and every figure can be checked against Excel."
 >
   {
-    /* The hero is laid out as the face of a note: ruled twice, rosettes struck
-      into the corners, an engraved line above the title and lathe work below
-      it. All build-time SVG and CSS — this page still ships 0.53KB. */
+    /* The hero is the face of a note: ruled twice, rosettes struck into the
+      corners, and a real computed curve where a stock illustration would go. */
   }
   <NoteFrame class="mt-2">
     <div class="relative overflow-hidden">
-      {/* Behind the headline, clipped and faint. Decorative, aria-hidden. */}
       <Guilloche
         size={300}
-        class="text-brand pointer-events-none absolute -top-20 -right-20 hidden opacity-[0.10] sm:block"
+        class="text-brand pointer-events-none absolute -top-24 -right-24 hidden opacity-[0.08] sm:block"
       />
 
       <p class="engraved-fine text-ink-mute relative">Verified calculation</p>
 
       <h1 class="relative mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-        Calculators that show their working.
+        The whole schedule, not just a number.
       </h1>
 
-      <LatheBand height={9} class="text-engrave-strong relative mt-4 max-w-xs" />
-
       <p class="text-ink-soft relative mt-4 text-lg">
-        Money tools that give you the whole schedule, not just a number — and prove the
-        arithmetic against real published figures.
+        Most calculators hand you one figure and keep the working. These give you every
+        month, the formula behind it, a chart, and a spreadsheet you can take away — and
+        every figure can be checked against Excel.
       </p>
+
+      {
+        /* Straight to the tool. A visitor who came for a debt calculator should
+          not have to scroll past an explanation of why we are trustworthy. */
+      }
+      <div class="relative mt-6 flex flex-wrap gap-3">
+        <a
+          href="/finance/debt-payoff-calculator"
+          class="rounded-control border-brand bg-brand text-canvas hover:bg-brand-hover border px-4 py-2 text-sm font-semibold"
+        >
+          Debt payoff calculator
+        </a>
+        <a
+          href="/finance/coast-fire-calculator"
+          class="rounded-control border-line-strong bg-sunken hover:bg-brand-soft hover:border-brand border px-4 py-2 text-sm font-semibold"
+        >
+          Coast FIRE calculator
+        </a>
+      </div>
     </div>
   </NoteFrame>
 
   {
-    /* Double-ruled like the frame, but without corner rosettes — four medallions
-      on a card this small is fussy rather than formal. */
+    /* Proof, computed at build time by the real engine on the calculator's own
+      default scenario — see the frontmatter. */
   }
-  <div class="mt-8 grid gap-4 sm:grid-cols-3">
-    <div class="rounded-panel border-line bg-surface shadow-panel border p-1.5">
-      <div class="border-engrave-strong rounded-control border p-3">
-        <h2 class="engraved text-ink text-xs">Verified arithmetic</h2>
-        <p class="text-ink-soft mt-2 text-sm">
-          Every calculation is a separately-tested pure function, checked against a real
-          published schedule. The tests are public.
-        </p>
+  <section class="mt-10" aria-labelledby="proof-heading">
+    <h2 id="proof-heading" class="sr-only">What the debt payoff calculator produces</h2>
+
+    <div class="rounded-panel border-line-strong bg-surface border p-1.5">
+      <div class="border-engrave-strong rounded-control border p-4 sm:p-5">
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <p class="engraved text-ink text-xs">$9,400 of debt, $600 a month</p>
+          <p class="text-ink-mute text-xs">
+            Worked out in your browser · nothing transmitted
+          </p>
+        </div>
+
+        <ProofChart
+          class="mt-4"
+          caption={`Total balance by month. Paying $600 a month with the avalanche method clears $9,400 of debt in ${fastMonths} months. Paying only the minimums takes ${slowMonths} months and costs ${saved} more in interest.`}
+          series={[
+            { label: 'Minimum payments only', points: curve(demo.minimumsOnly) },
+            { label: 'Avalanche', points: curve(demo.avalanche), emphasis: true },
+          ]}
+        />
+
+        <dl class="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <dt class="engraved text-ink-mute text-[0.65rem]">Debt-free in</dt>
+            <dd class="numeric text-ink mt-0.5 text-xl font-semibold">
+              {fastMonths} months
+            </dd>
+            <dd class="text-ink-mute text-xs">instead of {slowMonths}</dd>
+          </div>
+          <div>
+            <dt class="engraved text-ink-mute text-[0.65rem]">Interest saved</dt>
+            <dd class="numeric text-positive mt-0.5 text-xl font-semibold">{saved}</dd>
+            <dd class="text-ink-mute text-xs">against paying minimums</dd>
+          </div>
+          <div>
+            <dt class="engraved text-ink-mute text-[0.65rem]">Sooner by</dt>
+            <dd class="numeric text-ink mt-0.5 text-xl font-semibold">
+              {monthsSaved} months
+            </dd>
+            <dd class="text-ink-mute text-xs">
+              <a class="text-brand underline" href="/finance/debt-payoff-calculator">
+                run your own figures
+              </a>
+            </dd>
+          </div>
+        </dl>
       </div>
     </div>
 
-    <div class="rounded-panel border-line bg-surface shadow-panel border p-1.5">
-      <div class="border-engrave-strong rounded-control border p-3">
-        <h2 class="engraved text-ink text-xs">Nothing is transmitted</h2>
-        <p class="text-ink-soft mt-2 text-sm">
-          Static site, no backend, no accounts. Your numbers never leave your device —
-          there is no server to send them to.
-        </p>
-      </div>
-    </div>
-
-    <div class="rounded-panel border-line bg-surface shadow-panel border p-1.5">
-      <div class="border-engrave-strong rounded-control border p-3">
-        <h2 class="engraved text-ink text-xs">The whole schedule</h2>
-        <p class="text-ink-soft mt-2 text-sm">
-          Formula, intermediate values, every period, a chart, and a CSV you can take with
-          you.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <Rule class="mt-12" />
-
-  <h2 class="mt-8 text-lg font-semibold">Calculators</h2>
-
-  <ul class="mt-3 space-y-3">
-    <li>
-      <a
-        href="/finance/debt-payoff-calculator"
-        class="rounded-panel border-line bg-surface hover:border-line-strong block border p-4"
-      >
-        <span class="text-brand font-medium">Debt payoff — avalanche vs snowball</span>
-        <span class="text-ink-soft mt-1 block text-sm">
-          Compare both methods against paying minimums. Full month-by-month schedule,
-          chart and CSV export.
-        </span>
-      </a>
-    </li>
-
-    <li>
-      <a
-        href="/finance/coast-fire-calculator"
-        class="rounded-panel border-line bg-surface hover:border-line-strong block border p-4"
-      >
-        <span class="text-brand font-medium"
-          >Coast FIRE — when saving becomes optional</span
-        >
-        <span class="text-ink-soft mt-1 block text-sm">
-          How much you need invested today for it to reach your retirement target on its
-          own. Year-by-year projection, chart and export.
-        </span>
-      </a>
-    </li>
-  </ul>
-
-  <p class="text-ink-soft mt-4 text-sm">
-    <a class="text-brand underline" href="/finance">See all calculators</a> — more are added
-    one at a time, each tested against a published figure before it ships.
-  </p>
+    <p class="text-ink-mute mt-2 text-xs">
+      Every figure above is produced by the calculator itself when this page is built —
+      not written by hand.
+    </p>
+  </section>
 
   <Rule class="mt-12" />
 
   <section class="mt-8">
-    <h2 class="text-lg font-semibold">Why you can check these numbers</h2>
-    <p class="text-ink-soft mt-2 text-sm">
-      Every calculation is a tested function, checked against figures published elsewhere,
-      and the tests are public. The{' '}
-      <a class="text-brand underline" href="/methodology">methodology page</a> sets out the
-      rounding policy and a worked verification you can repeat — including why{' '}
-      <code class="numeric">1.005 × 100</code> is the reason most financial software is a cent
-      out.
-    </p>
-    <p class="text-ink-soft mt-3 text-sm">
-      Better than taking our word for it:{' '}
-      <a class="text-brand underline" href="/verify"
-        >check our arithmetic in your own spreadsheet</a
-      >. Five formulas and the SEC's own calculator, about ten minutes — including the two
-      figures where we deliberately differ, and exactly why.
+    <h2 class="text-2xl font-semibold tracking-tight">
+      What the big comparison sites will not give you
+    </h2>
+
+    <p class="text-ink-soft mt-2">
+      Not a claim about their arithmetic — a claim about their incentives. A site funded
+      by lead generation needs your email and your attention. This one has no backend to
+      send anything to.
     </p>
 
-    <p class="text-ink-soft mt-3 text-sm">
+    <div class="mt-6 grid gap-4 sm:grid-cols-3">
+      <div class="rounded-panel border-line bg-surface shadow-panel border p-1.5">
+        <div class="border-engrave-strong rounded-control h-full border p-3">
+          <h3 class="engraved text-ink text-xs">Your numbers stay here</h3>
+          <p class="text-ink-soft mt-2 text-sm">
+            There is no server to send them to. No account, no email wall, no analytics
+            attached to what you typed. The claim is structural, not a promise.
+          </p>
+        </div>
+      </div>
+
+      <div class="rounded-panel border-line bg-surface shadow-panel border p-1.5">
+        <div class="border-engrave-strong rounded-control h-full border p-3">
+          <h3 class="engraved text-ink text-xs">Arithmetic you can check</h3>
+          <p class="text-ink-soft mt-2 text-sm">
+            Five formulas reproduce every published figure in your own spreadsheet —
+            including the two where we differ, and by exactly how much.
+          </p>
+        </div>
+      </div>
+
+      <div class="rounded-panel border-line bg-surface shadow-panel border p-1.5">
+        <div class="border-engrave-strong rounded-control h-full border p-3">
+          <h3 class="engraved text-ink text-xs">The document, not the answer</h3>
+          <p class="text-ink-soft mt-2 text-sm">
+            Every period, a chart, a CSV, and a printable schedule with a link back to
+            your exact scenario. Yours to keep and to send on.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-ink-soft mt-4 text-sm">
+      <a class="text-brand underline" href="/verify">Check our arithmetic yourself</a> — five
+      spreadsheet formulas and the SEC's own calculator, about ten minutes.
+    </p>
+  </section>
+
+  <Rule class="mt-12" />
+
+  <section class="mt-8">
+    <h2 class="text-2xl font-semibold tracking-tight">Calculators</h2>
+
+    <ul class="mt-4 space-y-3">
+      <li>
+        <a
+          href="/finance/debt-payoff-calculator"
+          class="rounded-panel border-line bg-surface hover:border-brand block border p-4"
+        >
+          <span class="text-brand font-medium">Debt payoff — avalanche vs snowball</span>
+          <span class="text-ink-soft mt-1 block text-sm">
+            Compare both methods against paying minimums. Full month-by-month schedule,
+            chart, CSV and printable report.
+          </span>
+        </a>
+      </li>
+
+      <li>
+        <a
+          href="/finance/coast-fire-calculator"
+          class="rounded-panel border-line bg-surface hover:border-brand block border p-4"
+        >
+          <span class="text-brand font-medium"
+            >Coast FIRE — when saving becomes optional</span
+          >
+          <span class="text-ink-soft mt-1 block text-sm">
+            How much you need invested today for it to reach your retirement target on its
+            own. Year-by-year projection, chart and export.
+          </span>
+        </a>
+      </li>
+    </ul>
+
+    <h3 class="mt-8 text-lg font-semibold">Derivations</h3>
+    <p class="text-ink-soft mt-1 text-sm">
+      The arithmetic behind the tools, worked out with real figures.
+    </p>
+
+    <ul class="text-ink-soft mt-3 space-y-1 text-sm">
+      <li>
+        <a class="text-brand underline" href="/credit-card-interest"
+          >How credit card interest is actually calculated</a
+        > — the daily periodic rate, and why 22.99% costs 25.838%.
+      </li>
+      <li>
+        <a class="text-brand underline" href="/monthly-return-rate"
+          >Why a 7% return is not 0.583% a month</a
+        > — one division that overstates thirty years by $50,424.
+      </li>
+    </ul>
+  </section>
+
+  <section class="mt-12">
+    <h2 class="text-lg font-semibold">Who writes this</h2>
+    <p class="text-ink-soft mt-2 text-sm">
       Built by <a class="text-brand underline" href="/about"
         >a software engineer, not a financial adviser</a
-      >. That distinction matters, and we are precise about it.
+      >. That distinction matters and we are precise about it: this site does arithmetic
+      and shows its working. It never tells you what to do with your money.
     </p>
   </section>
 </BaseLayout>
