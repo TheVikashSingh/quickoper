@@ -946,6 +946,50 @@ verified the same way, at defaults and at the stalling inputs.
 **Cost: 0.12KB** on the worst page (18.27 → 18.39, 1.11 spare), for one ternary
 and two strings.
 
+### D48 — Launched, and the half-hour where a fixed site still looked broken
+
+`https://quickoper.com` went live on **2026-08-11**. Nameservers moved from
+Hostinger to Cloudflare, all ten records recreated, mail verified passing on both
+sides of the switch, Worker custom domains attached for the apex and `www`.
+
+Verified on the live domain rather than assumed: **18 routes returning 200**, the
+redirect running the correct direction (`/about/` → `/about`, not the reverse),
+all six security headers applying, 404s handled, canonical tags pointing at the
+apex, 15 slash-less URLs in the sitemap, `Organization` + `Person` + `WebSite` on
+the homepage, and the debt calculator computing **19 months, $1,427.27 interest,
+$5,021.37 saved** with its chart and 22 schedule rows — the same figures the
+homepage bakes in at build time (D32).
+
+**The thing worth recording is the failure that was not one.**
+
+After the apex custom domain was attached and Cloudflare was demonstrably
+serving `104.21.85.39` for it, the site still showed `DNS_PROBE_FINISHED_NXDOMAIN`
+for roughly half an hour. Nothing was wrong. The zone's SOA sets a **negative-cache
+TTL of 1800 seconds**, and during the window between deleting the old Vercel A
+record and attaching the Worker, every resolver that was asked cached the answer
+*"this name has no address"* — for thirty minutes, regardless of what changed
+afterwards.
+
+So the site was fixed long before it looked fixed, and the natural reaction —
+delete the custom domain and try again — would have restarted the same clock
+while changing nothing.
+
+**The lesson for the next migration, and it is cheap:** attach the new custom
+domain **before** deleting the old host's record, so the name never has a moment
+with no answer. `docs/DNS.md` step 4 currently says to delete the Vercel records
+during the zone review, which created exactly that gap. Reordering costs nothing.
+
+Diagnosis was two queries: ask Cloudflare's own nameserver (record present) and
+ask a public resolver (no answer, SOA TTL counting down). When those two
+disagree, it is caching, not configuration — and the fix is to wait, not to
+change anything.
+
+**Also fixed here:** `STATE.md`'s CI-gates row still read "headers config" after
+D46 renamed the gate to `check-deploy-config.mjs`, while the same file's gate
+list two sections down read "deploy config". The same fact stated twice, once
+stale — which is the exact failure `check-state.mjs` exists for and does not
+cover, because it polices counts rather than names.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

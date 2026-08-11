@@ -74,6 +74,15 @@ being retired and nothing about it carries over.
 Both are replaced automatically when the Worker custom domain is attached
 (step 8). Do not create them by hand in Cloudflare.
 
+**Delete them at step 8, not here — this was got wrong (D48).** Removing the old
+address record before the Worker is attached leaves the name with *no answer*,
+and every resolver that asks during that window caches the emptiness for the
+zone's negative-cache TTL: **1800 seconds**. The site then stays dark for up to
+half an hour after it is actually working, and the obvious reaction — detach and
+re-attach the custom domain — restarts the clock while fixing nothing.
+
+Leave them in place, DNS-only, until step 8 replaces them.
+
 ---
 
 ## Procedure
@@ -214,9 +223,28 @@ custom domain → `quickoper.com`. Repeat for `www.quickoper.com`.
 Cloudflare creates the records and issues the certificate — a few minutes,
 occasionally fifteen.
 
+Now delete the previous host's `A` and `www` records, if they are still there.
+Doing it in this order means the name never has a moment with no answer (D48).
+
 **Gate:** `https://quickoper.com` serves the site, `www` resolves, and the mail
 test still passes. Attaching a custom domain does not touch MX, but confirming it
 takes seconds.
+
+**If the apex returns `NXDOMAIN` after this, do not detach anything.** Ask two
+questions instead:
+
+```
+nslookup quickoper.com NAME.ns.cloudflare.com
+```
+
+```
+curl -sS "https://dns.google/resolve?name=quickoper.com&type=A"
+```
+
+If Cloudflare's own nameserver has the record and a public resolver does not,
+that is **negative caching**, not misconfiguration — wait for the TTL in the SOA
+to expire (up to 1800s) and flush locally with `ipconfig /flushdns`. Changing
+configuration at that point only restarts the clock.
 
 This step is reversible: detach the custom domain and the site is off the
 apex again.
