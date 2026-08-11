@@ -993,6 +993,66 @@ only) and `CLOUDFLARE_ACCOUNT_ID`.
 which is exactly the division the working agreement already described, now
 enforced by the pipeline rather than by etiquette.
 
+### D50 — The page contradicted itself, and "linked from somewhere" was not enough
+
+The homepage hero row listed three calculators. The section further down headed
+**"Calculators"** listed two — the mortgage tool was missing from it for four
+pull requests. A visitor who scrolled to the list of calculators was told there
+were two.
+
+**Every gate passed**, and D41's orphan check is the reason why: it asks *"is
+this page linked from anywhere"*, and the mortgage page **was** linked, from the
+hero, thirty lines above. Being linked from somewhere is not the same as being
+listed where a reader looks for the list.
+
+Second time this same tool has gone missing from a listing (D41). Twice is a
+pattern, so `check-links.mjs` now asserts that every `/finance/*-calculator`
+route appears in the list under the "Calculators" heading. Proven by stripping
+the mortgage `<li>` from the built HTML **while leaving the hero link intact** —
+the orphan check still passes, the new one exits 1 naming the route.
+
+Anchored on the heading text, and a **missing heading is a failure**, not a
+silent pass. Renaming the section must break the check loudly rather than
+quietly retire it — the same reasoning as `check-state.mjs` (D27), and the
+failure mode that let the byte budget report an island page at 1.09 KB (D18).
+
+**What is still unchecked, and stated rather than hidden:** the hero's "Three
+calculators today" is prose. It said "two" for two pull requests after the third
+tool shipped, and nothing catches that. Gating a sentence against a count is
+possible and was not done — the list is the thing a reader acts on, the sentence
+is a caption. Recorded so the next person knows it is a gap rather than an
+oversight.
+
+**On the affordance, which was the operator's other complaint.** The cards were
+bordered panels whose only cue was coloured text; a whole-card link that does
+not look like a link is a dead end for anyone not hovering. They now carry an
+arrow that shifts on hover, the title underlines with it, and the border moves
+to `--color-line-strong` — the token D30 raised specifically so control
+boundaries clear WCAG 1.4.11.
+
+No per-card focus ring was added: `global.css` already sets a 2px brand
+`:focus-visible` outline site-wide, and duplicating it in a component is how
+tokens stop being the single source.
+
+**Measured, not eyeballed** (D29, D36):
+
+| | Border vs card | Title | Description |
+|---|---|---|---|
+| Light | **3.85:1** | 7.88:1 | 7.89:1 |
+| Dark | **3.80:1** | 8.24:1 | 9.04:1 |
+
+Against 3:1 for a UI component boundary and 4.5:1 for text. At 375px: no
+horizontal scroll, arrows contained, every card far above the 44px tap target.
+
+**The first measurement pass reported 2.24:1 for both title and description** —
+two different tokens returning one number, which is the exact smell D29 records.
+It was a selector picking the wrong node after a colour-scheme switch without a
+reload, not a contrast defect. Worth writing down: when two distinct tokens
+measure identically, suspect the instrument before the palette.
+
+**Zero JavaScript cost.** These are `.astro` markup changes; the homepage island
+is untouched.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

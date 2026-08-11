@@ -98,8 +98,12 @@ const slowMonths = demo.minimumsOnly.months;
         thing this space can do. It is what calculator.net gets right.
 
         Compact on purpose — one line on a phone, two short rows at most. The
-        list is also honest about its own length: two tools, and it says so
-        rather than padding the row to look fuller.
+        list is also honest about its own length: it states the count rather
+        than padding the row to look fuller.
+
+        That count is prose and nothing checks it — it said "two" for two pull
+        requests after the third tool shipped. The list under "Calculators"
+        further down IS checked, by check-links.mjs (D50).
       */
       }
       <nav class="relative mt-4" aria-label="Calculators">
@@ -287,13 +291,41 @@ const slowMonths = demo.minimumsOnly.months;
   <section class="mt-8">
     <h2 class="text-2xl font-semibold tracking-tight">Calculators</h2>
 
+    {
+      /*
+        EVERY calculator belongs in this list, in the same order as the hero row
+        above. The mortgage tool was missing here for four pull requests while
+        being present in the hero — so the page contradicted itself, and a
+        visitor who scrolled to the section headed "Calculators" was told there
+        were two (D50).
+
+        `check-links.mjs` now fails the build if a calculator route is absent
+        from this list, because D41's orphan check could not: the route *was*
+        linked from the hero, so every gate was green.
+
+        On the affordance: these are whole-card links, and a bordered panel does
+        not read as one. Hover moves the arrow and underlines the title; the
+        global :focus-visible rule in global.css supplies the keyboard ring, so
+        it is deliberately not repeated here.
+      */
+    }
     <ul class="mt-4 space-y-3">
       <li>
         <a
           href="/finance/debt-payoff-calculator"
-          class="rounded-panel border-line bg-surface hover:border-brand block border p-4"
+          class="rounded-panel border-line-strong bg-surface hover:border-brand hover:bg-sunken group block border p-4 transition-colors"
         >
-          <span class="text-brand font-medium">Debt payoff — avalanche vs snowball</span>
+          <span class="flex items-baseline justify-between gap-3">
+            <span class="text-brand font-medium group-hover:underline">
+              Debt payoff — avalanche vs snowball
+            </span>
+            <span
+              aria-hidden="true"
+              class="text-brand shrink-0 transition-transform group-hover:translate-x-1"
+            >
+              →
+            </span>
+          </span>
           <span class="text-ink-soft mt-1 block text-sm">
             Compare both methods against paying minimums. Full month-by-month schedule,
             chart, CSV and printable report.
@@ -303,12 +335,44 @@ const slowMonths = demo.minimumsOnly.months;
 
       <li>
         <a
-          href="/finance/coast-fire-calculator"
-          class="rounded-panel border-line bg-surface hover:border-brand block border p-4"
+          href="/finance/mortgage-overpayment-calculator"
+          class="rounded-panel border-line-strong bg-surface hover:border-brand hover:bg-sunken group block border p-4 transition-colors"
         >
-          <span class="text-brand font-medium"
-            >Coast FIRE — when saving becomes optional</span
-          >
+          <span class="flex items-baseline justify-between gap-3">
+            <span class="text-brand font-medium group-hover:underline">
+              Mortgage overpayment — what an extra payment removes
+            </span>
+            <span
+              aria-hidden="true"
+              class="text-brand shrink-0 transition-transform group-hover:translate-x-1"
+            >
+              →
+            </span>
+          </span>
+          <span class="text-ink-soft mt-1 block text-sm">
+            How much interest and how many years an overpayment takes off, against the
+            contractual schedule. Full amortisation table, chart, CSV and printable
+            report.
+          </span>
+        </a>
+      </li>
+
+      <li>
+        <a
+          href="/finance/coast-fire-calculator"
+          class="rounded-panel border-line-strong bg-surface hover:border-brand hover:bg-sunken group block border p-4 transition-colors"
+        >
+          <span class="flex items-baseline justify-between gap-3">
+            <span class="text-brand font-medium group-hover:underline">
+              Coast FIRE — when saving becomes optional
+            </span>
+            <span
+              aria-hidden="true"
+              class="text-brand shrink-0 transition-transform group-hover:translate-x-1"
+            >
+              →
+            </span>
+          </span>
           <span class="text-ink-soft mt-1 block text-sm">
             How much you need invested today for it to reach your retirement target on its
             own. Year-by-year projection, chart and export.

@@ -199,6 +199,67 @@ if (orphans.length > 0) {
   process.exit(1);
 }
 
+// ── The homepage's own list of calculators ───────────────────────────────────
+//
+// D41 made every page prove it is linked from somewhere. That is not enough.
+//
+// The mortgage calculator was linked from the hero row at the top of the
+// homepage and absent from the section further down headed "Calculators" — so
+// the orphan check above passed, the page linked to it, and a visitor who
+// scrolled to the list of calculators was told there were two. The page
+// contradicted itself, and the operator found it by reading the page.
+//
+// Second time this exact tool has gone missing from a listing (D41, D50). Twice
+// is a pattern, so it gets a check.
+//
+// Anchored on the heading text rather than a class or position, and a missing
+// heading is a FAILURE rather than a silent pass — otherwise renaming the
+// section quietly retires the check, which is how check-js-budget once reported
+// an island page at 1.09 KB.
+
+const homepage = join(DIST, 'index.html');
+const homeHtml = (await exists(homepage)) ? await readFile(homepage, 'utf8') : '';
+
+const calculators = pages
+  .map((page) =>
+    ('/' + relative(DIST, page).split(sep).join('/')).replace(/index\.html$/, ''),
+  )
+  .filter((route) => /^\/finance\/[^/]+-calculator\/$/.test(route))
+  .map((route) => route.replace(/\/$/, ''));
+
+// Everything after the "Calculators" heading, up to the next heading of the
+// same or higher level. That is the list a reader sees under that word.
+const section = homeHtml.match(/<h2[^>]*>\s*Calculators\s*<\/h2>([\s\S]*?)<h[123][\s>]/i);
+
+if (homeHtml === '') {
+  console.error('FAIL: dist/index.html not found — cannot check the calculator list.');
+  process.exit(1);
+}
+
+if (!section) {
+  console.error('FAIL: no "Calculators" section found on the homepage.\n');
+  console.error('  This check reads the list under that heading. If the section was');
+  console.error('  renamed, update the pattern in scripts/check-links.mjs — do not');
+  console.error('  delete the check, or the list can silently go stale again.');
+  process.exit(1);
+}
+
+const missingFromList = calculators.filter(
+  (route) => !(section[1] ?? '').includes(route),
+);
+
+if (missingFromList.length > 0) {
+  console.error(
+    `FAIL: ${missingFromList.length} calculator(s) missing from the homepage list:\n`,
+  );
+  for (const route of missingFromList) console.error(`    ${route}`);
+  console.error('');
+  console.error('  Being linked from the hero is not the same as being listed under');
+  console.error('  "Calculators". A page that lists some of them and not others tells');
+  console.error('  the visitor there are fewer tools than there are.');
+  process.exit(1);
+}
+
 if (broken.length > 0) {
   console.error(`FAIL: ${broken.length} internal link(s) point at nothing:\n`);
   for (const link of broken)
@@ -213,3 +274,4 @@ console.log(
   `PASS: ${total} internal link(s) across ${pages.length} page(s), ` +
     `${checked.size} distinct, all resolve.`,
 );
+console.log(`PASS: all ${calculators.length} calculator(s) appear in the homepage list.`);
