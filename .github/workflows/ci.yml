@@ -9,9 +9,12 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded PR runs — that is what this setting is for. Never cancel a
+# run on main: since D49 those runs deploy to production, and killing one
+# mid-upload leaves the live site half-written with no error anywhere.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -96,3 +99,51 @@ jobs:
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Production ──────────────────────────────────────────────────────────────
+  #
+  # Merging to main IS the release (D49). Before this job existed, `main` and
+  # the live site drifted apart silently: production only moved when someone
+  # remembered to run `npx wrangler deploy` by hand, from a working tree that
+  # might be on any branch.
+  #
+  # That is not hypothetical. It happened twice during launch — once deploying
+  # a wrangler.toml from a stale branch, so a merged fix never reached the site
+  # while every dashboard said it had.
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+
+    # Production can only ever receive a commit that passed all ten gates.
+    needs: [verify, secret-scan]
+
+    # Merges only. A pull request must never touch the live site.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # NOT optional, and the reason is a real defect. `wrangler deploy` uploads
+      # ./dist exactly as it finds it — it does not build. A deploy without this
+      # step ships whatever happened to be on disk, which during launch meant
+      # shipping the previous commit's output while reporting success.
+      - name: Build
+        run: npm run build
+
+      # `npx wrangler` rather than cloudflare/wrangler-action. A third-party
+      # action in the release path is a supply-chain dependency holding a token
+      # that can rewrite the live site, added to save four lines. Rule 4's
+      # reasoning applies to CI as much as to npm.
+      - name: Deploy to Cloudflare Workers
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

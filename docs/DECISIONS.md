@@ -946,6 +946,53 @@ verified the same way, at defaults and at the stalling inputs.
 **Cost: 0.12KB** on the worst page (18.27 → 18.39, 1.11 spare), for one ternary
 and two strings.
 
+### D49 — Merging to main is the release
+
+Until now, `main` and the live site were connected by nothing but memory.
+Production moved only when someone ran `npx wrangler deploy` by hand, from a
+working tree that might be on any branch, against a `dist/` that might be from
+any commit.
+
+**That drift is not hypothetical — it cost two deploys during launch.** One
+uploaded a `wrangler.toml` from a branch cut before the fix it was supposed to
+carry, so a merged change never reached the site while GitHub, CI and the
+Cloudflare dashboard all reported success. The only thing that caught it was
+querying the live site and finding every page still a 307 (D46).
+
+So the deploy is now a job in the same workflow, and the properties are the
+point:
+
+**Production can only receive a commit that passed all ten gates.**
+`needs: [verify, secret-scan]`. There is no path to the live site that skips
+them — not "I'll just push this one small fix".
+
+**It builds first.** `wrangler deploy` uploads `./dist` exactly as it finds it;
+it does not build. Both bad deploys above were a stale `dist/`, and a human is
+reliably the wrong mechanism for remembering this.
+
+**Pull requests never touch it.** Gated on `push` to `main`.
+
+**`npx wrangler`, not `cloudflare/wrangler-action`.** A third-party action in
+the release path is a supply-chain dependency that holds a token able to rewrite
+the live site, adopted to save four lines of YAML. Rule 4's reasoning — state
+what it does and why hand-rolling is worse — applies to CI at least as much as
+to npm, and here hand-rolling is *better*: `npx wrangler deploy` is exactly the
+command that already worked.
+
+**`cancel-in-progress` is now conditional.** It was unconditionally true, which
+is right for superseding a PR run and actively dangerous for a run that deploys:
+two quick merges would cancel the first mid-upload and leave the live site
+half-written, with no error anywhere. Now it cancels pull requests only.
+
+**Two secrets, created by the operator, never seen by an agent:**
+`CLOUDFLARE_API_TOKEN` (scoped to *Edit Cloudflare Workers* on this account
+only) and `CLOUDFLARE_ACCOUNT_ID`.
+
+**What this does not change:** CLAUDE.md still forbids an agent from running
+`wrangler deploy`, and that stays. The operator's merge click is what releases —
+which is exactly the division the working agreement already described, now
+enforced by the pipeline rather than by etiquette.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
