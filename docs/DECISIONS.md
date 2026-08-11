@@ -946,49 +946,52 @@ verified the same way, at defaults and at the stalling inputs.
 **Cost: 0.12KB** on the worst page (18.27 → 18.39, 1.11 spare), for one ternary
 and two strings.
 
-### D48 — Launched, and the half-hour where a fixed site still looked broken
+### D49 — Merging to main is the release
 
-`https://quickoper.com` went live on **2026-08-11**. Nameservers moved from
-Hostinger to Cloudflare, all ten records recreated, mail verified passing on both
-sides of the switch, Worker custom domains attached for the apex and `www`.
+Until now, `main` and the live site were connected by nothing but memory.
+Production moved only when someone ran `npx wrangler deploy` by hand, from a
+working tree that might be on any branch, against a `dist/` that might be from
+any commit.
 
-Verified on the live domain rather than assumed: **18 routes returning 200**, the
-redirect running the correct direction (`/about/` → `/about`, not the reverse),
-all six security headers applying, 404s handled, canonical tags pointing at the
-apex, 15 slash-less URLs in the sitemap, `Organization` + `Person` + `WebSite` on
-the homepage, and the debt calculator computing **19 months, $1,427.27 interest,
-$5,021.37 saved** with its chart and 22 schedule rows — the same figures the
-homepage bakes in at build time (D32).
+**That drift is not hypothetical — it cost two deploys during launch.** One
+uploaded a `wrangler.toml` from a branch cut before the fix it was supposed to
+carry, so a merged change never reached the site while GitHub, CI and the
+Cloudflare dashboard all reported success. The only thing that caught it was
+querying the live site and finding every page still a 307 (D46).
 
-**The thing worth recording is the failure that was not one.**
+So the deploy is now a job in the same workflow, and the properties are the
+point:
 
-After the apex custom domain was attached and Cloudflare was demonstrably
-serving `104.21.85.39` for it, the site still showed `DNS_PROBE_FINISHED_NXDOMAIN`
-for roughly half an hour. Nothing was wrong. The zone's SOA sets a **negative-cache
-TTL of 1800 seconds**, and during the window between deleting the old Vercel A
-record and attaching the Worker, every resolver that was asked cached the answer
-*"this name has no address"* — for thirty minutes, regardless of what changed
-afterwards.
+**Production can only receive a commit that passed all ten gates.**
+`needs: [verify, secret-scan]`. There is no path to the live site that skips
+them — not "I'll just push this one small fix".
 
-So the site was fixed long before it looked fixed, and the natural reaction —
-delete the custom domain and try again — would have restarted the same clock
-while changing nothing.
+**It builds first.** `wrangler deploy` uploads `./dist` exactly as it finds it;
+it does not build. Both bad deploys above were a stale `dist/`, and a human is
+reliably the wrong mechanism for remembering this.
 
-**The lesson for the next migration, and it is cheap:** attach the new custom
-domain **before** deleting the old host's record, so the name never has a moment
-with no answer. `docs/DNS.md` step 4 currently says to delete the Vercel records
-during the zone review, which created exactly that gap. Reordering costs nothing.
+**Pull requests never touch it.** Gated on `push` to `main`.
 
-Diagnosis was two queries: ask Cloudflare's own nameserver (record present) and
-ask a public resolver (no answer, SOA TTL counting down). When those two
-disagree, it is caching, not configuration — and the fix is to wait, not to
-change anything.
+**`npx wrangler`, not `cloudflare/wrangler-action`.** A third-party action in
+the release path is a supply-chain dependency that holds a token able to rewrite
+the live site, adopted to save four lines of YAML. Rule 4's reasoning — state
+what it does and why hand-rolling is worse — applies to CI at least as much as
+to npm, and here hand-rolling is *better*: `npx wrangler deploy` is exactly the
+command that already worked.
 
-**Also fixed here:** `STATE.md`'s CI-gates row still read "headers config" after
-D46 renamed the gate to `check-deploy-config.mjs`, while the same file's gate
-list two sections down read "deploy config". The same fact stated twice, once
-stale — which is the exact failure `check-state.mjs` exists for and does not
-cover, because it polices counts rather than names.
+**`cancel-in-progress` is now conditional.** It was unconditionally true, which
+is right for superseding a PR run and actively dangerous for a run that deploys:
+two quick merges would cancel the first mid-upload and leave the live site
+half-written, with no error anywhere. Now it cancels pull requests only.
+
+**Two secrets, created by the operator, never seen by an agent:**
+`CLOUDFLARE_API_TOKEN` (scoped to *Edit Cloudflare Workers* on this account
+only) and `CLOUDFLARE_ACCOUNT_ID`.
+
+**What this does not change:** CLAUDE.md still forbids an agent from running
+`wrangler deploy`, and that stays. The operator's merge click is what releases —
+which is exactly the division the working agreement already described, now
+enforced by the pipeline rather than by etiquette.
 
 ### D26 — Indexability is an invariant, and it is checked
 
