@@ -20,11 +20,11 @@ changes the answer to "what exists" or "what is next".
 
 | | |
 |---|---|
-| Live? | **No.** Nothing is deployed. The apex still serves an unrelated Vercel app, being retired at launch. |
+| Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
 | Pages built | 16 (15 substantive — `/404` is not) |
 | Working calculators | 3 |
 | Tests | 153 passing |
-| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · headers config |
+| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · deploy config |
 | Worst-page JS | 18.39 KB of 19.5 KB (1.11 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only); homepage 12.81 KB — it carries an island (D34) |
 
@@ -104,23 +104,21 @@ Nothing in code depends on these, but launch does.
    out, and keep the `Show original` headers as the pre-migration baseline —
    `docs/DNS.md` step 1.
 
-2. **Cloudflare DNS migration.** The domain carries **live email** — MX, SPF,
-   DMARC and three DKIM CNAMEs. Recreate every one in Cloudflare *before*
-   switching nameservers, and test mail end-to-end as a gate on both sides of the
-   switch. `docs/DNS.md` is the runbook, ordered so the site is deployed and
-   proven on `workers.dev` before any DNS change. Its records were **verified
-   against the live zone on 2026-08-09** — which found the Search Console token
-   recorded there was wrong by one character (D43).
+2. ~~**Cloudflare DNS migration.**~~ **Done, 2026-08-11.** Nameservers moved
+   Hostinger → Cloudflare, all ten records recreated, mail verified passing on
+   both sides of the switch. Worker custom domains attached for the apex and
+   `www`. `docs/DNS.md` is the runbook that was followed; D43, D45, D46 and D48
+   record what it cost to learn.
 
-3. **Search Console** verification and sitemap submission, once the domain
-   resolves. The domain property is already verified by a TXT record; carrying
-   that record across the migration correctly is what keeps it verified.
+3. **Search Console.** The domain property survived the migration — the
+   verification TXT is live and correct. Remaining: submit
+   `https://quickoper.com/sitemap-index.xml`, and remove the old `/sitemap.xml`
+   submission belonging to the retired application.
 
-   The apex currently serves an **unrelated earlier application** from Vercel
-   (`/dashboard`, `/tracker`, `/checklists`, `/pricing`, `/blog`). Launch is a
-   replacement, not a first appearance: expect a 404 spike, and expect the old
-   `/sitemap.xml` submission to need removing. No redirects are warranted —
-   none of that content has an equivalent here.
+   That application (`/dashboard`, `/tracker`, `/checklists`, `/pricing`,
+   `/blog`) is gone. Launch was a **replacement**, so expect a 404 spike. It is
+   correct behaviour and needs no redirects — none of that content has an
+   equivalent here.
 
 4. **One 1200x630 PNG at `public/og.png`**, then flip `twitter:card` back to
    `summary_large_image` in `BaseLayout`. The card claimed a large image and
@@ -263,11 +261,13 @@ file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: three
 calculators, four derivation pages, five trust pages, 15 substantive pages, 153
-tests, ten CI gates. The apex serves an unrelated earlier application from
-Vercel, which is retired as part of launch. **The site is live on Cloudflare
-Workers at `quickoper.quickoper.workers.dev`**, awaiting the DNS move. Deploying
-before touching DNS found two defects nothing else could have (D45, D46), which
-is exactly what that ordering is for.
+tests, ten CI gates. **The site is live at `https://quickoper.com`** as of
+2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
+still Hostinger, mail still Hostinger and verified working after the move.
+
+Deploying before touching DNS found three defects nothing else could have
+(D45, D46, D47), which is exactly what that ordering is for. Every one of them
+would have been debugged against a live domain otherwise.
 
 **What the next session should not do.** Not build tools 4 and 5 — they are
 unassigned and any candidate must pass rule B first. Not write more content — the
@@ -275,13 +275,16 @@ threshold is met and further pages have no near-term purpose until Search Consol
 says which queries are landing. Not raise the JS budget again; 19.5KB has 1.23KB
 of headroom and the next honest fix is structural (D10).
 
-**What it should do.** Help the operator through launch. `docs/DNS.md` is the
-runbook and it is ordered deliberately: mailbox first (so the mail test has a
-known-good baseline), zone export, **deploy to `workers.dev` and prove the site
-before any DNS change**, recreate every mail record in Cloudflare, then query
-Cloudflare's nameservers directly before switching — that query is what makes the
-one irreversible step safe. Mail is a gate on both sides of the switch. The
-custom domain, Search Console and retiring Vercel come last.
+**What it should do.** Launch is done. The remaining operator items are Search
+Console (submit the sitemap, drop the old one), retiring the Vercel account,
+turning off the `workers.dev` route so the site is not publicly duplicated, and
+the og.png. None of them are code.
+
+**The first thing that is now possible and was not before:** Search Console data.
+Every topic on this site was chosen by what is provable from first principles
+(D2), never by what anyone searches. That is defensible and it is not targeting.
+Queries landing at position 8–20 are where a content edit actually moves
+something — and that clock started on 2026-08-11.
 
 **The one honest caveat to carry forward.** Every topic on this site was chosen by
 what can be proved from first principles, not by search demand. That is
