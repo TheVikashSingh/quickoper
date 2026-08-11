@@ -120,11 +120,11 @@ Nothing in code depends on these, but launch does.
    correct behaviour and needs no redirects — none of that content has an
    equivalent here.
 
-4. **One 1200x630 PNG at `public/og.png`**, then flip `twitter:card` back to
-   `summary_large_image` in `BaseLayout`. The card claimed a large image and
-   supplied none for the whole project (D31); it is now honestly `summary`.
-   Generating one at build time would mean satori or sharp, a dependency
-   against rule 4 for a social preview — a hand-made file is cheaper.
+4. ~~**One 1200x630 PNG at `public/og.png`.**~~ **Done** (D51). Drawn by
+   `scripts/og/generate.html` — a browser canvas, so no satori or sharp and no
+   dependency against rule 4. The card type is now *derived* from whether the
+   file exists rather than asserted, so the declaration cannot go back to
+   claiming an image it does not have.
 
 5. **Run `docs/VERIFICATION.md`** — five spreadsheet checks and one at
    investor.gov, ten minutes. Do this

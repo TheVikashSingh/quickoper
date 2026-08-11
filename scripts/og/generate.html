@@ -1,0 +1,196 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>QuickOper — og:image generator</title>
+<!--
+  Generates public/og.png (1200x630), the image link previews render.
+
+  WHY THIS EXISTS RATHER THAN A DEPENDENCY. Producing a PNG at build time means
+  satori or sharp, which is a dependency against rule 4 for a social preview.
+  A browser already has a rasteriser, so this page draws the image on a canvas
+  and exports it. Zero dependencies, and it never runs in CI or in the site.
+
+  WHY IT LIVES IN scripts/ RATHER THAN src/pages/ OR public/. Either of those
+  would make it a route: Astro would build it into dist/, check-state.mjs counts
+  every HTML file in dist/ as a page, and the AdSense "15 substantive pages"
+  figure would silently gain one. A generator is not a page.
+
+  THE CURVE IS REAL. series.json is extracted from the built homepage, whose
+  ProofChart runs the actual debt-payoff engine at build time on the
+  calculator's own default scenario (D32). 19 months against 77. A calculator
+  site whose share image shows a drawing of a calculator is decorating; one that
+  shows its own output is demonstrating.
+
+  COLOURS COME FROM THE TOKENS, not from anybody's memory. tokens.json is
+  extracted from the @theme block in src/styles/global.css.
+
+  TO REGENERATE: open this file in a browser and click the button. Re-extract
+  series.json and tokens.json first if the engine or the palette has changed.
+-->
+<style>
+  body {
+    margin: 0;
+    padding: 24px;
+    font:
+      14px system-ui,
+      sans-serif;
+    background: #222;
+    color: #eee;
+  }
+  canvas {
+    width: 600px;
+    height: 315px;
+    border: 1px solid #555;
+    display: block;
+    margin-bottom: 12px;
+  }
+  button {
+    font: inherit;
+    padding: 8px 14px;
+  }
+</style>
+
+<canvas id="c" width="1200" height="630"></canvas>
+<button id="dl">Download og.png</button>
+
+<script type="module">
+  const [tokens, series] = await Promise.all([
+    fetch('./tokens.json').then((r) => r.json()),
+    fetch('./series.json').then((r) => r.json()),
+  ]);
+
+  const t = (name) => tokens[`--color-${name}`];
+
+  const W = 1200;
+  const H = 630;
+  const ctx = document.getElementById('c').getContext('2d');
+
+  // ── Paper ──────────────────────────────────────────────────────────────────
+  ctx.fillStyle = t('canvas');
+  ctx.fillRect(0, 0, W, H);
+
+  // Engine-turned hairlines: two sets crossing at ±58°, the same device the
+  // site uses site-wide (D29). Very low alpha — texture, never contrast.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, W, H);
+  ctx.clip();
+  ctx.strokeStyle = t('brand');
+  ctx.globalAlpha = 0.05;
+  ctx.lineWidth = 1;
+  for (const angle of [58, -58]) {
+    const rad = (angle * Math.PI) / 180;
+    const dx = Math.cos(rad);
+    const dy = Math.sin(rad);
+    for (let i = -H * 2; i < W * 2; i += 9) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + dx * 2000, dy * 2000);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // ── Note frame: heavy outer rule, hairline inset ───────────────────────────
+  // One border reads as a card; two unevenly weighted read as intaglio (D29).
+  ctx.strokeStyle = t('brand');
+  ctx.lineWidth = 3;
+  ctx.strokeRect(34, 34, W - 68, H - 68);
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(48, 48, W - 96, H - 96);
+  ctx.globalAlpha = 1;
+
+  // ── Left column ────────────────────────────────────────────────────────────
+  const L = 92;
+
+  ctx.fillStyle = t('ink-mute');
+  ctx.font = '600 17px Georgia, "Times New Roman", serif';
+  ctx.letterSpacing = '3px';
+  ctx.fillText('VERIFIED CALCULATION', L, 138);
+  ctx.letterSpacing = '0px';
+
+  ctx.fillStyle = t('ink');
+  ctx.font = '700 78px Georgia, "Times New Roman", serif';
+  ctx.fillText('QuickOper', L, 224);
+
+  ctx.strokeStyle = t('line-strong');
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(L, 256);
+  ctx.lineTo(L + 430, 256);
+  ctx.stroke();
+
+  ctx.fillStyle = t('ink');
+  ctx.font = '400 41px Georgia, "Times New Roman", serif';
+  ctx.fillText('The whole schedule,', L, 324);
+  ctx.fillText('not just a number.', L, 374);
+
+  ctx.fillStyle = t('ink-soft');
+  ctx.font = '400 22px Georgia, "Times New Roman", serif';
+  ctx.fillText('Every figure checkable in a spreadsheet.', L, 424);
+  ctx.fillText('Nothing you type is sent anywhere.', L, 456);
+
+  ctx.fillStyle = t('brand');
+  ctx.font = '600 26px Georgia, "Times New Roman", serif';
+  ctx.fillText('quickoper.com', L, 534);
+
+  // ── Right column: the engine's own output ──────────────────────────────────
+  const CX = 668;
+  const CY = 196;
+  const CW = 440;
+  const CH = 250;
+  const [vw, vh] = series.viewBox;
+  const map = ([x, y]) => [CX + (x / vw) * CW, CY + (y / vh) * CH];
+
+  const line = (points, colour, dash) => {
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = 3;
+    ctx.setLineDash(dash);
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    points.forEach((p, i) => {
+      const [x, y] = map(p);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  };
+
+  // Baseline for the chart.
+  ctx.strokeStyle = t('line-strong');
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(CX, CY + CH);
+  ctx.lineTo(CX + CW, CY + CH);
+  ctx.stroke();
+
+  // Colour is one channel; the dash is the second (D42). On a monochrome
+  // render these two lines must still be distinguishable.
+  line(series.minimums, t('caution'), [8, 5]);
+  line(series.avalanche, t('brand'), []);
+
+  ctx.fillStyle = t('ink-mute');
+  ctx.font = '600 15px Georgia, "Times New Roman", serif';
+  ctx.letterSpacing = '2px';
+  ctx.fillText('$9,400 OF DEBT, $600 A MONTH', CX, 162);
+  ctx.letterSpacing = '0px';
+
+  ctx.fillStyle = t('caution');
+  ctx.font = '400 19px Georgia, "Times New Roman", serif';
+  ctx.fillText('Minimums only — 77 months', CX, CY + CH + 40);
+
+  ctx.fillStyle = t('brand');
+  ctx.font = '600 19px Georgia, "Times New Roman", serif';
+  ctx.fillText('$600 a month — 19 months, $5,021.37 saved', CX, CY + CH + 70);
+
+  // ── Export ─────────────────────────────────────────────────────────────────
+  const url = document.getElementById('c').toDataURL('image/png');
+  window.__OG_PNG__ = url;
+  document.getElementById('dl').onclick = () => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'og.png';
+    a.click();
+  };
+  document.title = 'ready ' + url.length;
+</script>
