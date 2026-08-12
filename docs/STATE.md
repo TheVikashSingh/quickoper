@@ -63,6 +63,13 @@ figures computed here rather than transcribed:
 `mortgage.ts`. Pure, no DOM, no framework. Fixtures anchored to published
 figures (D7) — the mortgage engine to calculator.net's own output, to the cent.
 
+**Affiliate infrastructure** (D52) — `lib/affiliates.ts` (the registry, currently
+**empty**), `public/_redirects` (edge 302s, no Worker and no backend),
+`components/affiliate/AffiliateLink.astro` and `AffiliateDisclosure.astro`.
+Rule 12 is enforced against the built HTML: known slug, `rel="sponsored
+nofollow"`, disclosure above the link. Adding a partner means an entry in the
+registry **and** a line in `_redirects` — the gate fails on either alone.
+
 **Shared UI** — `LineChart.tsx` (hand-rolled reactive SVG), `ScheduleTable.tsx`,
 `lib/csv.ts`, `lib/params.ts`, `lib/url-state.ts`.
 

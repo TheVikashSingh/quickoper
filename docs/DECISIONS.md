@@ -1106,6 +1106,68 @@ header. A gate is possible and was not written — the file changes about once a
 year, and D27's reasoning applies about not building machinery to police
 something that does not move.
 
+### D52 — Affiliate plumbing before there is anything to put in it
+
+`/go/<partner>`, the disclosure component, the registry and the enforcement all
+exist. **There are zero partners**, and that is the point: a disclosure
+convention and a redirect indirection cost five minutes now and are a genuine
+problem to retrofit across a grown site, where every existing page has to be
+revisited.
+
+**It needs no backend, which was not expected.** CLAUDE.md's backend policy
+permits a Worker route for `/go/*`, and it turns out not to need one — a
+`_redirects` line is served by Cloudflare's static asset handler at the edge.
+No Worker script, no `lib/ports/`, no request logging, nothing stateful.
+Verified in the installed wrangler (`REDIRECTS_FILENAME = "_redirects"`) rather
+than assumed, after D45 and D46 both cost a deploy to that exact assumption.
+
+That is strictly better than the permitted design: the site stays deployable
+anywhere as a directory of files, and the click is not observed by anything we
+run. A visitor's outbound click is the one piece of behaviour this site could
+have started logging without anybody noticing, and it does not.
+
+**302, never 301.** A permanent redirect is cached by browsers indefinitely, so
+the day a programme changes its destination — or ends — every visitor who ever
+clicked keeps going there and no deploy can reach them. Affiliate destinations
+are the least permanent URLs on the internet. The gate rejects any other status.
+
+**Two files must agree**: `src/lib/affiliates.ts` renders the links,
+`public/_redirects` serves them. Each is individually valid while disagreeing,
+which is D46's shape precisely, so `check-deploy-config.mjs` compares them —
+slug by slug and URL by URL — and fails on a partner present in one and not the
+other. Proven by adding a line to one file alone: exit 1, naming the slug and
+the direction of the mismatch.
+
+**Rule 12 is enforced against the built HTML**, because a hand-written `<a>` to
+a partner looks identical to a correct one in review. `check-links.mjs` now
+requires, for every `/go/` link on any page:
+
+1. the slug is really in the registry — a `/go/` path with no redirect behind
+   it is a dead link that reviews fine;
+2. `rel` contains both `sponsored` and `nofollow`;
+3. the page carries a disclosure, and it appears **above** the link — below it,
+   the reader is informed after the click it was meant to inform.
+
+All three proven by injecting each violation into `dist/index.html` and running
+the gate: four problems, two problems, two problems, exit 1 each time, exit 0
+restored. The disclosure-position check compares document offsets, which is the
+only place "above" is a fact rather than an intention.
+
+**`/go/*` is exempt from the link resolver** and this is not a loophole. Those
+paths deliberately have no file behind them; resolving them against `dist/`
+would report every correct affiliate link as broken. They are checked against
+the registry instead, which is the stronger question.
+
+**Also: `Disallow: /go/` in robots.txt.** The links already carry
+`rel="sponsored nofollow"`; this keeps crawl budget off the hops as well.
+
+**The disclosure wording is deliberately not a hedge.** "We may receive
+compensation from our partners" is what a site writes when it does not want to
+be understood. The component names the partner and states what triggers the
+payment, and the type requires a relationship string long enough to be a real
+sentence — a vague disclosure on a site whose entire argument is checkability
+costs more than the affiliate link earns.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

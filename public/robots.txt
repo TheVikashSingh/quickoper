@@ -18,4 +18,9 @@ Disallow: /*?*
 # Internal component reference. Not part of the site.
 Disallow: /dev/
 
+# Affiliate redirects (rule 12). These are 302s to third parties, not content.
+# The links themselves carry rel="sponsored nofollow"; this keeps crawl budget
+# off the hops as well.
+Disallow: /go/
+
 Sitemap: https://quickoper.com/sitemap-index.xml

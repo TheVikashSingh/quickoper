@@ -271,6 +271,88 @@ if (required && htmlHandling !== required) {
   process.exit(1);
 }
 
+// ── public/_redirects agrees with the affiliate registry ─────────────────────
+//
+// Two files have to say the same thing: src/lib/affiliates.ts is what the site
+// renders links from, public/_redirects is what Cloudflare actually serves. A
+// partner in one and not the other is either a dead /go/ link on a live page,
+// or a redirect pointing somewhere nothing links to.
+//
+// This is D46's shape exactly — configuration split across two files that no
+// single tool reads, where each file is individually valid and the defect
+// exists only in the relationship. That one shipped every page as a 307.
+
+const REDIRECTS = 'public/_redirects';
+
+if (await exists(REDIRECTS)) {
+  const { AFFILIATES } = await import('../src/lib/affiliates.ts');
+
+  const declared = new Map(AFFILIATES.map((partner) => [partner.slug, partner.url]));
+  const routed = new Map();
+  const redirectProblems = [];
+
+  const redirectLines = (await readFile(REDIRECTS, 'utf8')).split(/\r?\n/);
+
+  redirectLines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (line === '' || line.startsWith('#')) return;
+
+    const [from, to, code] = line.split(/\s+/);
+
+    if (!from?.startsWith('/go/')) {
+      redirectProblems.push(
+        `line ${i + 1}: "${from}" is not a /go/ path — this file is for affiliate redirects only`,
+      );
+      return;
+    }
+    if (!to) {
+      redirectProblems.push(`line ${i + 1}: "${from}" has no destination`);
+      return;
+    }
+    // 301 is cached by browsers indefinitely, and affiliate destinations are
+    // the least permanent URLs there are.
+    if (code !== '302') {
+      redirectProblems.push(
+        `line ${i + 1}: "${from}" uses ${code ?? '(no status)'} — affiliate redirects must be 302`,
+      );
+    }
+    routed.set(from.replace(/^\/go\//, ''), to);
+  });
+
+  for (const [slug, url] of declared) {
+    if (!routed.has(slug)) {
+      redirectProblems.push(
+        `"${slug}" is in affiliates.ts but has no line in ${REDIRECTS}`,
+      );
+    } else if (routed.get(slug) !== url) {
+      redirectProblems.push(
+        `"${slug}" points at a different URL in each file:\n` +
+          `                   affiliates.ts: ${url}\n` +
+          `                   _redirects:    ${routed.get(slug)}`,
+      );
+    }
+  }
+
+  for (const slug of routed.keys()) {
+    if (!declared.has(slug)) {
+      redirectProblems.push(`"${slug}" is in ${REDIRECTS} but not in affiliates.ts`);
+    }
+  }
+
+  if (redirectProblems.length > 0) {
+    console.error(`FAIL: ${REDIRECTS} and the affiliate registry disagree:\n`);
+    for (const problem of redirectProblems) console.error(`    ${problem}`);
+    console.error('');
+    console.error('  A partner in one file and not the other is a dead /go/ link on a');
+    console.error('  live page, or a redirect nothing points at. Both files, always.');
+    process.exit(1);
+  }
+
+  console.log(
+    `PASS: ${REDIRECTS} agrees with the affiliate registry — ${declared.size} partner(s).`,
+  );
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 
 const total = rules.reduce((sum, rule) => sum + rule.headers, 0);
