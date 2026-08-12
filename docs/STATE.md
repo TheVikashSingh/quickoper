@@ -267,7 +267,7 @@ Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
 file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: three
-calculators, five derivation pages, five trust pages, 16 substantive pages, 159
+calculators, five derivation pages, five trust pages, 16 substantive pages, 165
 tests, ten CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.

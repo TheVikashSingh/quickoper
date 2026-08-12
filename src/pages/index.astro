@@ -48,7 +48,8 @@ const DEMO_DEBTS = [
   },
 ];
 
-const demo = compareStrategies(DEMO_DEBTS, fromMajor(600));
+const DEMO_BUDGET = fromMajor(600);
+const demo = compareStrategies(DEMO_DEBTS, DEMO_BUDGET);
 
 const opening = DEMO_DEBTS.reduce((sum, d) => sum + d.balance, 0);
 const curve = (result: (typeof demo)['avalanche']) => [
@@ -57,6 +58,19 @@ const curve = (result: (typeof demo)['avalanche']) => [
 ];
 
 const CURRENCY = 'USD';
+
+/**
+ * THE SCENARIO DESCRIBES ITSELF (D55).
+ *
+ * "$9,400 of debt, $600 a month" was typed into two places on this page while
+ * the actual balances lived in DEMO_DEBTS above. Editing a demo balance would
+ * have left the caption stating a total the chart beside it no longer showed —
+ * the same failure as "paying $150 instead of $250 removes 44 months": a true
+ * number, a false sentence, and nothing able to tell.
+ */
+const totalOwed = format(opening as typeof DEMO_BUDGET, CURRENCY);
+const monthlyBudget = format(DEMO_BUDGET, CURRENCY);
+
 const saved = format(demo.interestSavedVsMinimums, CURRENCY);
 const monthsSaved = demo.monthsSavedVsMinimums;
 const fastMonths = demo.avalanche.months;
@@ -186,7 +200,9 @@ const slowMonths = demo.minimumsOnly.months;
     <div class="rounded-panel border-line-strong bg-surface border p-1.5">
       <div class="border-engrave-strong rounded-control border p-4 sm:p-5">
         <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <p class="engraved text-ink text-xs">$9,400 of debt, $600 a month</p>
+          <p class="engraved text-ink text-xs">
+            {totalOwed} of debt, {monthlyBudget} a month
+          </p>
           <p class="text-ink-mute text-xs">
             Worked out in your browser · nothing transmitted
           </p>
@@ -194,7 +210,7 @@ const slowMonths = demo.minimumsOnly.months;
 
         <ProofChart
           class="mt-4"
-          caption={`Total balance by month. Paying $600 a month with the avalanche method clears $9,400 of debt in ${fastMonths} months. Paying only the minimums takes ${slowMonths} months and costs ${saved} more in interest.`}
+          caption={`Total balance by month. Paying ${monthlyBudget} a month with the avalanche method clears ${totalOwed} of debt in ${fastMonths} months. Paying only the minimums takes ${slowMonths} months and costs ${saved} more in interest.`}
           series={[
             { label: 'Minimum payments only', points: curve(demo.minimumsOnly) },
             { label: 'Avalanche', points: curve(demo.avalanche), emphasis: true },

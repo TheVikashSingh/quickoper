@@ -85,10 +85,18 @@ const CAP_YEARS = MAX_MONTHS / 12;
  * The two comparisons the page pulls out, derived from the rows above rather
  * than restated. If a scenario changes, these change with it — a quotable
  * sentence that has drifted from the table beside it is worse than no sentence.
+ *
+ * WHICH SIDE IS WHICH IS COMPUTED, NOT LABELLED (D55). The first draft of this
+ * page indexed the array by hand and got the pair the wrong way round, and the
+ * rendered sentence read "paying $150.00 instead of $250.00 removes 44 months".
+ * The arithmetic was right; the sentence was false; nothing failed. Sorting by
+ * the outcome makes that particular mistake unavailable.
  */
 const SLOW = SCENARIOS[1]!; // same trap card, at a payment that does clear
-const BIG_SLOW = SCENARIOS[2]!;
-const BIG_FAST = SCENARIOS[3]!;
+
+const BIG_PAIR = [SCENARIOS[2]!, SCENARIOS[3]!].sort((a, b) => a.months - b.months);
+const BIG_FAST = BIG_PAIR[0]!;
+const BIG_SLOW = BIG_PAIR[1]!;
 
 const STEP = {
   extra: BIG_FAST.minimum - BIG_SLOW.minimum,
