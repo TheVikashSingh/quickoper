@@ -142,39 +142,47 @@ Nothing in code depends on these, but launch does.
 
 ## Next
 
-**The content threshold is met.**
-The build produces 17 pages, of which 16 are substantive.
-None more needed for AdSense. Every remaining blocker is on the
-operator, not in the code — see the section above. **Nothing in this list is
-worth doing before the domain resolves**, because indexing lag gates everything
-downstream and that clock has not started.
+**The content threshold is met.** The build produces 17 pages, of which 16 are
+substantive. None more needed for AdSense.
 
-1. **Launch.** Mailbox, then DNS (`docs/DNS.md`), then Search Console and the
-   sitemap. This is the whole critical path and it is entirely operator work.
+**Launched 2026-08-11.** The site is live, deploys on merge, and carries the
+affiliate plumbing and the share image. What is left is mostly waiting.
+
+1. ~~**Launch.**~~ Done. ~~**Affiliate plumbing.**~~ Done (D52).
+   ~~**`public/og.png`.**~~ Done (D51).
 2. **Export Search Console data** once there is any, to `.gsc/` (gitignored),
    and tell the next session. **This is the first point in the project where
    keyword decisions stop being guesswork.** Every topic so far was chosen by
    what is provable from first principles (D2), not by what anybody searches —
    defensible, but not the same thing as targeting. Queries at position 8–20 are
    where a content edit realistically moves the needle.
-3. **AdSense application**, once indexed with impressions registering.
+3. **AdSense application**, once indexed with impressions registering. Seven of
+   the plan's eight pre-application criteria are met; the outstanding one is
+   impressions, which is time rather than work. `ads.txt` waits on a publisher
+   ID that does not exist yet.
 4. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression, and D29,
-   D30 and D33 each measured by hand again — four defects that every gate passed.
-   Needs Playwright and a headless run, and it **must** resolve colours through a
-   canvas: `getComputedStyle` returns `oklch()` in Chrome, and parsing those
-   three numbers as RGB silently reports 1.29:1 for every element on the page.
-5. **Affiliate plumbing** (`/go/*`) before there is anything to put in it. This
-   is where the vertical actually earns; AdSense at achievable traffic is a
-   legitimacy checkbox more than a revenue line.
-6. **One 1200×630 PNG at `public/og.png`**, then flip `twitter:card` back to
-   `summary_large_image` (D31).
+   D30, D33, D50 and D54 each measured by hand again — six defects that every
+   gate passed. Needs Playwright and a headless run, and it **must** resolve
+   colours through a canvas: `getComputedStyle` returns `oklch()` in Chrome, and
+   parsing those three numbers as RGB silently reports 1.29:1 for every element
+   on the page. It must also **composite translucent layers over the page colour
+   first** — D54 measured 1.06:1 on a panel that was actually 8.82:1, because a
+   translucent fill on a bare canvas composites over transparent black.
+5. **More derivation pages, not encyclopedia pages** (D57). The format that
+   works here computes something and shows its working. "What is an FHA loan"
+   is the most contested informational query class on the internet, resolves on
+   the SERP most of the time, and carries none of this site's advantage.
 
-**Blocked, not forgotten:** a content page on why a payoff date differs from a
-statement. The existing debt-payoff FAQ claims Reg Z Appendix M1 "permits a
-margin of error of two months" — that claim predates this session's work and
-**has never been checked against the regulation**. Verify it before building a
-page on it, and correct the FAQ if it is wrong. On a site whose entire argument
-is checkability, an unverified regulatory claim is the worst kind of debt.
+~~**Blocked, not forgotten:** the Reg Z "two months" claim has never been
+checked.~~ **Checked on 2026-08-12 and it is correct** (D56). Regulation Z
+Appendix M1 (b)(5) states a repayment estimate "shall be considered accurate if
+it is not more than 2 months above or below" the figure its own guidance
+produces. Read at
+[consumerfinance.gov/rules-policy/regulations/1026/m1](https://www.consumerfinance.gov/rules-policy/regulations/1026/m1/),
+which is the regulation text published by the agency that administers it. Both
+places the site made the claim now **quote** the regulation rather than
+paraphrasing it. eCFR was the intended second source and bot-blocks automated
+fetches; that is a gap in the check, not a disagreement between sources.
 
 **Tools 4 and 5 are unassigned.** Three calculators exist. The original plan's
 tool #5 (equity comp) was killed by rule B — neither operator nor agent can

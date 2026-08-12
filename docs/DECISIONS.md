@@ -1390,6 +1390,95 @@ and nothing here would fail. The defence is three layers deep and none of them
 is a checker: derive the labels, keep the engines provably monotonic, and read
 the rendered page. The bug that started this was found by the third.
 
+### D56 — The Reg Z claim was true, and is now quoted rather than asserted
+
+`STATE.md` carried this as blocked debt: the debt-payoff page claimed Regulation
+Z Appendix M1 "permits a margin of error of two months", the claim predated the
+current work, and **nobody had opened the regulation**.
+
+Opened. It is correct. Appendix M1 (b)(5):
+
+> A minimum payment repayment estimate shall be considered accurate if it is not
+> more than 2 months above or below the minimum payment repayment estimate
+> determined in accordance with the guidance in this appendix.
+
+Read at
+[consumerfinance.gov/rules-policy/regulations/1026/m1](https://www.consumerfinance.gov/rules-policy/regulations/1026/m1/)
+— the regulation text published by the agency that administers it, which is a
+primary source rather than a summary of one.
+
+**Both places the site made the claim now quote it.** Being right was not
+sufficient: a paraphrase asks the reader to trust us about a regulation, and
+this site's entire proposition is that its figures can be checked. A quoted
+sentence with a named provision can be verified in a minute; "permits a margin
+of error of two months" cannot be verified at all without already knowing the
+answer.
+
+**The gap in the check, stated.** eCFR was the intended second source and
+bot-blocks automated fetches, so this rests on one source. That is one primary
+source rather than two, not a disagreement between sources — recorded so nobody
+later assumes it was double-checked.
+
+**The general rule this settles.** Every *number* on this site is computed and
+checkable. Regulatory claims are the one category that cannot be derived from
+first principles, which makes them the weakest link in a site built on
+checkability. So they get the strictest treatment available: quote the text,
+name the provision, link the source, and record the date it was read.
+
+### D57 — Encyclopedia pages are rejected; education through computation is not
+
+The operator proposed a set of educational pages — types of loans, what a
+mortgage is, kinds of debt — reasoning that more topical pages would help
+AdSense and search trust. It is a reasonable instinct and the answer is no,
+for four reasons that compound.
+
+**1. The project's own plan already decided this.** The Master Build Plan's §1
+reversed exactly this idea, and gave its evidence: informational queries now
+resolve on the results page roughly 74% of the time, and organic CTR falls by up
+to 61% where an AI Overview appears. Its conclusion: *explainer articles are a
+compliance and internal-linking asset, not a traffic asset.* Both of those jobs
+are already done — 16 substantive pages, and the internal linking was rebuilt in
+D53.
+
+**2. It is the most contested content class on the internet.** "What is a
+mortgage" is held by Investopedia, NerdWallet, Bankrate, the CFPB itself and
+every retail bank — institutions with decades of domain age, editorial staff and
+budgets. A domain with no history does not take those queries with better prose.
+The `/minimum-payments` bet works because it says something incumbents *will not*
+say (D54); there is no equivalent edge in defining a term everyone defines
+identically.
+
+**3. It fails rule B in spirit.** "Build only what can be proved from first
+principles" is what every page here is built on. A definitional page has no
+computation, no anchor, nothing a reader can check and nothing a fixture can
+test. It would be the first content on this site whose only warrant is that we
+say so — which is precisely the "generic AI output" `CLAUDE.md` forbids, and it
+would sit next to pages whose whole claim is the opposite.
+
+**4. It risks the pages that do work.** Helpful-content signals are assessed
+site-wide, not per page. Ten thin definitional pages beside sixteen computed
+ones do not add ten pages of value; they dilute what the site demonstrably is.
+
+**What is not rejected: education that computes.** The derivation format already
+does this, and it is the thing to extend — `/credit-card-interest` teaches how
+interest works *by computing it three ways*; `/minimum-payments` teaches the
+minimum-payment trap *by showing the balance rise*. That is educational content.
+It is simply educational content with an anchor.
+
+Candidates in that shape, all first-principles verifiable and all long-tail:
+
+- what an extra payment does in year one versus year twenty of an amortising
+  loan, computed
+- why a mortgage payment barely touches the principal early on, with the split
+  shown month by month
+- biweekly versus monthly payments — 26 half-payments is 13 monthly payments a
+  year, and the difference is computable
+- what a rate change of one percentage point costs over a term
+
+**The distinction, in one line:** define nothing, compute everything. If a page
+cannot be checked by a reader with a spreadsheet, it does not belong on this
+site regardless of its search volume.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

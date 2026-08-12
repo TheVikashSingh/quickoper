@@ -27,7 +27,7 @@ const SOURCES = [
 const FAQ = [
   {
     q: 'Why does this not match the payoff date on my statement?',
-    a: 'Two reasons, both structural. Card issuers charge interest daily against an average daily balance, so the exact figure depends on which day of the month your payment lands — something no calculator can know. And the repayment estimate printed on your statement is itself an estimate: Regulation Z Appendix M1, which defines how issuers must produce it, permits a margin of error of two months. A difference of a few dollars, or a month either way, is expected.',
+    a: 'Two reasons, both structural. Card issuers charge interest daily against an average daily balance, so the exact figure depends on which day of the month your payment lands — something no calculator can know. And the repayment estimate printed on your statement is itself an estimate: Regulation Z Appendix M1, which defines how issuers must produce it, states that such an estimate "shall be considered accurate if it is not more than 2 months above or below" the figure its own guidance produces. A difference of a few dollars, or a month either way, is expected.',
   },
   {
     q: 'Does the avalanche method always cost less than snowball?',
@@ -316,15 +316,30 @@ const structuredData = [
         slightly less than this model predicts; paying later costs slightly more.
       </p>
 
+      {
+        /*
+          THIS CLAIM IS NOW QUOTED, NOT PARAPHRASED (D56).
+
+          It previously asserted "two months" with no wording behind it and had
+          never been checked against the regulation — STATE.md carried it as
+          blocked debt for exactly that reason. It has now been read at the
+          source and it is correct, so it is stated in the regulation's own
+          words rather than ours. On a site that asks readers to check its
+          arithmetic, a regulatory claim they cannot check is the one kind of
+          figure that does not belong.
+        */
+      }
       <p>
-        For scale: the repayment estimate that appears on your own statement is produced
-        under Regulation Z Appendix M1, and that regulation explicitly permits it to be{
-          ' '
-        }
-        <strong class="text-ink">two months out</strong>. It makes the same simplifying
-        assumptions this calculator does — no new spending, a constant payment, no grace
-        period. So the figure printed by your card issuer is an estimate on the same
-        footing as this one, not a precise quote.
+        For scale: the repayment estimate on your own statement is produced under
+        Regulation Z Appendix M1, and that regulation sets its accuracy standard
+        explicitly — a minimum payment repayment estimate{' '}
+        <q class="text-ink"
+          >shall be considered accurate if it is not more than 2 months above or below</q
+        >{' '}
+        the figure the appendix's own guidance produces. It makes the same simplifying assumptions
+        this calculator does — no new spending, a constant payment, no grace period. So the
+        figure printed by your card issuer is an estimate on the same footing as this one, not
+        a precise quote.
       </p>
 
       <p>Four things will pull the real number away from the modelled one:</p>
