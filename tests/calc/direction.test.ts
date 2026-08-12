@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { compareStrategies, simulate } from '../../src/lib/calc/debt-payoff';
-import { compareOverpayment } from '../../src/lib/calc/mortgage';
-import { fromMajor, toMajor } from '../../src/lib/calc/money';
+import { compareOverpayment, contractualPayment } from '../../src/lib/calc/mortgage';
+import { divide, fromMajor, scale, toMajor } from '../../src/lib/calc/money';
 
 /**
  * DIRECTIONAL INVARIANTS.
@@ -166,6 +166,42 @@ describe('mortgage — overpaying always helps, never hurts', () => {
       previousMonths = c.overpaid.months;
       previousInterest = c.interestSaved;
     }
+  });
+
+  /**
+   * The biweekly page's central claim: 26 half-payments a year is 13 monthly
+   * payments, so the difference against 12 monthly payments is one payment.
+   *
+   * True in exact arithmetic. NOT always true on the cent — halving an odd
+   * number of cents rounds, and 26 of the rounded halves drift. Both loans on
+   * that page are exact, and the page derives the wording rather than asserting
+   * it, so this pins both branches (D58).
+   */
+  it('26 half-payments exceed 12 monthly payments by one payment, when the halving is exact', () => {
+    for (const [amount, rate] of [
+      [320_000, 0.06706],
+      [160_000, 0.04125],
+    ] as const) {
+      const payment = contractualPayment(fromMajor(amount), rate, 360);
+      const half = divide(payment, 2);
+
+      // Only exact when the payment is an even number of cents.
+      if (payment % 2 === 0) {
+        expect(scale(half, 26) - scale(payment, 12)).toBe(payment);
+      }
+    }
+  });
+
+  it('the identity drifts when the payment is an odd number of cents', () => {
+    // $775.45 halves to $387.73 (up from 387.725), so 26 halves overshoot.
+    const payment = fromMajor(775.45);
+    const half = divide(payment, 2);
+    const difference = scale(half, 26) - scale(payment, 12);
+
+    expect(payment % 2).toBe(1);
+    expect(difference).not.toBe(payment);
+    // Thirteen cents, one for each of the thirteen whole payments it represents.
+    expect(difference - payment).toBe(13);
   });
 
   /** Overpaying nothing must be a no-op, not a saving or a penalty (D39). */

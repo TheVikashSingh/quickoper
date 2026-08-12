@@ -1479,6 +1479,74 @@ Candidates in that shape, all first-principles verifiable and all long-tail:
 cannot be checked by a reader with a spreadsheet, it does not belong on this
 site regardless of its search volume.
 
+### D58 — Biweekly payments, and two rounding bugs caught before they shipped
+
+`/biweekly-mortgage-payments` — the second page written for a query, and the
+first to be anchored to a **third party's own worked example**.
+
+**The finding, which is not what the name suggests.** Twenty-six half-payments a
+year is thirteen monthly payments, not twelve. The entire benefit of a biweekly
+schedule is that one extra payment; the fortnightly timing contributes almost
+nothing. Computed on the site's standard loan:
+
+| | Payment | 12 monthly | 26 halves | Difference |
+|---|---|---|---|---|
+| $320,000 at 6.706% | $2,066.16 | $24,793.92 | $26,860.08 | **$2,066.16** |
+
+That difference is exactly one payment, and it removes **72 months and
+$99,532.52** of interest.
+
+**The second row is the CFPB's own example loan.** The Bureau sued Nationwide
+Biweekly Administration over its programme, alleging a setup fee of up to $995
+plus $84–$101 a year, and used a $160,000 mortgage at 4.125% to argue a consumer
+would need nine years to recoup the fees. Running that same loan here: the extra
+payment removes $18,840.18 of interest over 25y 10m. Both figures are real and
+measured over different periods, and the page says so rather than picking the
+flattering one.
+
+That is the "documented comparison against a named third party" `CLAUDE.md`
+requires, and it is a stronger form of it than D39's: the comparison is not to a
+competitor's calculator but to a regulator's enforcement filing.
+
+**Two rounding bugs, both caught by reading the rendered page.**
+
+The first draft converted to major-unit floats and rounded to whole dollars for
+display. It produced:
+
+- **$2,066.00** for a payment D39 anchors to **$2,066.16** against
+  calculator.net — quietly breaking the site's most precise external anchor;
+- **$780.00 of "extra a year" against a $775.30 payment.** One extra payment a
+  year that is *larger than a payment* is arithmetically impossible, and it
+  would have shipped looking entirely plausible.
+
+Both came from the same mistake: leaving minor units, which is exactly what D4's
+branded `Minor` type exists to prevent. Every amount on the page now stays in
+cents until `format` renders it.
+
+**And the central claim is derived, not asserted.** `26 × (P/2) − 12 × P = P`
+holds in exact arithmetic. It does **not** always hold on the cent: halving an
+odd number of cents rounds, and twenty-six of the rounded halves drift. A
+payment of $775.45 halves to $387.73 and twenty-six of those come to **thirteen
+cents** more than thirteen payments.
+
+Both loans here happen to have even cents, so the identity is exact — but a
+sentence true only by luck of the input is D55 waiting to recur. The residual is
+computed, and the prose reads it: "exactly one payment" when it is, and "one
+payment to within *n*" when it is not. Two fixtures pin both branches.
+
+**What the page refuses to claim.** It does not model a true fortnightly
+accrual, where half a payment lands mid-month and reduces the balance a
+fortnight earlier than a monthly engine can express. That effect is real and
+small beside the thirteenth payment. Saying so costs nothing and is the
+difference between a model and a claim — and the CFPB's own description of these
+programmes ("collect fortnightly, forward monthly") means that for many of them
+the fortnightly part does nothing at all.
+
+**Why this topic passes the filter where "what is a mortgage" fails (D57).**
+It computes something, the arithmetic is checkable against a spreadsheet, and
+the honest answer — *the fortnightly part is not what helps* — is one a company
+selling fortnightly payment plans has no reason to lead with.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
