@@ -178,20 +178,40 @@ const claims = [
     // rewritten and the sentence moved. Tie the pattern to the claim, not to
     // the sentence around it — a check that fails on a rephrase trains people
     // to edit the check.
-    re: /(\w+) more needed/,
+    re: /(\w+)\s+more\s+needed/,
     expect: [gapWord],
   },
   {
     where: 'Next — pages the build produces',
-    re: /the build produces (\d+) pages/,
+    re: /the\s+build\s+produces\s+(\d+)\s+pages/,
     expect: [String(built)],
   },
   {
     where: 'Next — how many of those are substantive',
-    re: /of which (\d+) are substantive/,
+    re: /of\s+which\s+(\d+)\s+are\s+substantive/,
     expect: [String(substantive)],
   },
 ];
+
+/*
+ * WHY THE PROSE PATTERNS MATCH \s+ RATHER THAN A LITERAL SPACE.
+ *
+ * Prettier re-wraps markdown, and where it puts the line break depends on every
+ * word before it. Editing an unrelated sentence in the Next section moved
+ * "of which 16 are substantive" across a newline and this gate reported the
+ * claim as MISSING — which, by design, is a failure rather than a pass.
+ *
+ * That is the correct behaviour for a deleted claim and the wrong behaviour for
+ * a re-flowed one, and the difference is invisible to the author: the sentence
+ * is still there, still true, still saying the same thing. A gate that fails
+ * when the formatter moves a word teaches people to fight the formatter, or
+ * worse, to edit the gate — which is the exact instruction this file gives in
+ * the opposite direction three lines from here.
+ *
+ * The table patterns are left with literal spaces on purpose: prettier keeps a
+ * markdown table row on one line, so they cannot wrap, and a looser pattern
+ * there would only make them harder to read.
+ */
 
 const problems = [];
 
