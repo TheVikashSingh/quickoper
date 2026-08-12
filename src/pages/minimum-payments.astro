@@ -1,0 +1,496 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
+import Rule from '../components/ornament/Rule.astro';
+import RelatedTools from '../components/RelatedTools.astro';
+import { SITE } from '../lib/site';
+import { sourceRef } from '../lib/schema';
+
+import { MAX_MONTHS, simulate } from '../lib/calc/debt-payoff';
+import { format, fromMajor, toMajor } from '../lib/calc/money';
+
+const LAST_VERIFIED = '2026-08-12';
+const CURRENCY = 'USD';
+
+const SOURCES = [
+  {
+    label: 'CFPB — What is a minimum payment?',
+    url: 'https://www.consumerfinance.gov/ask-cfpb/what-is-a-minimum-payment-en-431/',
+    retrieved: '2026-08-12',
+  },
+  {
+    label: 'Regulation Z, Appendix M1 — Repayment Disclosures',
+    url: 'https://www.consumerfinance.gov/rules-policy/regulations/1026/m1/',
+    retrieved: '2026-08-12',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * EVERY FIGURE ON THIS PAGE IS COMPUTED, NOT WRITTEN.
+ *
+ * This runs the real debt-payoff engine at build time — the same code the
+ * calculator runs — so the page cannot state a number the product does not
+ * produce, and it cannot go stale when the engine changes. Zero client
+ * JavaScript: .astro frontmatter never reaches the browser.
+ *
+ * The same discipline as the homepage's ProofChart (D32). It is also the only
+ * honest way to write a page whose entire argument is "here is what the
+ * arithmetic does": the arithmetic has to actually do it.
+ */
+function scenario(balance: number, aprPercent: number, minimum: number) {
+  const result = simulate({
+    debts: [
+      {
+        id: 'card',
+        name: 'Card',
+        balance: fromMajor(balance),
+        annualRate: aprPercent / 100,
+        minimumPayment: fromMajor(minimum),
+      },
+    ],
+    monthlyBudget: fromMajor(minimum),
+    strategy: 'minimums-only',
+  });
+
+  // `?? 0` here is a type error, and correctly so (D4): a bare 0 is ambiguous
+  // between cents and dollars, which is the whole reason Minor is branded.
+  const firstInterest = result.schedule[0]?.rows[0]?.interest ?? fromMajor(0);
+
+  return {
+    balance,
+    aprPercent,
+    minimum,
+    /** What the card charges in month one, before a penny of the payment lands. */
+    firstInterest: toMajor(firstInterest),
+    /** The payment at which the balance stops moving at all. */
+    standStill: (balance * (aprPercent / 100)) / 12,
+    neverClears: result.neverPaysOff,
+    months: result.months,
+    totalInterest: toMajor(result.totalInterest),
+    totalPaid: toMajor(result.totalPaid),
+  };
+}
+
+const TRAP = scenario(3000, 29.99, 30);
+const SCENARIOS = [
+  TRAP,
+  scenario(3000, 29.99, 90),
+  scenario(6000, 22.99, 150),
+  scenario(6000, 22.99, 250),
+];
+
+const CAP_YEARS = MAX_MONTHS / 12;
+
+/**
+ * The two comparisons the page pulls out, derived from the rows above rather
+ * than restated. If a scenario changes, these change with it — a quotable
+ * sentence that has drifted from the table beside it is worse than no sentence.
+ */
+const SLOW = SCENARIOS[1]!; // same trap card, at a payment that does clear
+const BIG_SLOW = SCENARIOS[2]!;
+const BIG_FAST = SCENARIOS[3]!;
+
+const STEP = {
+  extra: BIG_FAST.minimum - BIG_SLOW.minimum,
+  monthsSaved: BIG_SLOW.months - BIG_FAST.months,
+  interestSaved: BIG_SLOW.totalInterest - BIG_FAST.totalInterest,
+};
+
+const money = (major: number) => format(fromMajor(major), CURRENCY);
+const years = (months: number) => `${Math.floor(months / 12)}y ${months % 12}m`;
+
+const FAQ = [
+  {
+    q: 'Can a credit card really never be paid off?',
+    a: `Yes, and it needs no unusual numbers. If the minimum payment is smaller than the interest charged that month, the balance is larger after the payment than before it. On ${money(TRAP.balance)} at ${TRAP.aprPercent}% the card charges ${money(TRAP.firstInterest)} in month one; a ${money(TRAP.minimum)} payment leaves ${money(TRAP.firstInterest - TRAP.minimum)} of unpaid interest added to what you owe. The balance grows every month, forever.`,
+  },
+  {
+    q: 'What payment makes the balance stand still?',
+    a: `Exactly the monthly interest: balance × (APR ÷ 12). On ${money(TRAP.balance)} at ${TRAP.aprPercent}% that is ${money(TRAP.standStill)} a month, which pays off nothing at all — it holds the balance where it is. Every cent above that figure, and only the cents above it, reduce what you owe.`,
+  },
+  {
+    q: 'My statement says a number of years. Why is yours different?',
+    a: 'Both can be right. US statements are required to show a payoff estimate under Regulation Z, and it assumes the percentage-based minimum your issuer actually uses, which shrinks as the balance falls. This page models a fixed monthly payment, which is the more optimistic case. If the figures differ, your statement is describing your card and this page is describing the arithmetic.',
+  },
+  {
+    q: 'Why does a percentage minimum take longer than a fixed one?',
+    a: 'Because it shrinks as you pay. A minimum of 2% of the balance starts high and falls every month, so the amount going to principal falls too, and the tail of the debt stretches out. Paying the same fixed amount every month — the figure your minimum started at — clears the balance sooner than following the minimum down.',
+  },
+  {
+    q: 'Does this account for new spending on the card?',
+    a: 'No. Every figure here assumes nothing further is charged to the card. New spending is added to the balance and charged interest in the same way, so it moves the answer in one direction only.',
+  },
+  {
+    q: 'Is a minimum payment the same everywhere?',
+    a: 'No. How a minimum is set is a matter of the cardholder agreement, not of any single rule, and it differs by issuer and by country. The arithmetic on this page does not depend on which formula your issuer uses — it depends only on whether the payment is larger than the interest.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'How long minimum payments take',
+        item: `${SITE.url}/minimum-payments`,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="How long minimum payments take, and when they never finish | QuickOper"
+  description={`A minimum payment clears a card only if it is larger than the month's interest. On ${money(TRAP.balance)} at ${TRAP.aprPercent}% APR the interest is ${money(TRAP.firstInterest)} a month, so a ${money(TRAP.minimum)} minimum never clears the balance at all. Worked out from first principles.`}
+  structuredData={structuredData}
+>
+  <article class="prose-like">
+    <p class="engraved-fine text-ink-mute">Worked derivation</p>
+
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+      How long minimum payments take, and when they never finish
+    </h1>
+
+    <p class="text-ink-soft mt-4 text-lg">
+      There is one line of arithmetic that decides it, and it is not the one most
+      calculators show you.
+    </p>
+
+    {
+      /*
+        THE HEADLINE FACT, COMPUTED.
+
+        This is the thing a large comparison site will not lead with, and the
+        reason this page exists: for a great many real cards the honest answer
+        to "how long will this take" is "it does not finish". A lead-generation
+        site sells credit products; it has no incentive to open with that.
+      */
+    }
+    <NoteFrame class="mt-8">
+      <p class="engraved-fine text-caution">Does not clear</p>
+      <p class="text-ink mt-2 text-2xl font-semibold sm:text-3xl">
+        {money(TRAP.balance)} at {TRAP.aprPercent}% APR, paying {money(TRAP.minimum)} a month,
+        never reaches zero.
+      </p>
+      <p class="text-ink-soft numeric mt-3">
+        Interest in month one: <strong class="text-ink"
+          >{money(TRAP.firstInterest)}</strong
+        >. Payment: {money(TRAP.minimum)}. The balance is{' '}
+        <strong class="text-ink">{money(TRAP.firstInterest - TRAP.minimum)}</strong> higher
+        after the payment than before it — and higher again the month after.
+      </p>
+      <p class="text-ink-mute mt-3 text-sm">
+        Computed on this page by the same engine the calculator runs, at build time.
+      </p>
+    </NoteFrame>
+
+    <Rule class="mt-12" />
+
+    <section class="mt-10 space-y-4">
+      <h2 class="section-head text-ink">The only line that matters</h2>
+
+      <p>
+        A card charges interest on what you owe, then your payment arrives. So the balance
+        moves by the difference between the two:
+      </p>
+
+      <p class="numeric bg-surface rounded-control p-3">
+        interest this month = balance × (APR ÷ 12)
+        <br />
+        balance next month = balance + interest − payment
+      </p>
+
+      <p>
+        Everything else follows from that. If the payment is larger than the interest, the
+        balance falls and the card eventually clears. If it is smaller, the balance rises
+        and the card never clears, no matter how long you keep paying. There is no third
+        case.
+      </p>
+
+      <p>
+        The payment that exactly equals the interest is the hinge. On{' '}
+        {money(TRAP.balance)} at {TRAP.aprPercent}% that is{' '}
+        <strong class="text-ink">{money(TRAP.standStill)} a month</strong> — and it pays off
+        nothing whatsoever. It holds the balance exactly where it is, indefinitely. Only the
+        money above that figure reduces the debt.
+      </p>
+
+      <p>
+        That is why two cards with similar balances can behave completely differently. The
+        question is never "is the minimum small". It is "is the minimum bigger than the
+        interest", and by how much.
+      </p>
+    </section>
+
+    <section class="mt-12 space-y-4">
+      <h2 class="section-head text-ink">Four cards, same arithmetic</h2>
+
+      <p>
+        Every row below is computed by running the engine, not looked up. The only thing
+        that changes between the first two rows is the payment.
+      </p>
+
+      <div class="not-prose overflow-x-auto">
+        <table class="numeric mt-4 w-full text-sm">
+          <thead>
+            <tr class="border-line-strong text-ink-mute border-b text-left">
+              <th class="py-2 pr-3 font-medium">Balance</th>
+              <th class="py-2 pr-3 font-medium">APR</th>
+              <th class="py-2 pr-3 font-medium">Paid monthly</th>
+              <th class="py-2 pr-3 font-medium">Interest, month 1</th>
+              <th class="py-2 pr-3 font-medium">Time to clear</th>
+              <th class="py-2 font-medium">Interest paid</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              SCENARIOS.map((row) => (
+                <tr class="border-line border-b">
+                  <td class="py-2 pr-3">{money(row.balance)}</td>
+                  <td class="py-2 pr-3">{row.aprPercent}%</td>
+                  <td class="py-2 pr-3">{money(row.minimum)}</td>
+                  <td class="py-2 pr-3">{money(row.firstInterest)}</td>
+                  <td class="py-2 pr-3">
+                    {row.neverClears ? (
+                      <span class="text-caution font-semibold">never clears</span>
+                    ) : (
+                      <>
+                        {row.months} months{' '}
+                        <span class="text-ink-mute">({years(row.months)})</span>
+                      </>
+                    )}
+                  </td>
+                  <td class="py-2">
+                    {row.neverClears ? (
+                      <span class="text-ink-mute">unbounded</span>
+                    ) : (
+                      money(row.totalInterest)
+                    )}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="text-ink-mute text-sm">
+        "Never clears" means a balance remains after {CAP_YEARS} years, which is where the engine
+        stops simulating. There is no payment schedule beyond it — the balance is rising, not
+        falling.
+      </p>
+    </section>
+
+    {
+      /*
+        TWO FACTS, DERIVED FROM THE TABLE ABOVE RATHER THAN TYPED.
+
+        These are the sentences worth quoting, so they are computed from the
+        same rows the reader just saw and cannot drift from them. Both are
+        stated flat and standalone — no pronouns, no "as shown above" — because
+        that is the form a retrieval system can lift without losing the meaning,
+        and the form a person can paste into a forum without it needing context.
+      */
+    }
+    <section class="mt-12 space-y-4">
+      <h2 class="section-head text-ink">Two numbers worth keeping</h2>
+
+      <div class="not-prose grid gap-4 sm:grid-cols-2">
+        <div class="rounded-panel border-line-strong bg-surface border p-4">
+          <p class="engraved-fine text-ink-mute">Interest can exceed the debt</p>
+          <p class="text-ink mt-2 text-lg font-semibold">
+            {money(SLOW.balance)} at {SLOW.aprPercent}%, paid {money(SLOW.minimum)} a month,
+            costs {money(SLOW.totalInterest)} in interest.
+          </p>
+          <p class="text-ink-soft mt-2 text-sm">
+            That is {money(SLOW.totalInterest - SLOW.balance)} more than the balance itself,
+            over{' '}
+            {years(SLOW.months)}. The card is repaid roughly {
+              (SLOW.totalPaid / SLOW.balance).toFixed(1)
+            }{' '}
+            times over.
+          </p>
+        </div>
+
+        <div class="rounded-panel border-line-strong bg-surface border p-4">
+          <p class="engraved-fine text-ink-mute">
+            What {money(STEP.extra)} a month removes
+          </p>
+          <p class="text-ink mt-2 text-lg font-semibold">
+            Paying {money(BIG_FAST.minimum)} instead of {money(BIG_SLOW.minimum)} on{' '}
+            {money(BIG_SLOW.balance)} removes {STEP.monthsSaved} months and{' '}
+            {money(STEP.interestSaved)}.
+          </p>
+          <p class="text-ink-soft mt-2 text-sm">
+            Same balance, same {BIG_SLOW.aprPercent}% rate, same card. {
+              years(BIG_SLOW.months)
+            }{' '}
+            becomes {years(BIG_FAST.months)}.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-12 space-y-4">
+      <h2 class="section-head text-ink">Why a real minimum is worse than this</h2>
+
+      <p>
+        The table above assumes a <em>fixed</em> monthly payment. Most issuers do not work that
+        way: a minimum is commonly the greater of a small flat amount or a percentage of the
+        balance, so it <strong class="text-ink"
+          >shrinks every month as the balance falls</strong
+        >.
+      </p>
+
+      <p>
+        That matters more than it sounds. Paying a fixed {money(SCENARIOS[2]!.minimum)} clears{
+          ' '
+        }
+        {money(SCENARIOS[2]!.balance)} at {SCENARIOS[2]!.aprPercent}% in{' '}
+        {SCENARIOS[2]!.neverClears ? `no finite time` : `${SCENARIOS[2]!.months} months`}.
+        Following a percentage minimum down as the balance falls takes longer, because the
+        amount reaching the principal falls with it.
+      </p>
+
+      <p>
+        So the figures on this page are the <strong class="text-ink">optimistic</strong> case.
+        Where a row says a card never clears, a declining percentage minimum does not rescue
+        it — it is smaller still.
+      </p>
+    </section>
+
+    <section class="mt-12 space-y-4">
+      <h2 class="section-head text-ink">Check this against your own statement</h2>
+
+      <p>
+        You do not have to take this page's word for any of it, and you should not. If you
+        have a US card, your statement carries a repayment disclosure required under
+        Regulation Z: a box stating how long the balance takes to clear making only
+        minimum payments, and what it costs.
+      </p>
+
+      <p>
+        Compare it with the arithmetic above. The two figures will usually differ, and the
+        reason is stated rather than hidden: your issuer models the percentage minimum
+        your agreement specifies, while this page models a fixed payment. When they
+        disagree,{' '}
+        <strong class="text-ink">your statement is describing your card</strong> — this page
+        is describing what the arithmetic does to any card.
+      </p>
+
+      <p>
+        The one figure you can check exactly, with a pocket calculator: month-one
+        interest. Take your balance, multiply by your APR, divide by twelve. On{' '}
+        {money(TRAP.balance)} at {TRAP.aprPercent}% that is {money(TRAP.firstInterest)}.
+        If your minimum payment is below that number, your balance is growing.
+      </p>
+    </section>
+
+    <section class="mt-12 space-y-4">
+      <h2 class="section-head text-ink">What this page does not model</h2>
+
+      <p>
+        Rounding happens to the cent every month, the way a statement does it, and the
+        final payment is reduced to clear the balance exactly rather than overshooting.
+      </p>
+
+      <p>
+        Not modelled: new spending on the card, promotional or introductory rates, penalty
+        APRs triggered by a late payment, fees, cash-advance rates charged separately from
+        purchase rates, or a percentage-based minimum that changes month to month. Each of
+        those moves the real answer, none of them changes the rule at the top of this
+        page, and none of them is something a calculator can know about your account.
+      </p>
+    </section>
+
+    <section class="mt-14" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="section-head text-ink">Common questions</h2>
+      <dl class="mt-4 grid gap-x-8 gap-y-5 lg:grid-cols-2">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="text-ink font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="section-head text-ink">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          Every figure on this page is produced at build time by the same engine the debt
+          payoff calculator runs, from the balances, rates and payments shown beside it.
+          Nothing is transcribed from a third party. The sources above are cited for what
+          they describe — how a minimum payment is set, and what a statement must disclose
+          — not for any number here.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper shows how
+        a calculation works and shows its working. It does not know your circumstances and cannot
+        tell you what to do about a debt. Nothing here is financial, tax or investment advice.
+        Your cardholder agreement is the authority on how your card sets its minimum and charges
+        its interest.
+      </p>
+    </aside>
+
+    <RelatedTools
+      hubNote="every tool here shows the full schedule rather than one figure"
+      links={[
+        {
+          href: '/finance/debt-payoff-calculator',
+          label: 'Debt payoff calculator',
+          note: 'put your own balances in and see the month-by-month schedule, including whether the minimums ever clear them',
+        },
+        {
+          href: '/credit-card-interest',
+          label: 'How credit card interest is actually calculated',
+          note: 'the daily periodic rate behind the monthly figure used above',
+        },
+        {
+          href: '/verify',
+          label: 'Check our arithmetic yourself',
+          note: 'reproduce these figures in a spreadsheet in about two minutes',
+        },
+      ]}
+    />
+  </article>
+</BaseLayout>

@@ -35,6 +35,35 @@ const TOOLS = [
   },
 ];
 
+const DERIVATIONS = [
+  {
+    href: '/minimum-payments',
+    title: 'How long minimum payments take, and when they never finish',
+    summary:
+      'the one line that decides whether a card ever clears, and the balances where it does not',
+  },
+  {
+    href: '/credit-card-interest',
+    title: 'How credit card interest is actually calculated',
+    summary: 'the daily periodic rate, and why 22.99% costs 25.838%',
+  },
+  {
+    href: '/monthly-return-rate',
+    title: 'Why a 7% return is not 0.583% a month',
+    summary: 'one division that overstates thirty years by $50,424',
+  },
+  {
+    href: '/withdrawal-rate',
+    title: 'Where the 4% rule comes from',
+    summary: 'what Bengen and the Trinity Study actually tested, and what they did not',
+  },
+  {
+    href: '/coast-number',
+    title: 'What a coast number is, and what it is not',
+    summary: 'the assumption that moves the figure more than any other',
+  },
+];
+
 const IN_PROGRESS = ['Freelance and contractor rate'];
 
 const structuredData = [
@@ -94,6 +123,40 @@ const structuredData = [
       ))
     }
   </ul>
+
+  {
+    /*
+      The derivations belong on the hub, not only on the homepage.
+
+      Measured inbound links before this section existed: /coast-number 1,
+      /withdrawal-rate 2, /credit-card-interest 3 — against /terms 16 and
+      /contact 22 (D53). The hub said "every tool links up to here, and this
+      page links back down to every tool", and it was true of the tools and
+      false of everything that explains them.
+
+      These pages are the long-tail surface. A hub that lists only the three
+      tools tells a crawler this cluster is three pages wide.
+    */
+  }
+  <section class="mt-12">
+    <h2 class="text-lg font-semibold">The arithmetic behind them</h2>
+    <p class="text-ink-soft mt-2 text-sm">
+      Each one works a single calculation out from first principles, with real figures
+      computed by the same engines the tools run.
+    </p>
+    <ul class="mt-4 space-y-3">
+      {
+        DERIVATIONS.map((page) => (
+          <li>
+            <a class="text-brand underline" href={page.href}>
+              {page.title}
+            </a>
+            <span class="text-ink-soft text-sm"> — {page.summary}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
 
   <section class="mt-12">
     <h2 class="text-lg font-semibold">Being built</h2>

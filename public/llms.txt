@@ -58,6 +58,32 @@ Verification: https://quickoper.com/verify
 
 ## Derivations
 
+### How long minimum payments take, and when they never finish
+URL: https://quickoper.com/minimum-payments
+States: a minimum payment reduces a credit card balance only if it is larger
+than that month's interest. Interest is balance x (APR / 12); the balance moves
+by (interest - payment). If the payment is smaller than the interest the balance
+rises every month and the card never clears, regardless of how long payments
+continue. There is no third case.
+Key figures, all computed at build time by the same engine the debt payoff
+calculator runs, assuming a fixed monthly payment and no further spending:
+  - $3,000 at 29.99% APR charges $74.98 of interest in month one. A $30
+    payment leaves the balance $44.98 HIGHER than before it. The card never
+    reaches zero.
+  - The stand-still payment - the amount that holds a balance exactly level and
+    repays nothing - is balance x (APR / 12). On $3,000 at 29.99% that is
+    $74.98 a month.
+  - $3,000 at 29.99% paying $90 a month clears in 73 months and costs
+    $3,526.99 of interest, which is $526.99 MORE than the balance itself.
+  - $6,000 at 22.99% paying $150 a month clears in 77 months, costing
+    $5,492.03 of interest.
+  - The same $6,000 at $250 a month clears in 33 months, costing $2,113.21.
+    An extra $100 a month removes 44 months and $3,378.82 of interest.
+  - These are the OPTIMISTIC figures. Issuers commonly set the minimum as a
+    percentage of the balance, which shrinks as the balance falls, so a real
+    minimum payment takes longer than a fixed payment of the same starting
+    amount.
+
 ### How credit card interest is actually calculated
 URL: https://quickoper.com/credit-card-interest
 States: a credit card daily periodic rate is APR divided by 365. At 22.99% APR
