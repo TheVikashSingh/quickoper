@@ -1168,6 +1168,71 @@ payment, and the type requires a relationship string long enough to be a real
 sentence — a vague disclosure on a site whose entire argument is checkability
 costs more than the affiliate link earns.
 
+### D53 — The site was spending its internal link equity on /terms
+
+Measured inbound internal links across the built site, which nobody had done:
+
+| Page | Inbound | | Page | Inbound |
+|---|---|---|---|---|
+| `/methodology` | 41 | | `/coast-number` | **1** |
+| `/contact` | 22 | | `/withdrawal-rate` | **2** |
+| `/about` | 19 | | `/credit-card-interest` | **3** |
+| `/privacy` | 17 | | `/monthly-return-rate` | **3** |
+| `/terms` | 16 | | `/finance/mortgage-overpayment-calculator` | **3** |
+
+The trust pages sit in the footer, so they collect a link from every page and
+will never rank for anything worth having. The derivation pages — the entire
+long-tail surface, and the only part of this site that can realistically win a
+query — were an island linked mostly to each other.
+
+**`/credit-card-interest` was not linked from the debt payoff calculator at
+all.** It was linked from the *mortgage* page. The pages that exist to support a
+calculator were not connected to it.
+
+**Rule 8 already required the fix and all three pages violated it.** "2-3 genuine
+internal links + the cluster hub", measured:
+
+| Page | What it actually had |
+|---|---|
+| debt payoff | **one link, to `/`** — no siblings, no derivations, no hub |
+| coast fire | two links, neither of them its own derivations |
+| mortgage overpayment | three links, one a *debt* derivation, still no hub |
+
+**None of the three linked to `/finance`**, the cluster hub the rule names
+explicitly. Three hand-written blocks, three different shapes, three failures of
+the same rule — which is the argument for a component rather than a convention.
+
+`components/RelatedTools.astro` renders the hub link itself rather than taking
+it as a prop, because that is the specific part every hand-written version
+forgot. It throws below two genuine links.
+
+**`/` does not count as a related link.** It is on every page already;
+satisfying a *related content* requirement with site navigation is how the debt
+payoff page ended up with a Related block containing nothing related.
+
+After, with each derivation now linked from the calculator it supports:
+
+| | Before | After |
+|---|---|---|
+| `/coast-number` | 1 | 2 |
+| `/withdrawal-rate` | 2 | 3 |
+| `/credit-card-interest` | 3 | 4 |
+| `/monthly-return-rate` | 3 | 4 |
+| `/finance` | 17 | 20 |
+
+**The counts are small and the point is not the counts.** A link from the debt
+calculator to the page explaining its own interest arithmetic is a topical
+signal; a footer link to `/terms` is not. What changed is which pages the site
+says are related to which.
+
+Proven by removing the hub link from the built HTML — exit 1, naming the page —
+and again by deleting the block entirely. Exit 0 restored.
+
+**Not done, deliberately:** nothing here targets a query. It makes the pages that
+already exist legible to a crawler as a cluster. Whether any of them ranks is a
+separate question that only Search Console can answer, and it cannot answer it
+for pages that are not linked.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

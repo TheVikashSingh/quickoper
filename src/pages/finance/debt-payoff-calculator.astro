@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { DebtPayoffCalculator } from '../../components/calculators/DebtPayoffCalculator';
 import { sourceRef } from '../../lib/schema';
 import TrustStrip from '../../components/ornament/TrustStrip.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
 
 const AUTHOR = 'Vikash Singh';
 const LAST_VERIFIED = '2026-08-07';
@@ -435,13 +436,25 @@ const structuredData = [
 
     <!-- ── Related (rule 7) ─────────────────────────────────────────────── -->
 
-    <nav class="no-print mt-14" aria-label="Related tools">
-      <h2 class="text-lg font-semibold">Related</h2>
-      <p class="text-ink-mute mt-2 text-sm">
-        More calculators are being added one at a time, each with its working shown and
-        its arithmetic tested against published figures.{' '}
-        <a class="text-brand underline" href="/">See what is live</a>.
-      </p>
-    </nav>
+    <RelatedTools
+      hubNote="three tools, each with its working shown and its arithmetic tested against a published figure"
+      links={[
+        {
+          href: '/credit-card-interest',
+          label: 'How credit card interest is actually calculated',
+          note: 'the daily periodic rate behind every figure above, and why 22.99% costs 25.838%',
+        },
+        {
+          href: '/finance/mortgage-overpayment-calculator',
+          label: 'Mortgage overpayment calculator',
+          note: 'the same overpayment arithmetic against a single amortising loan',
+        },
+        {
+          href: '/verify',
+          label: 'Check our arithmetic yourself',
+          note: 'reproduce the payment and the interest total in a spreadsheet',
+        },
+      ]}
+    />
   </article>
 </BaseLayout>
