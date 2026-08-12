@@ -1,0 +1,68 @@
+---
+/**
+ * A whole-card link to a tool or a derivation page.
+ *
+ * WHY IT IS A COMPONENT. D50 fixed the affordance on the homepage — a bordered
+ * panel whose only cue was coloured text does not read as a link, and the
+ * operator reported exactly that. The `/finance` hub carries the same three
+ * cards and was not touched, so the fix lived in one place and the defect in
+ * the other, and the operator reported it a second time on the other page.
+ *
+ * That is the D53 shape: one rule, two hand-written implementations, one of
+ * them wrong. The card is now a component so the two cannot drift, and a third
+ * use site inherits the affordance rather than reinventing it.
+ *
+ * THE AFFORDANCE, and why each part is there:
+ *
+ *   - an arrow that shifts right on hover — the strongest "this navigates"
+ *     signal available without an icon set, at the cost of one character;
+ *   - the title underlines with it, because underline is what a link is;
+ *   - the whole card lifts to --color-sunken, so the hit area is visibly the
+ *     card rather than the words;
+ *   - the border is --color-line-strong, the token D30 raised specifically so
+ *     that control boundaries clear WCAG 1.4.11's 3:1.
+ *
+ * No focus ring is declared here. global.css already sets a 2px brand
+ * :focus-visible outline site-wide, and duplicating it in a component is how
+ * tokens stop being the single source of truth.
+ */
+
+interface Props {
+  href: string;
+  title: string;
+  summary: string;
+  /** Optional third line — jurisdiction, convention, anything qualifying. */
+  detail?: string | undefined;
+  /** Tools get a larger title than derivations. */
+  size?: 'lg' | 'md';
+}
+
+const { href, title, summary, detail, size = 'md' } = Astro.props;
+---
+
+<a
+  href={href}
+  data-tool-card
+  class="rounded-panel border-line-strong bg-surface hover:border-brand hover:bg-sunken group block border p-4 transition-colors sm:p-5"
+>
+  <span class="flex items-baseline justify-between gap-3">
+    <span
+      class:list={[
+        'text-brand font-semibold group-hover:underline',
+        size === 'lg' ? 'text-lg' : '',
+      ]}
+    >
+      {title}
+    </span>
+    <span
+      aria-hidden="true"
+      class="text-brand shrink-0 transition-transform group-hover:translate-x-1"
+    >
+      →
+    </span>
+  </span>
+
+  <span class="text-ink-soft mt-1 block text-sm">{summary}</span>
+
+  {detail && <span class="text-ink-mute mt-2 block text-xs">{detail}</span>}
+</a>
