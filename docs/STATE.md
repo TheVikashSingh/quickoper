@@ -21,11 +21,11 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 17 (16 substantive — `/404` is not) |
+| Pages built | 18 (17 substantive — `/404` is not) |
 | Working calculators | 3 |
-| Tests | 153 passing |
+| Tests | 167 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · deploy config |
-| Worst-page JS | 18.39 KB of 19.5 KB (1.11 KB spare) |
+| Worst-page JS | 18.51 KB of 19.5 KB (0.99 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only); homepage 12.81 KB — it carries an island (D34) |
 
 ---
@@ -54,10 +54,10 @@ report (local-only — never in the URL, never persisted).
 `/` · `/finance` (cluster hub) · `/methodology` · `/verify` · `/about` ·
 `/privacy` · `/terms` · `/contact` · `/404`
 
-**Derivations** — four pages, each tied to a tool that exists and each carrying
+**Derivations** — six pages, each tied to a tool that exists and each carrying
 figures computed here rather than transcribed:
-`/minimum-payments` · `/credit-card-interest` · `/monthly-return-rate` ·
-`/withdrawal-rate` · `/coast-number`
+`/minimum-payments` · `/biweekly-mortgage-payments` · `/credit-card-interest` ·
+`/monthly-return-rate` · `/withdrawal-rate` · `/coast-number`
 
 **Engines** (`src/lib/calc/`) — `money.ts`, `debt-payoff.ts`, `coast-fire.ts`,
 `mortgage.ts`. Pure, no DOM, no framework. Fixtures anchored to published
@@ -142,7 +142,7 @@ Nothing in code depends on these, but launch does.
 
 ## Next
 
-**The content threshold is met.** The build produces 17 pages, of which 16 are
+**The content threshold is met.** The build produces 18 pages, of which 17 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -195,7 +195,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **16** — none to go |
+| 15+ substantive pages | **17** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |
@@ -275,7 +275,7 @@ Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
 file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: three
-calculators, five derivation pages, five trust pages, 16 substantive pages, 165
+calculators, six derivation pages, five trust pages, 17 substantive pages, 167
 tests, ten CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.

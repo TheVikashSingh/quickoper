@@ -1,0 +1,488 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
+import Rule from '../components/ornament/Rule.astro';
+import RelatedTools from '../components/RelatedTools.astro';
+import { SITE } from '../lib/site';
+import { sourceRef } from '../lib/schema';
+
+import { compareOverpayment, contractualPayment } from '../lib/calc/mortgage';
+import {
+  divide,
+  format,
+  fromMajor,
+  scale,
+  subtract,
+  type Minor,
+} from '../lib/calc/money';
+
+const LAST_VERIFIED = '2026-08-12';
+const CURRENCY = 'USD';
+
+const SOURCES = [
+  {
+    label: 'CFPB — Someone offered me 26 bi-weekly mortgage payments a year for a fee',
+    url: 'https://www.consumerfinance.gov/ask-cfpb/someone-offered-me-the-ability-to-make-26-bi-weekly-mortgage-payments-a-year-for-a-fee-is-there-a-way-i-can-pay-down-my-loan-faster-on-my-own-without-paying-a-fee-to-sign-up-for-this-plan-en-203/',
+    retrieved: '2026-08-12',
+  },
+  {
+    label: 'CFPB — Suit against Nationwide Biweekly over mortgage savings claims',
+    url: 'https://www.consumerfinance.gov/archive/newsroom/cfpb-files-suit-against-nationwide-biweekly-for-luring-consumers-with-false-promises-of-mortgage-savings/',
+    retrieved: '2026-08-12',
+  },
+  {
+    label: 'CFPB — What is an amortization schedule?',
+    url: 'https://www.consumerfinance.gov/ask-cfpb/what-is-an-amortization-schedule-en-100/',
+    retrieved: '2026-08-12',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * EVERY FIGURE IS COMPUTED AT BUILD TIME BY THE REAL MORTGAGE ENGINE.
+ *
+ * Same discipline as /minimum-payments and the homepage ProofChart (D32, D54):
+ * the page runs the code the calculator runs, so it cannot state a number the
+ * product does not produce and cannot go stale when the engine changes. Zero
+ * client JavaScript — .astro frontmatter never reaches the browser.
+ *
+ * WHAT IS MODELLED, EXACTLY. Twenty-six half-payments a year is thirteen
+ * monthly payments, so the whole effect is one extra payment per year. That
+ * extra is modelled here as an even monthly addition of payment ÷ 12, which is
+ * what the engine supports and is the closest available proxy for money that
+ * accumulates fortnightly through the year.
+ *
+ * WHAT IS NOT MODELLED, and the page says so rather than hiding it: a true
+ * fortnightly accrual, where half a payment lands mid-month and reduces the
+ * balance a fortnight earlier than a monthly model can express. That effect is
+ * real and small next to the thirteenth payment, which is where essentially all
+ * of the difference comes from.
+ */
+function scenario(label: string, amount: number, ratePercent: number, years: number) {
+  const principal = fromMajor(amount);
+  const annualRate = ratePercent / 100;
+  const termMonths = years * 12;
+
+  const payment = contractualPayment(principal, annualRate, termMonths);
+
+  /*
+    EVERY AMOUNT STAYS IN MINOR UNITS (D4).
+
+    The first draft of this page converted to major-unit floats and rounded to
+    whole dollars for display. It produced $2,066.00 for a payment D39 anchors
+    to $2,066.16 against calculator.net, and — worse — it made the CFPB loan's
+    "extra a year" $780.00 against a $775.30 payment. One extra payment a year
+    that is LARGER than a payment is arithmetically impossible, and it would
+    have shipped looking plausible.
+
+    `divide` rounds half-up on the cent, so twelve of these are the payment
+    itself to within a cent or two. The residual is computed rather than waved
+    at, and shown where it is not zero.
+  */
+  const halfPayment = divide(payment, 2);
+  const extraPerMonth = divide(payment, 12);
+  const yearlyExtra = scale(extraPerMonth, 12);
+
+  /*
+    THE "ONE EXTRA PAYMENT" CLAIM IS CHECKED, NOT ASSERTED (D58).
+
+    26 × (P/2) − 12 × P = P holds in exact arithmetic. It does NOT always hold
+    on the cent: if the payment is an odd number of cents, halving it rounds,
+    and twenty-six of the rounded halves drift from thirteen payments. A payment
+    of $775.45 halves to $387.73 (up from 387.725), and twenty-six of those come
+    to thirteen cents more than thirteen payments.
+
+    Both loans on this page happen to have even cents, so the identity is exact
+    for them — but the page states "which is one payment", and a sentence that
+    is true only by luck of the input is the D55 defect waiting to happen. So
+    the residual is computed and the prose reads it.
+  */
+  const fortnightlyYear = scale(halfPayment, 26);
+  const monthlyYear = scale(payment, 12);
+  const yearlyDifference = subtract(fortnightlyYear, monthlyYear);
+  const residual = subtract(yearlyDifference, payment);
+
+  const comparison = compareOverpayment({
+    principal,
+    annualRate,
+    termMonths,
+    monthlyOverpayment: extraPerMonth,
+  });
+
+  return {
+    label,
+    amount,
+    ratePercent,
+    years,
+    payment,
+    halfPayment,
+    extraPerMonth,
+    yearlyExtra,
+    fortnightlyYear,
+    monthlyYear,
+    yearlyDifference,
+    residual,
+    exactlyOnePayment: residual === 0,
+    baselineMonths: comparison.baseline.months,
+    overpaidMonths: comparison.overpaid.months,
+    monthsSaved: comparison.monthsSaved,
+    interestSaved: comparison.interestSaved,
+  };
+}
+
+/** The site's standard loan — payment anchored to calculator.net's figure (D39). */
+const MAIN = scenario('Standard 30-year loan', 320_000, 6.706, 30);
+
+/** The CFPB's own example from the Nationwide Biweekly enforcement action. */
+const CFPB = scenario('The CFPB example loan', 160_000, 4.125, 30);
+
+const SCENARIOS = [MAIN, CFPB];
+
+const money = (amount: Minor) => format(amount, CURRENCY);
+/** Loan principals are written as plain numbers above; format them the same way. */
+const loan = (major: number) => format(fromMajor(major), CURRENCY);
+const yearsAndMonths = (months: number) => `${Math.floor(months / 12)}y ${months % 12}m`;
+
+const FAQ = [
+  {
+    q: 'Why does paying every two weeks pay a mortgage off faster?',
+    a: `Not because of the fortnightly timing — because of the count. Twenty-six half-payments is thirteen monthly payments, so a year of biweekly payments contains one more payment than a year of monthly ones. On ${loan(MAIN.amount)} at ${MAIN.ratePercent}% that extra is ${money(MAIN.payment)} a year, and it removes ${MAIN.monthsSaved} months and ${money(MAIN.interestSaved)} of interest.`,
+  },
+  {
+    q: 'Is it the same as paying a bit extra every month?',
+    a: `Very nearly, and that is the point. Adding ${money(MAIN.extraPerMonth)} to each monthly payment on ${loan(MAIN.amount)} at ${MAIN.ratePercent}% puts the same ${money(MAIN.yearlyExtra)} a year against the balance. The remaining difference is timing within the month, which is small next to the extra payment itself.`,
+  },
+  {
+    q: 'Does this page model a true fortnightly schedule?',
+    a: 'No, and that is stated rather than glossed. It models one extra payment a year, spread evenly month by month, using the same monthly engine as the mortgage calculator. A true fortnightly schedule credits half a payment mid-month, which reduces the balance slightly earlier than a monthly model can express. That effect is real and small; the thirteenth payment is where essentially all of the difference comes from.',
+  },
+  {
+    q: 'Do biweekly payment plans cost anything?',
+    a: 'Some do. The CFPB sued Nationwide Biweekly Administration over its programme, alleging a setup fee of up to $995 plus annual processing fees of $84 to $101, and that consumers "will pay more in fees than they save in interest for the first several years". Whether any particular plan charges a fee, and how your servicer applies extra money, are questions for your servicer and your note — not for a calculator.',
+  },
+  {
+    q: 'Will my servicer apply an extra payment to principal?',
+    a: 'That depends on your servicer and how the payment is labelled. Extra money is only worth what this page computes if it reduces the principal rather than sitting in suspense or being treated as a payment made early. Ask how they apply it before assuming, and check the next statement.',
+  },
+  {
+    q: 'Does the arithmetic depend on the country?',
+    a: 'The counting does not — twenty-six halves is thirteen wholes anywhere. The rest depends on your loan: how interest accrues, whether early repayment carries a charge, and how your lender applies extra money. The sources below are US, and the schedule here uses the US monthly convention.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Biweekly mortgage payments',
+        item: `${SITE.url}/biweekly-mortgage-payments`,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Biweekly mortgage payments: what the thirteenth payment actually does | QuickOper"
+  description={`Twenty-six half-payments a year is thirteen monthly payments, not twelve. On ${loan(MAIN.amount)} at ${MAIN.ratePercent}% that one extra payment removes ${MAIN.monthsSaved} months and ${money(MAIN.interestSaved)} of interest. Computed from first principles, with what is and is not modelled stated.`}
+  structuredData={structuredData}
+>
+  <article class="prose-like">
+    <p class="engraved-fine text-ink-mute">Worked derivation</p>
+
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+      Biweekly mortgage payments: what the thirteenth payment actually does
+    </h1>
+
+    <p class="text-ink-soft mt-4 text-lg">
+      The benefit is real, and it has almost nothing to do with paying fortnightly.
+    </p>
+
+    <NoteFrame class="mt-8">
+      <p class="engraved-fine text-ink-mute">The whole mechanism</p>
+      <p class="text-ink mt-2 text-2xl font-semibold sm:text-3xl">
+        26 half-payments a year is 13 monthly payments, not 12.
+      </p>
+      <p class="text-ink-soft numeric mt-3">
+        On {loan(MAIN.amount)} at {MAIN.ratePercent}% over {MAIN.years} years the contractual
+        payment is <strong class="text-ink">{money(MAIN.payment)}</strong>.
+      </p>
+      <p class="text-ink-soft numeric mt-2">
+        Twelve of those in a year is{' '}
+        <strong class="text-ink">{money(MAIN.monthlyYear)}</strong>. Twenty-six halves is{
+          ' '
+        }
+        <strong class="text-ink">{money(MAIN.fortnightlyYear)}</strong> — a difference of{
+          ' '
+        }
+        <strong class="text-ink">{money(MAIN.yearlyDifference)}</strong>,{' '}
+        {
+          MAIN.exactlyOnePayment
+            ? 'which is exactly one payment.'
+            : `which is one payment to within ${money(MAIN.residual)}, the rounding on halving an odd number of cents.`
+        }
+      </p>
+      <p class="text-ink-soft mt-3">
+        That single extra payment a year removes{' '}
+        <strong class="text-ink numeric">{MAIN.monthsSaved} months</strong> and{' '}
+        <strong class="text-ink numeric">{money(MAIN.interestSaved)}</strong> of interest from
+        the schedule.
+      </p>
+    </NoteFrame>
+
+    <Rule class="mt-12" />
+
+    <section class="mt-10 space-y-4">
+      <h2 class="section-head text-ink">Where the saving comes from</h2>
+
+      <p>
+        A year has twelve months and twenty-six fortnights. Pay monthly and you make
+        twelve payments; pay half the monthly amount every fortnight and you make
+        twenty-six halves, which is thirteen wholes. The extra thirteenth payment has no
+        interest of its own to cover, so all of it reduces the balance — and a smaller
+        balance is charged less interest in every month that follows.
+      </p>
+
+      <p>
+        That compounding is the entire effect. It is not that fortnightly payments are
+        charged differently, and it is not a trick of the calendar. It is one more payment
+        a year, doing what any extra payment does.
+      </p>
+
+      <p class="numeric bg-surface rounded-control p-3">
+        26 × (monthly payment ÷ 2) = 13 × monthly payment
+        <br />
+        13 − 12 = 1 extra payment a year
+      </p>
+    </section>
+
+    <section class="mt-12 space-y-4">
+      <h2 class="section-head text-ink">Two loans, computed</h2>
+
+      <p>
+        Both rows are produced by running the mortgage engine at build time, not looked
+        up. The second is the loan the CFPB used in its own enforcement action against a
+        biweekly payment company, so the arithmetic here can be read against their
+        figures.
+      </p>
+
+      <div class="not-prose overflow-x-auto">
+        <table class="numeric mt-4 w-full text-sm">
+          <thead>
+            <tr class="border-line-strong text-ink-mute border-b text-left">
+              <th class="py-2 pr-3 font-medium">Loan</th>
+              <th class="py-2 pr-3 font-medium">Payment</th>
+              <th class="py-2 pr-3 font-medium">Paid fortnightly</th>
+              <th class="py-2 pr-3 font-medium">Extra a year</th>
+              <th class="py-2 pr-3 font-medium">Term becomes</th>
+              <th class="py-2 font-medium">Interest saved</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              SCENARIOS.map((row) => (
+                <tr class="border-line border-b">
+                  <td class="py-2 pr-3">
+                    {loan(row.amount)}
+                    <span class="text-ink-mute"> at {row.ratePercent}%</span>
+                  </td>
+                  <td class="py-2 pr-3">{money(row.payment)}</td>
+                  <td class="py-2 pr-3">{money(row.halfPayment)}</td>
+                  <td class="py-2 pr-3">{money(row.yearlyExtra)}</td>
+                  <td class="py-2 pr-3">
+                    {yearsAndMonths(row.overpaidMonths)}
+                    <span class="text-ink-mute">
+                      {' '}
+                      from {yearsAndMonths(row.baselineMonths)}
+                    </span>
+                  </td>
+                  <td class="py-2">{money(row.interestSaved)}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="text-ink-mute text-sm">
+        Interest is charged monthly on the opening balance, rounded to the cent every
+        month, with the final payment reduced to clear the balance exactly.
+      </p>
+    </section>
+
+    <section class="mt-12 space-y-4">
+      <h2 class="section-head text-ink">The same money, paid monthly</h2>
+
+      <p>
+        If the effect is one extra payment a year, then dividing that payment across the
+        twelve months puts the same money against the balance on almost the same schedule.
+        On {loan(MAIN.amount)} at {MAIN.ratePercent}% that is{' '}
+        <strong class="text-ink numeric">{money(MAIN.extraPerMonth)}</strong> added to each
+        monthly payment — {money(MAIN.yearlyExtra)} a year, which is what the fortnightly schedule
+        delivers.
+      </p>
+
+      <p>
+        This page models exactly that: the extra spread evenly, month by month. It is the
+        closest a monthly engine gets to money that accumulates fortnightly, and it is why
+        the figures above are described as the effect of the thirteenth payment rather
+        than of fortnightly billing.
+      </p>
+    </section>
+
+    <section class="mt-12 space-y-4">
+      <h2 class="section-head text-ink">What this page does not model</h2>
+
+      <p>
+        <strong class="text-ink">A true fortnightly accrual.</strong> On a genuinely fortnightly
+        schedule, half a payment lands mid-month and reduces the balance a fortnight before
+        a monthly model can register it. That is a real effect and it is small beside the thirteenth
+        payment. This page does not claim it.
+      </p>
+
+      <p>
+        <strong class="text-ink">How your servicer applies the money.</strong> The figures here
+        assume every extra cent reduces principal in the month it arrives. Some servicers hold
+        partial payments in suspense until a full payment accumulates, which changes the timing.
+        The CFPB describes programmes that collect fortnightly and forward monthly — in that
+        arrangement the fortnightly part does nothing at all, and the annual extra is the whole
+        of it.
+      </p>
+
+      <p>
+        <strong class="text-ink">Anything about your loan in particular.</strong> Early repayment
+        charges, escrow, insurance, rate changes on an adjustable loan and fees are all outside
+        this arithmetic, and every one of them can move the real answer.
+      </p>
+    </section>
+
+    <section class="mt-12 space-y-4">
+      <h2 class="section-head text-ink">What the fee changes</h2>
+
+      <p>
+        Some companies sell enrolment in a biweekly programme. The arithmetic above does
+        not change when a fee is charged — but the money left over does, and that is a
+        documented matter of record rather than an opinion.
+      </p>
+
+      <p>
+        The CFPB sued Nationwide Biweekly Administration over its programme, alleging a
+        setup fee of up to <strong class="text-ink numeric">$995</strong> plus annual processing
+        fees of <strong class="text-ink numeric">$84 to $101</strong>, and that consumers{
+          ' '
+        }
+        <q>will pay more in fees than they save in interest for the first several years</q
+        >. The Bureau's own example was a{' '}
+        <strong class="text-ink numeric">{loan(CFPB.amount)}</strong> mortgage at{' '}
+        {CFPB.ratePercent}%, on which it said a consumer would need nine years to recoup
+        the fees.
+      </p>
+
+      <p>
+        That is the same loan as the second row of the table above, where the extra
+        payment removes <strong class="text-ink numeric"
+          >{money(CFPB.interestSaved)}</strong
+        > of interest across{' '}
+        <strong class="text-ink numeric">{yearsAndMonths(CFPB.overpaidMonths)}</strong>.
+        Both figures are real; they are simply measured over different periods, which is
+        what the Bureau's nine-year point is about.
+      </p>
+
+      <p>
+        Whether any particular programme charges a fee, and whether your servicer accepts
+        extra principal directly, are questions for your servicer and your note. This page
+        computes the arithmetic; it does not know your loan and does not tell you what to
+        do with it.
+      </p>
+    </section>
+
+    <section class="mt-14" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="section-head text-ink">Common questions</h2>
+      <dl class="mt-4 grid gap-x-8 gap-y-5 lg:grid-cols-2">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="text-ink font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="section-head text-ink">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          Every figure in the table and the prose is produced at build time by the same
+          engine the mortgage calculator runs, from the loan amounts and rates shown
+          beside it. The fee figures and the nine-year recovery period are the CFPB's,
+          quoted from the filing above and not recomputed here.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper shows how
+        a calculation works and shows its working. It does not know your circumstances and cannot
+        tell you whether to change how you pay a mortgage. Nothing here is financial, tax or
+        investment advice. Your note and your servicer are the authority on how your loan treats
+        extra payments.
+      </p>
+    </aside>
+
+    <RelatedTools
+      hubNote="every tool here shows the full schedule rather than one figure"
+      links={[
+        {
+          href: '/finance/mortgage-overpayment-calculator',
+          label: 'Mortgage overpayment calculator',
+          note: 'put your own loan in and see what any extra amount removes, month by month',
+        },
+        {
+          href: '/minimum-payments',
+          label: 'How long minimum payments take, and when they never finish',
+          note: 'the same extra-payment arithmetic where the payment is too small instead of too large',
+        },
+        {
+          href: '/verify',
+          label: 'Check our arithmetic yourself',
+          note: 'reproduce the contractual payment against a spreadsheet in about a minute',
+        },
+      ]}
+    />
+  </article>
+</BaseLayout>
