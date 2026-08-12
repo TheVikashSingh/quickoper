@@ -602,11 +602,26 @@ function Results({
             </>
           ) : (
             <>
-              On these figures avalanche costs{' '}
+              {/*
+                THE CHEAPER STRATEGY IS DERIVED, NOT NAMED (D55).
+
+                This sentence used to hardcode "avalanche costs X less interest
+                than snowball", while the figure beside it is
+                `absolute(avalanche − snowball)` — an absolute value, with the
+                direction thrown away. If snowball ever came out cheaper by a
+                cent, the tool would state the opposite of its own arithmetic,
+                confidently, with the right number attached.
+
+                `comparison.best` is already the cheaper result and carries its
+                own strategy name, so the sentence reads it instead. It is now
+                impossible for this text to disagree with the figure it quotes.
+              */}
+              On these figures {comparison.best.strategy} costs{' '}
               <strong class="text-ink">
                 {format(comparison.interestDifferenceBetweenStrategies, CURRENCY)}
               </strong>{' '}
-              less interest than snowball.
+              less interest than{' '}
+              {comparison.best.strategy === 'avalanche' ? 'snowball' : 'avalanche'}.
             </>
           )}{' '}
           {baselineStalls ? (

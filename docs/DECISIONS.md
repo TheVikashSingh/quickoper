@@ -1316,6 +1316,80 @@ the build green would have written. The AdSense criterion is a floor, not a
 quota; the gap is clamped at zero and the honest answer is "none" at 15 pages
 and at 150.
 
+### D55 — A true number in a false sentence, and the three places it was waiting
+
+The operator flagged the `/minimum-payments` bug as the one that would kill the
+site's credibility, and he is right. The rendered card said:
+
+> Paying **$150.00** instead of **$250.00** on $6,000.00 removes 44 months and
+> $3,378.82.
+
+Backwards. Paying *more* removes them. **The arithmetic was correct** — 44
+months and $3,378.82 are exactly right — and the sentence was false. Every gate
+was green, 159 tests passed, and no reader could have detected it.
+
+That is the worst failure available to this site. A wrong number can be caught
+by anyone with a spreadsheet, which is what `/verify` invites. A right number in
+a false sentence cannot, and it discredits every other figure on the page.
+
+**The class, named:** *prose that says which side is which, instead of deriving
+it.* An audit of every place the site puts directional language beside a
+computed figure found three live instances.
+
+**1. The comparison card that was reported.** Two scenarios indexed out of an
+array by hand and labelled `BIG_FAST` / `BIG_SLOW` by position. Now sorted by
+the outcome, so the labels cannot be the wrong way round — the mistake is
+unavailable rather than merely fixed.
+
+**2. The strategy sentence, and this one was a loaded gun.**
+
+```
+On these figures avalanche costs $230.65 less interest than snowball.
+```
+
+The figure is `absolute(avalanche − snowball)` — **the direction is thrown
+away** — and the sentence then asserted which side won. If snowball ever came
+out cheaper by a cent, the tool would state the opposite of its own arithmetic,
+confidently, with the correct number attached. It now reads `comparison.best`,
+which is already computed as the cheaper result and carries its own strategy
+name.
+
+Currently unreachable, because avalanche minimises interest by construction. It
+is fixed anyway: an assertion that is true only because of an invariant nobody
+wrote down is a defect waiting for the engine to change.
+
+**3. The homepage described a scenario it did not compute.** `"$9,400 of debt,
+$600 a month"` was typed into two places while the balances lived in
+`DEMO_DEBTS` above them. Editing one demo balance would have left the caption
+stating a total the chart beside it no longer showed. Both now derive from the
+same constants the engine is given.
+
+**The engines were exonerated, by test rather than by argument.**
+`tests/calc/direction.test.ts` adds six invariants that ask a different question
+from every other fixture here — not "is the number right" but "does it point the
+way the prose says":
+
+- `best` is never beaten by either strategy it chose between, across five debt
+  shapes at three budgets each
+- `interestDifferenceBetweenStrategies` really is the gap between the two named
+  strategies
+- a larger budget never clears later or costs more
+- the saving against the minimums is never negative
+- a payment below the monthly interest grows the balance; above it, clears
+- a larger mortgage overpayment never removes fewer months or less interest,
+  swept across six overpayments
+- overpaying nothing saves exactly zero (D39's regression)
+
+All six pass. **So the reversal was never arithmetic — it was labelling**, which
+is precisely why no existing fixture could have caught it and why the fix has to
+be structural rather than a corrected string.
+
+**What is still not protected, stated rather than implied.** No gate reads
+English. A future sentence could still describe a computed figure incorrectly,
+and nothing here would fail. The defence is three layers deep and none of them
+is a checker: derive the labels, keep the engines provably monotonic, and read
+the rendered page. The bug that started this was found by the third.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
