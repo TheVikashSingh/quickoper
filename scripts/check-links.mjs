@@ -92,6 +92,14 @@ for (const page of pages) {
     if (pathname === '') continue;
 
     total += 1;
+
+    // /go/* is an affiliate redirect served from public/_redirects at the
+    // edge (rule 12, D52). There is no file behind it and there is not meant
+    // to be, so resolving it against dist/ would report every affiliate link
+    // as broken. That it points at a REAL partner is checked further down,
+    // against the registry — a stronger question than "does a file exist".
+    if (pathname.startsWith('/go/')) continue;
+
     const key = pathname;
     if (checked.has(key)) continue;
     checked.add(key);
@@ -257,6 +265,80 @@ if (missingFromList.length > 0) {
   console.error('  Being linked from the hero is not the same as being listed under');
   console.error('  "Calculators". A page that lists some of them and not others tells');
   console.error('  the visitor there are fewer tools than there are.');
+  process.exit(1);
+}
+
+// ── Rule 12: affiliate links ─────────────────────────────────────────────────
+//
+// Three things must hold for every affiliate link, and all three are invisible
+// in review because a wrong one looks exactly like a right one:
+//
+//   1. It points at /go/<slug> for a slug that is really in the registry.
+//      A /go/ path with no redirect behind it is a dead link that looks fine.
+//   2. It carries rel="sponsored nofollow". Undisclosed paid links are the
+//      fastest available way to lose the trust this site is built on.
+//   3. The page carries a disclosure, and the disclosure appears ABOVE the
+//      link. Below it, the reader is informed after the click it was meant to
+//      inform, which is not a disclosure.
+//
+// Checked against the built HTML because that is the only place the answer
+// exists — the same reasoning as check-spacing (D24) and check-slots (D28).
+//
+// This runs today against zero affiliate links and will keep passing until the
+// first one is added. That is the point: the convention exists before the link
+// does, so nothing has to be retrofitted across a grown site.
+
+const { AFFILIATES } = await import('../src/lib/affiliates.ts');
+const knownSlugs = new Set(AFFILIATES.map((partner) => partner.slug));
+
+const affiliateProblems = [];
+
+for (const page of pages) {
+  const html = await readFile(page, 'utf8');
+  const route =
+    '/' +
+    relative(DIST, page)
+      .split(sep)
+      .join('/')
+      .replace(/index\.html$/, '');
+
+  const disclosureAt = html.indexOf('data-affiliate-disclosure');
+
+  for (const match of html.matchAll(/<a\b[^>]*href=["'](\/go\/[^"']*)["'][^>]*>/g)) {
+    const [tag, href] = match;
+    const slug = (href ?? '').replace(/^\/go\//, '').replace(/\/$/, '');
+
+    if (!knownSlugs.has(slug)) {
+      affiliateProblems.push(
+        `${route} links to ${href} — "${slug}" is not in src/lib/affiliates.ts`,
+      );
+    }
+
+    const rel = tag.match(/rel=["']([^"']*)["']/)?.[1] ?? '';
+    for (const required of ['sponsored', 'nofollow']) {
+      if (!rel.split(/\s+/).includes(required)) {
+        affiliateProblems.push(`${route} links to ${href} without rel="${required}"`);
+      }
+    }
+
+    if (disclosureAt === -1) {
+      affiliateProblems.push(`${route} has an affiliate link and no disclosure`);
+    } else if (disclosureAt > (match.index ?? 0)) {
+      affiliateProblems.push(
+        `${route} discloses BELOW the ${href} link — it must appear above it`,
+      );
+    }
+  }
+}
+
+if (affiliateProblems.length > 0) {
+  console.error(`FAIL: ${affiliateProblems.length} affiliate link problem(s):\n`);
+  for (const problem of affiliateProblems) console.error(`    ${problem}`);
+  console.error('');
+  console.error('  Rule 12: affiliate links go through /go/<partner>, carry');
+  console.error('  rel="sponsored nofollow", and are disclosed above the link.');
+  console.error('  Use src/components/affiliate/AffiliateLink.astro rather than');
+  console.error('  writing the anchor by hand.');
   process.exit(1);
 }
 

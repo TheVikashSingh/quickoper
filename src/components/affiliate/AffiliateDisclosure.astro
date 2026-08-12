@@ -1,0 +1,57 @@
+---
+/**
+ * The disclosure that must sit ABOVE any affiliate link on the page (rule 12).
+ *
+ * "Above" is the requirement, not "somewhere on the page" — a disclosure below
+ * the link is read after the click that it was supposed to inform.
+ * `scripts/check-links.mjs` compares document positions in the built HTML, so
+ * moving this below a link fails the build rather than shipping quietly.
+ *
+ * The wording is deliberately specific. "We may receive compensation from our
+ * partners" is what a site writes when it does not want to be understood; this
+ * one names the partner and says what triggers the payment. On a site whose
+ * whole argument is that its arithmetic is checkable, a vague disclosure is
+ * more expensive than no affiliate link at all.
+ *
+ * `data-affiliate-disclosure` is what the gate looks for, so the copy can be
+ * rewritten without silently retiring the check.
+ */
+import { findPartner } from '../../lib/affiliates';
+
+interface Props {
+  /** Partners disclosed here. Must cover every AffiliateLink below it. */
+  partners: string[];
+}
+
+const { partners } = Astro.props;
+
+const entries = partners.map((slug) => {
+  const entry = findPartner(slug);
+  if (!entry) {
+    throw new Error(
+      `AffiliateDisclosure: unknown partner "${slug}". Add it to ` +
+        `src/lib/affiliates.ts, or remove it from this disclosure.`,
+    );
+  }
+  return entry;
+});
+---
+
+<aside
+  data-affiliate-disclosure
+  class="rounded-panel border-line-strong bg-sunken text-ink-soft border p-3 text-sm"
+>
+  <p>
+    <strong class="text-ink">How this link is paid for.</strong>{' '}
+    {
+      entries.map((entry, i) => (
+        <>
+          {i > 0 && ' '}
+          {entry.relationship} ({entry.name}).
+        </>
+      ))
+    }{' '}
+    It costs you nothing extra, it does not change any figure on this page, and the calculation
+    above does not know the link exists.
+  </p>
+</aside>

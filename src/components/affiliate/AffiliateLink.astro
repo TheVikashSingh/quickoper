@@ -1,0 +1,49 @@
+---
+/**
+ * The only way an affiliate link may appear on this site (rule 12).
+ *
+ * It exists so that `rel="sponsored nofollow"` and the `/go/` indirection are
+ * not things anyone has to remember. A hand-written <a> to a partner is a rule
+ * violation that looks identical to a correct link in review — so the correct
+ * form is a component, and `scripts/check-links.mjs` fails the build on any
+ * /go/ link in the built HTML that lacks the rel or the disclosure.
+ *
+ * `sponsored` tells Google the link is paid. `nofollow` alongside it is
+ * belt-and-braces: `sponsored` is the specific and correct value, and older
+ * crawlers only understand `nofollow`. Undisclosed paid links are the fastest
+ * way to lose the trust this site's entire pitch rests on, and the disclosure
+ * requirement is a legal one in most markets, not a courtesy.
+ *
+ * The page must ALSO render <AffiliateDisclosure /> above this link. That is
+ * checked in the built output rather than trusted.
+ */
+import { findPartner, goPath } from '../../lib/affiliates';
+
+interface Props {
+  /** Must exist in AFFILIATES. An unknown slug fails the build. */
+  partner: string;
+  class?: string | undefined;
+}
+
+const { partner, class: className } = Astro.props;
+
+const entry = findPartner(partner);
+
+if (!entry) {
+  throw new Error(
+    `AffiliateLink: unknown partner "${partner}". Add it to src/lib/affiliates.ts ` +
+      `and to public/_redirects, or remove the link. Failing the build is ` +
+      `deliberate — a /go/ path with no redirect behind it is a dead link that ` +
+      `looks fine in review.`,
+  );
+}
+---
+
+<a
+  href={goPath(entry.slug)}
+  rel="sponsored nofollow"
+  data-affiliate={entry.slug}
+  class:list={['text-brand underline', className]}
+>
+  <slot>{entry.name}</slot>
+</a>

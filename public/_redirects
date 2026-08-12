@@ -1,0 +1,26 @@
+# Affiliate redirects — rule 12.
+#
+# Every affiliate link on this site points at /go/<slug>, never at the
+# destination. This file is what turns that into a real redirect, served by
+# Cloudflare's static asset handler at the edge: no Worker script, no
+# JavaScript, no request logging, nothing stateful.
+#
+# MUST AGREE WITH src/lib/affiliates.ts, line for line. Same slugs, same URLs.
+# scripts/check-deploy-config.mjs fails the build if they diverge — two files
+# that have to say the same thing with no check between them is what shipped
+# every page on this site as a 307 (D46).
+#
+# FORMAT:  /go/<slug>   <destination>   302
+#
+# 302, NOT 301. A permanent redirect is cached by browsers indefinitely, so the
+# day a programme changes its destination — or ends — every visitor who ever
+# clicked the old one keeps going there, and nothing we deploy can reach them.
+# Affiliate destinations are the least permanent URLs on the internet.
+#
+# Crawlers are kept off these paths by `Disallow: /go/` in robots.txt, and the
+# links themselves carry rel="sponsored nofollow" (rule 12), enforced against
+# the built HTML by scripts/check-links.mjs.
+#
+# THERE ARE NO PARTNERS YET. That is deliberate: the convention exists before
+# the first link does, so nothing has to be retrofitted across a grown site.
+# Adding one means an entry here AND in src/lib/affiliates.ts.
