@@ -1547,6 +1547,56 @@ It computes something, the arithmetic is checkable against a spreadsheet, and
 the honest answer — *the fortnightly part is not what helps* — is one a company
 selling fortnightly payment plans has no reason to lead with.
 
+### D59 — The affordance fix that was applied to one page and not the other
+
+D50 made the homepage's calculator cards read as links, after the operator
+reported that they looked like text. The **`/finance` hub carries the same three
+cards** and was never touched — so the fix lived on one page and the defect on
+the other, and the operator reported it a second time, on the other page.
+
+Two hand-written copies of one pattern, one of them wrong. That is D53's shape
+exactly, and it gets D53's answer: `components/ToolCard.astro`. Both pages now
+render through it, a third use site inherits the affordance instead of
+reinventing it, and there is no longer a copy that can be missed.
+
+**The important design change is that the affordance no longer depends on
+hover.** The old card announced itself only when the cursor arrived, which is
+useless to a reader deciding whether the page has anything to click — and
+useless on touch, where there is no hover at all. Every card now carries a
+visible `→` at rest, measured at **8.24:1** against the card, with the border at
+**4.05:1** against the page and `cursor: pointer`. Hover adds an underline and
+moves the arrow; it is no longer carrying the whole signal.
+
+**On verifying hover, and an honest limit.** Four separate attempts to measure
+the hover background and border in the headless browser produced four wrong
+answers, each for a different reason:
+
+1. reading `transform` when Tailwind v4 animates the standalone `translate`
+   property;
+2. a `grep` pattern that did not escape the `\` Tailwind writes into class
+   selectors, reporting the utilities as absent when they are present;
+3. a synthetic injected stylesheet whose `var(--spacing)` resolved to `0`;
+4. enumerating `document.styleSheets[].cssRules` without descending into the
+   `@layer` blocks Tailwind emits everything inside — 54 rules found in a file
+   containing thousands.
+
+The rules themselves were then read straight out of the built CSS and are
+correct, unwrapped and higher-specificity than the base utilities:
+
+```css
+.hover\:bg-sunken:hover{background-color:var(--color-sunken)}
+.hover\:border-brand:hover{border-color:var(--color-brand)}
+```
+
+So the hover states are almost certainly fine, and **that is stated as "almost
+certainly" rather than "verified"**, because the instrument was wrong four times
+and one more confident measurement is not worth much. The resting state is
+verified, and the resting state is what the complaint was about.
+
+**The generalisation, now earned three times over** (D29, D36, D50, D54, and
+here): when a browser measurement contradicts something the source plainly says,
+suspect the measurement first. It has been the measurement every time.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

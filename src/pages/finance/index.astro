@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolCard from '../../components/ToolCard.astro';
 import { SITE } from '../../lib/site';
 
 // The cluster hub. Hub-and-spoke internal linking is the main mechanism a new
@@ -117,14 +118,13 @@ const structuredData = [
     {
       TOOLS.map((tool) => (
         <li>
-          <a
+          <ToolCard
             href={tool.href}
-            class="rounded-panel border-line bg-surface hover:border-line-strong block border p-5"
-          >
-            <span class="text-brand text-lg font-semibold">{tool.title}</span>
-            <span class="text-ink-soft mt-1 block text-sm">{tool.summary}</span>
-            <span class="text-ink-mute mt-2 block text-xs">{tool.detail}</span>
-          </a>
+            title={tool.title}
+            summary={tool.summary}
+            detail={tool.detail}
+            size="lg"
+          />
         </li>
       ))
     }

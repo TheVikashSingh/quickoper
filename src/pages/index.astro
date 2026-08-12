@@ -6,6 +6,7 @@ import Guilloche from '../components/ornament/Guilloche.astro';
 import NoteFrame from '../components/ornament/NoteFrame.astro';
 import ProofChart from '../components/ornament/ProofChart.astro';
 import Rule from '../components/ornament/Rule.astro';
+import ToolCard from '../components/ToolCard.astro';
 
 import { compareStrategies } from '../lib/calc/debt-payoff';
 import { format, fromMajor } from '../lib/calc/money';
@@ -55,6 +56,34 @@ const opening = DEMO_DEBTS.reduce((sum, d) => sum + d.balance, 0);
 const curve = (result: (typeof demo)['avalanche']) => [
   opening,
   ...result.schedule.map((m) => m.totalRemaining),
+];
+
+/**
+ * The list under the "Calculators" heading, which check-links.mjs requires to
+ * contain every /finance/*-calculator route (D50). Data rather than markup so
+ * the cards render through the shared ToolCard — the hub had its own
+ * hand-written copy of these panels and missed D50's affordance fix entirely
+ * (D59).
+ */
+const CALCULATORS = [
+  {
+    href: '/finance/debt-payoff-calculator',
+    title: 'Debt payoff — avalanche vs snowball',
+    summary:
+      'Compare both methods against paying minimums. Full month-by-month schedule, chart, CSV and printable report.',
+  },
+  {
+    href: '/finance/mortgage-overpayment-calculator',
+    title: 'Mortgage overpayment — what an extra payment removes',
+    summary:
+      'How much interest and how many years an overpayment takes off, against the contractual schedule. Full amortisation table, chart, CSV and printable report.',
+  },
+  {
+    href: '/finance/coast-fire-calculator',
+    title: 'Coast FIRE — when saving becomes optional',
+    summary:
+      'How much you need invested today for it to reach your retirement target on its own. Year-by-year projection, chart and export.',
+  },
 ];
 
 const CURRENCY = 'USD';
@@ -326,75 +355,13 @@ const slowMonths = demo.minimumsOnly.months;
       */
     }
     <ul class="mt-4 space-y-3">
-      <li>
-        <a
-          href="/finance/debt-payoff-calculator"
-          class="rounded-panel border-line-strong bg-surface hover:border-brand hover:bg-sunken group block border p-4 transition-colors"
-        >
-          <span class="flex items-baseline justify-between gap-3">
-            <span class="text-brand font-medium group-hover:underline">
-              Debt payoff — avalanche vs snowball
-            </span>
-            <span
-              aria-hidden="true"
-              class="text-brand shrink-0 transition-transform group-hover:translate-x-1"
-            >
-              →
-            </span>
-          </span>
-          <span class="text-ink-soft mt-1 block text-sm">
-            Compare both methods against paying minimums. Full month-by-month schedule,
-            chart, CSV and printable report.
-          </span>
-        </a>
-      </li>
-
-      <li>
-        <a
-          href="/finance/mortgage-overpayment-calculator"
-          class="rounded-panel border-line-strong bg-surface hover:border-brand hover:bg-sunken group block border p-4 transition-colors"
-        >
-          <span class="flex items-baseline justify-between gap-3">
-            <span class="text-brand font-medium group-hover:underline">
-              Mortgage overpayment — what an extra payment removes
-            </span>
-            <span
-              aria-hidden="true"
-              class="text-brand shrink-0 transition-transform group-hover:translate-x-1"
-            >
-              →
-            </span>
-          </span>
-          <span class="text-ink-soft mt-1 block text-sm">
-            How much interest and how many years an overpayment takes off, against the
-            contractual schedule. Full amortisation table, chart, CSV and printable
-            report.
-          </span>
-        </a>
-      </li>
-
-      <li>
-        <a
-          href="/finance/coast-fire-calculator"
-          class="rounded-panel border-line-strong bg-surface hover:border-brand hover:bg-sunken group block border p-4 transition-colors"
-        >
-          <span class="flex items-baseline justify-between gap-3">
-            <span class="text-brand font-medium group-hover:underline">
-              Coast FIRE — when saving becomes optional
-            </span>
-            <span
-              aria-hidden="true"
-              class="text-brand shrink-0 transition-transform group-hover:translate-x-1"
-            >
-              →
-            </span>
-          </span>
-          <span class="text-ink-soft mt-1 block text-sm">
-            How much you need invested today for it to reach your retirement target on its
-            own. Year-by-year projection, chart and export.
-          </span>
-        </a>
-      </li>
+      {
+        CALCULATORS.map((tool) => (
+          <li>
+            <ToolCard href={tool.href} title={tool.title} summary={tool.summary} />
+          </li>
+        ))
+      }
     </ul>
 
     <h3 class="mt-8 text-lg font-semibold">Derivations</h3>
