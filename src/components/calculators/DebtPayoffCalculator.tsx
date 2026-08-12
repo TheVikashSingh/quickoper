@@ -479,12 +479,43 @@ function Results({
       </h2>
 
       {shown.neverPaysOff ? (
-        <p
-          role="alert"
-          class="rounded-panel border-caution/40 bg-caution/5 border p-4 text-sm"
-        >
-          {prose.stalled}
-        </p>
+        /*
+          THIS IS THE MOST IMPORTANT THING THE TOOL EVER SAYS, and it used to
+          look like a footnote — a tinted paragraph in body text, quieter on
+          the page than the three stat tiles it replaced.
+
+          It is now struck like the rest of the identity: a double rule, an
+          engraved caution eyebrow, and the verdict at the size the debt-free
+          figure would have been. The reader gets the same visual weight for
+          "this does not finish" as for "19 months", because those are answers
+          to the same question and one of them matters more.
+
+          Deliberately not red-alert styling. --color-caution is the amber
+          already used for the minimums-only series on every chart (D42), so
+          the page stays a ledger rather than becoming a warning sign, and the
+          colour means the same thing here as it does there.
+
+          THE PANEL IS OPAQUE bg-surface, NOT A CAUTION TINT, and that is a
+          measured decision rather than a stylistic one. A 5% caution wash put
+          the eyebrow at 4.13:1 in the light theme, under the 4.5:1 that 12px
+          text needs, and a border-caution/50 rule at 1.93:1 against the 3:1
+          WCAG 1.4.11 wants for a component boundary. On opaque surface the
+          same two are 4.66:1 and 4.13:1.
+
+          It is also D29's existing rule: text never sits on a tint here,
+          panels are opaque --color-surface, so the texture costs nothing in
+          contrast. The amber carries the meaning from the border and the
+          eyebrow instead of from a wash nobody can read through.
+        */
+        <div role="alert" class="rounded-panel border-caution bg-surface border-2 p-1.5">
+          <div class="border-caution/30 rounded-control border p-4 sm:p-5">
+            <p class="engraved-fine text-caution">Does not clear</p>
+            <p class="text-ink mt-2 text-xl font-semibold sm:text-2xl">
+              At this payment the balance never reaches zero.
+            </p>
+            <div class="text-ink-soft mt-3 text-sm">{prose.stalled}</div>
+          </div>
+        </div>
       ) : (
         <div class="grid gap-3 sm:grid-cols-3">
           <Stat

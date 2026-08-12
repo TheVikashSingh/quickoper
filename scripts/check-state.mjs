@@ -130,7 +130,16 @@ const calculators = routes.filter((route) =>
   /^\/finance\/[^/]+-calculator\/$/.test(route),
 ).length;
 
-const gap = SUBSTANTIVE_TARGET - substantive;
+/**
+ * Clamped at zero. The gap went NEGATIVE the first time the site published a
+ * sixteenth substantive page, and this script then demanded STATE.md claim
+ * "-1 more needed" — which is not a sentence, and would have been written into
+ * the handoff document by whoever was trying to get the build green.
+ *
+ * The AdSense criterion is a floor, not a quota. Once it is met the honest
+ * answer is "none", at 15 pages and at 150.
+ */
+const gap = Math.max(0, SUBSTANTIVE_TARGET - substantive);
 const gapWord = NUMBER_WORDS[gap] ?? String(gap);
 
 // ── What STATE.md says ───────────────────────────────────────────────────────

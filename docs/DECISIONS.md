@@ -1233,6 +1233,89 @@ already exist legible to a crawler as a cluster. Whether any of them ranks is a
 separate question that only Search Console can answer, and it cannot answer it
 for pages that are not linked.
 
+### D54 — The first page built to beat a giant, and what it is betting on
+
+`/minimum-payments` — the first page on this site written for a query rather
+than derived from a tool that already existed.
+
+**The bet, stated plainly.** calculator.net and Credit Karma both rank for
+"how long to pay off a credit card". Neither leads with the honest answer,
+which for a great many real cards is **"it never finishes"**. A
+lead-generation site for credit products has no incentive to open with that
+sentence. We have no incentive not to.
+
+That is the whole thesis of competing here: not better SEO, not more words —
+**a true statement the incumbent's business model discourages them from
+making.**
+
+**Every figure is computed at build time by the real engine.** The page imports
+`debt-payoff.ts` and runs four scenarios, the same discipline as the homepage's
+ProofChart (D32). It cannot state a number the product does not produce, and it
+cannot go stale when the engine changes. Zero client JavaScript.
+
+What the engine returned, none of it typed:
+
+| Balance | APR | Paid | Interest m1 | Clears in | Interest |
+|---|---|---|---|---|---|
+| $3,000 | 29.99% | $30 | $74.98 | **never** | unbounded |
+| $3,000 | 29.99% | $90 | $74.98 | 73 months | **$3,526.99** |
+| $6,000 | 22.99% | $150 | $114.95 | 77 months | $5,492.03 |
+| $6,000 | 22.99% | $250 | $114.95 | 33 months | $2,113.21 |
+
+Two of those are the page's reason to exist. Row 2 costs **$526.99 more in
+interest than the balance itself**. Rows 3 and 4 differ by $100 a month and by
+**44 months and $3,378.82**. Both are derived from the table rather than
+restated beside it, so a quotable sentence cannot drift from the figures above
+it.
+
+Row 4 independently reproduces D34's `QuickCost` verification — 33 months and
+$2,113.21 — from a page written months later, which is what having one engine
+buys.
+
+**The honest limitation is stated rather than buried.** The engine models a
+*fixed* payment; issuers commonly use a percentage of the balance, which shrinks
+as the balance falls and therefore takes **longer**. So every figure here is the
+optimistic case, and the page says so in its own section. It also tells readers
+to check against the Regulation Z repayment box on their own statement, and
+which of the two to believe when they disagree — the statement describes their
+card, this page describes the arithmetic.
+
+**On being cited by language models rather than replaced by them.** `llms.txt`
+gains an entry in the established shape: flat, standalone, quotable sentences
+carrying the computed figures. The strategy is not to be un-summarisable. It is
+that a model asked "how long to pay off $3,000 at 29.99%" produces an estimate,
+while this page produces $74.98 of month-one interest, a named threshold, a
+schedule and a spreadsheet check — and a retrieval system that wants a specific
+number has somewhere exact to get one. Being *the citable source* for a
+computed fact is a better position than being unquotable.
+
+**The warning is now struck rather than whispered.** "This does not finish" was
+a tinted paragraph in body text — visually quieter than the three stat tiles it
+replaced, for the most important thing the tool ever says. It is now a double
+rule, an engraved caution eyebrow and the verdict at the size the debt-free
+figure would have been.
+
+**And the tint had to go, on measurement.** In the light theme a 5% caution wash
+put the eyebrow at **4.13:1** (12px text needs 4.5) and a `border-caution/50`
+rule at **1.93:1** (a component boundary needs 3). On opaque `bg-surface` the
+same two measure **4.66:1** and **4.66:1**; dark measures 8.82 and 8.82. That is
+D29's existing rule rediscovered by measuring — text never sits on a tint here,
+panels are opaque, so the texture never costs contrast.
+
+**The first measurement pass reported 1.06:1 and 1.61:1** and looked like a
+catastrophe. It was the instrument: filling a canvas with a *translucent* colour
+composites it over transparent black, not over the page. The fix is to paint the
+page colour first, then the panel, then read. Third time a contrast measurement
+has been wrong before the design was (D29, D36, D50) — when a number looks
+impossible, suspect the ruler.
+
+**Also fixed: `check-state.mjs` demanded a sentence that is not English.** The
+sixteenth substantive page made its gap go negative, and the gate began
+requiring `STATE.md` to claim **"-1 more needed"** — which whoever was getting
+the build green would have written. The AdSense criterion is a floor, not a
+quota; the gap is clamped at zero and the honest answer is "none" at 15 pages
+and at 150.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
