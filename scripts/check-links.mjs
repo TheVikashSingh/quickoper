@@ -268,6 +268,77 @@ if (missingFromList.length > 0) {
   process.exit(1);
 }
 
+// ── Rule 8: every calculator ends with a real Related block ──────────────────
+//
+// Rule 8 requires "2-3 genuine internal links + the cluster hub". All three
+// calculators had a Related block, all three were different, and none of them
+// satisfied it. Measured against the built output before this check existed:
+//
+//   debt payoff            1 link, to "/" — no siblings, no derivations, no hub
+//   coast fire             2 links, neither of them its own derivations
+//   mortgage overpayment   3 links, one a *debt* derivation, still no hub
+//
+// Why it is worth a gate rather than a note. Internal links are how a site
+// tells a search engine which of its own pages matter, and the measured
+// distribution was backwards: /methodology 41 inbound, /contact 22, /about 19
+// — against /coast-number 1, /withdrawal-rate 2, /credit-card-interest 3. The
+// footer pages will never rank for anything worth having; the derivation pages
+// are the entire long-tail surface. The site was spending its equity on /terms.
+//
+// "/" does not count. A link to the homepage is navigation, present on every
+// page already, and using it to satisfy a *related content* requirement is how
+// the debt payoff page ended up with a Related block containing nothing related.
+
+const calculatorPages = pages.filter((page) =>
+  /finance[\\/][^\\/]+-calculator[\\/]index\.html$/.test(page),
+);
+
+const relatedProblems = [];
+
+for (const page of calculatorPages) {
+  const html = await readFile(page, 'utf8');
+  const route =
+    '/' +
+    relative(DIST, page)
+      .split(sep)
+      .join('/')
+      .replace(/index\.html$/, '')
+      .replace(/\/$/, '');
+
+  const block = html.match(/<nav[^>]*\sdata-related[^>]*>([\s\S]*?)<\/nav>/);
+
+  if (!block) {
+    relatedProblems.push(`${route} has no Related block (rule 8)`);
+    continue;
+  }
+
+  const hrefs = [...(block[1] ?? '').matchAll(/href=["'](\/[^"'#?]*)["']/g)].map(
+    ([, href]) => (href ?? '').replace(/\/$/, ''),
+  );
+
+  if (!hrefs.includes('/finance')) {
+    relatedProblems.push(`${route} Related block omits the cluster hub /finance`);
+  }
+
+  const genuine = hrefs.filter((href) => href !== '' && href !== '/finance');
+  if (genuine.length < 2) {
+    relatedProblems.push(
+      `${route} Related block has ${genuine.length} genuine link(s); rule 8 wants 2-3 plus the hub`,
+    );
+  }
+}
+
+if (relatedProblems.length > 0) {
+  console.error(`FAIL: ${relatedProblems.length} Related block problem(s):\n`);
+  for (const problem of relatedProblems) console.error(`    ${problem}`);
+  console.error('');
+  console.error('  Rule 8: 2-3 genuine internal links plus the cluster hub, on every');
+  console.error('  calculator page. Use components/RelatedTools.astro — it renders the');
+  console.error('  hub link itself, because that is the part every hand-written');
+  console.error('  version forgot.');
+  process.exit(1);
+}
+
 // ── Rule 12: affiliate links ─────────────────────────────────────────────────
 //
 // Three things must hold for every affiliate link, and all three are invisible

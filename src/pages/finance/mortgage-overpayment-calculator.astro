@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
 import { MortgageCalculator } from '../../components/calculators/MortgageCalculator';
 import TrustStrip from '../../components/ornament/TrustStrip.astro';
 import { sourceRef } from '../../lib/schema';
@@ -362,24 +363,25 @@ const structuredData = [
       </p>
     </aside>
 
-    <nav class="no-print mt-14" aria-label="Related tools">
-      <h2 class="section-head">Related</h2>
-      <ul class="text-ink-soft mt-3 space-y-1 text-sm">
-        <li>
-          <a class="text-brand underline" href="/finance/debt-payoff-calculator"
-            >Debt payoff calculator</a
-          > — the same idea across several debts at once.
-        </li>
-        <li>
-          <a class="text-brand underline" href="/credit-card-interest"
-            >How credit card interest is calculated</a
-          > — why a statement never shows APR ÷ 12.
-        </li>
-        <li>
-          <a class="text-brand underline" href="/verify">Check our arithmetic</a> — reproduce
-          these figures in a spreadsheet.
-        </li>
-      </ul>
-    </nav>
+    <RelatedTools
+      hubNote="the other calculators, each anchored to a published figure before it shipped"
+      links={[
+        {
+          href: '/finance/debt-payoff-calculator',
+          label: 'Debt payoff calculator',
+          note: 'the same overpayment idea across several debts at once',
+        },
+        {
+          href: '/credit-card-interest',
+          label: 'How credit card interest is calculated',
+          note: 'why a statement never shows APR ÷ 12',
+        },
+        {
+          href: '/verify',
+          label: 'Check our arithmetic yourself',
+          note: 'reproduce this payment against calculator.net and a spreadsheet',
+        },
+      ]}
+    />
   </article>
 </BaseLayout>

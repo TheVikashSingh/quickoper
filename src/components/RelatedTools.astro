@@ -1,0 +1,76 @@
+---
+/**
+ * The Related block every calculator page ends with (rule 8).
+ *
+ * WHY IT IS A COMPONENT. All three calculators had one, all three were
+ * different, and none of them satisfied the rule. Measured against the built
+ * output:
+ *
+ *   debt payoff            1 link, to "/" — no siblings, no derivations, no hub
+ *   coast fire             2 links, neither of them its own derivations
+ *   mortgage overpayment   3 links, one of which is a *debt* derivation
+ *
+ * None linked to /finance, the cluster hub, which rule 8 names explicitly.
+ *
+ * WHY IT MATTERS MORE THAN IT LOOKS. Internal links are how a site tells a
+ * search engine which of its own pages matter. Measured inbound counts across
+ * the built site before this change:
+ *
+ *   /methodology     41        /coast-number            1
+ *   /contact         22        /withdrawal-rate         2
+ *   /about           19        /credit-card-interest    3
+ *   /privacy         17        /monthly-return-rate     3
+ *
+ * The trust pages are in the footer, so they collect a link from every page and
+ * will never rank for anything worth having. The derivation pages — the actual
+ * long-tail surface — were an island linked mostly to each other. The site was
+ * spending its internal equity on /terms.
+ *
+ * The hub link is not a prop. It is always rendered, because "and the cluster
+ * hub" is the part of rule 8 that every hand-written version forgot.
+ */
+
+interface RelatedLink {
+  href: string;
+  label: string;
+  /** Why a reader would follow it. Not decoration — a bare list of links is a menu, not a recommendation. */
+  note: string;
+}
+
+interface Props {
+  /** Two or three genuine links. Never "/" — that is navigation, not relation. */
+  links: RelatedLink[];
+  /** What the cluster hub link should say on this page. */
+  hubNote: string;
+}
+
+const { links, hubNote } = Astro.props;
+
+if (links.length < 2) {
+  throw new Error(
+    `RelatedTools: rule 8 requires 2-3 genuine internal links plus the cluster ` +
+      `hub; got ${links.length}. A Related block with one link is a dead end.`,
+  );
+}
+---
+
+<nav class="no-print mt-14" aria-label="Related tools" data-related>
+  <h2 class="text-lg font-semibold">Related</h2>
+
+  <ul class="mt-3 space-y-2">
+    {
+      links.map((link) => (
+        <li>
+          <a class="text-brand underline" href={link.href}>
+            {link.label}
+          </a>
+          <span class="text-ink-soft text-sm"> — {link.note}</span>
+        </li>
+      ))
+    }
+    <li>
+      <a class="text-brand underline" href="/finance">All money calculators</a>
+      <span class="text-ink-soft text-sm"> — {hubNote}</span>
+    </li>
+  </ul>
+</nav>

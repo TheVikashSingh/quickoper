@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
 import { CoastFireCalculator } from '../../components/calculators/CoastFireCalculator';
 import { sourceRef } from '../../lib/schema';
 import { SITE } from '../../lib/site';
@@ -372,23 +373,25 @@ const structuredData = [
       </p>
     </aside>
 
-    <nav class="no-print mt-14" aria-label="Related tools">
-      <h2 class="text-lg font-semibold">Related</h2>
-      <ul class="mt-3 space-y-2 text-sm">
-        <li>
-          <a class="text-brand underline" href="/finance/debt-payoff-calculator">
-            Debt payoff calculator
-          </a>
-          <span class="text-ink-mute">
-            — the same arithmetic, running the other way.</span
-          >
-        </li>
-        <li>
-          <a class="text-brand underline" href="/methodology">How we verify our numbers</a
-          >
-          <span class="text-ink-mute"> — the rounding policy and the tests.</span>
-        </li>
-      </ul>
-    </nav>
+    <RelatedTools
+      hubNote="the other calculators, each showing its full schedule rather than one figure"
+      links={[
+        {
+          href: '/coast-number',
+          label: 'What a coast number is, and what it is not',
+          note: 'the one assumption that moves this figure more than any other',
+        },
+        {
+          href: '/withdrawal-rate',
+          label: 'Where the 4% rule comes from',
+          note: 'what the target on this page is actually derived from, and what it does not promise',
+        },
+        {
+          href: '/monthly-return-rate',
+          label: 'Why a 7% return is not 0.583% a month',
+          note: 'the compounding convention this projection uses, and the $50,424 it changes',
+        },
+      ]}
+    />
   </article>
 </BaseLayout>
