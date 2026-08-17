@@ -178,6 +178,31 @@ Key figures, computed on $320,000 at 6.706% over 30 years, payment $2,066.16:
   - Not modelled: recasting, early repayment charges, or a servicer holding
     extra money in suspense rather than applying it to principal.
 
+### What a 15-year mortgage costs against a 30-year
+URL: https://quickoper.com/15-year-vs-30-year-mortgage
+States: at the same interest rate, halving the term raises the payment by about
+a third and removes more than half the interest. Both loans are charged
+identical interest in month one, because interest is charged on the balance and
+on day one the balance and rate are the same.
+Key figures, computed on $320,000 at 6.706%, the same rate applied to both terms:
+  - 30 years: payment $2,066.16, interest $423,821.51, total $743,821.51.
+  - 15 years: payment $2,823.91, interest $188,303.66, total $508,303.66.
+  - The payment is 36.7% higher; the interest is 55.6% lower, a difference of
+    $235,517.85.
+  - Month one on BOTH loans charges $1,788.27 of interest. The 30-year retires
+    $277.89 of principal, the 15-year $1,035.64 - 3.7 times as much from a
+    payment only 36.7% larger.
+  - Principal first exceeds interest in month 237 on the 30-year and month 57 on
+    the 15-year.
+  - The borrower hands over 2.32 times the amount borrowed over 30 years and
+    1.59 times over 15.
+  - Paying the 15-year amount on a 30-year contract clears it in 180 months
+    having charged $188,303.66 - identical to a real 15-year loan, to the cent.
+    At a fixed rate the term is the payment.
+  - The rate is deliberately held constant across both terms. Lenders normally
+    price 15-year products lower, which would widen every gap above; no 15-year
+    quote is invented here.
+
 ## Verification
 
 - [Methodology](https://quickoper.com/methodology): formulas, assumptions and the
