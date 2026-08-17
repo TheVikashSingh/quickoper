@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-12, after PR #46.
+**Updated:** 2026-08-17, after PR #48.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -124,10 +124,11 @@ Nothing in code depends on these, but launch does.
    `www`. `docs/DNS.md` is the runbook that was followed; D43, D45, D46 and D48
    record what it cost to learn.
 
-3. **Search Console.** The domain property survived the migration — the
-   verification TXT is live and correct. Remaining: submit
-   `https://quickoper.com/sitemap-index.xml`, and remove the old `/sitemap.xml`
-   submission belonging to the retired application.
+3. ~~**Search Console.**~~ **Done.** The domain property survived the migration
+   and `sitemap-index.xml` was submitted on 2026-08-11 — status Success, all 17
+   URLs discovered. Six days of data are recorded in D60; the short version is 60
+   impressions, 0 clicks, average position 66.9, five pages indexed, and every
+   impression arriving at a single page.
 
    That application (`/dashboard`, `/tracker`, `/checklists`, `/pricing`,
    `/blog`) is gone. Launch was a **replacement**, so expect a 404 spike. It is
@@ -141,9 +142,20 @@ Nothing in code depends on these, but launch does.
    claiming an image it does not have.
 
 5. **Run `docs/VERIFICATION.md`** — five spreadsheet checks and one at
-   investor.gov, ten minutes. Do this
-   before launch so "an AI wrote this" becomes a documented verification rather
-   than a worry.
+   investor.gov, ten minutes. It was written as a pre-launch task and launch
+   happened without it, so it is now overdue rather than pending: the site is
+   publicly claiming figures nobody outside this repository has checked.
+
+6. ~~**Canonical hostname and scheme.**~~ **Done, 2026-08-17.** Both the apex and
+   `www` were serving `200`, as was plain `http://` on each — four addresses for
+   one site, against a crawl budget of one GoogleBot visit a day. Fixed with a
+   Redirect Rule and *Always Use HTTPS* (D60). **Both are Cloudflare zone
+   settings that no file in this repository can see**, so `docs/DNS.md` carries
+   their exact values and the commands that prove them.
+
+7. **AdSense.** Every criterion is now met, including the last one — indexed with
+   impressions registering. The operator has deliberately deferred applying until
+   there is more traffic. Recorded as a decision rather than an outstanding task.
 
 ---
 
@@ -294,19 +306,23 @@ would have been debugged against a live domain otherwise.
 **What the next session should not do.** Not build tools 4 and 5 — they are
 unassigned and any candidate must pass rule B first. Not write more content — the
 threshold is met and further pages have no near-term purpose until Search Console
-says which queries are landing. Not raise the JS budget again; 19.5KB has 1.23KB
+says which queries are landing. Not raise the JS budget again; 19.5KB has 0.99KB
 of headroom and the next honest fix is structural (D10).
 
-**What it should do.** Launch is done. The remaining operator items are Search
-Console (submit the sitemap, drop the old one), retiring the Vercel account,
-turning off the `workers.dev` route so the site is not publicly duplicated, and
-the og.png. None of them are code.
+**What it should do.** Launch is done, and so are the operator items that were
+outstanding at PR #46: the sitemap was submitted on 2026-08-11 (Success, 17 URLs
+discovered), the Vercel account is retired, the `workers.dev` route is off, and
+`public/og.png` exists (D51). What remains for the operator is running
+`docs/VERIFICATION.md` and the AdSense application, which the operator has
+deliberately deferred until there is more traffic. Neither is code.
 
-**The first thing that is now possible and was not before:** Search Console data.
-Every topic on this site was chosen by what is provable from first principles
-(D2), never by what anyone searches. That is defensible and it is not targeting.
-Queries landing at position 8–20 are where a content edit actually moves
-something — and that clock started on 2026-08-11.
+**Search Console data now exists, and it is thin.** Six days in: 60 impressions,
+0 clicks, average position 66.9, and **every impression from one page**
+(D60). Five pages are indexed of seventeen. Every topic on this site was chosen
+by what is provable from first principles (D2), never by what anyone searches;
+that is defensible and it is not targeting. Queries landing at position 8–20 are
+where a content edit actually moves something, and nothing here is close to that
+band yet. The clock started on 2026-08-11.
 
 **The one honest caveat to carry forward.** Every topic on this site was chosen by
 what can be proved from first principles, not by search demand. That is

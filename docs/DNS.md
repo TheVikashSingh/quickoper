@@ -279,6 +279,89 @@ account; closing it removes the deployments and their source.
 
 ---
 
+## Zone settings that live only in the dashboard
+
+**Nothing in this repository can see these, and no CI gate checks them.** They
+are Cloudflare zone configuration, not files. If the zone is ever rebuilt they
+vanish silently, and the failure is invisible: the site keeps working while
+serving itself on two hostnames again. Recorded here for the same reason the
+record table is — a setting nobody wrote down is a setting nobody restores.
+
+Added 2026-08-17, after D60 found the apex and `www` both serving `200`.
+
+### Redirect Rule: `www to apex (301)`
+
+Cloudflare → **Rules** → **Redirect Rules**. Created from the built-in
+*Redirect from WWW to root* template, unmodified except the name.
+
+| Field | Value |
+|---|---|
+| Match | Wildcard pattern |
+| Request URL | `https://www.*` |
+| Target URL | `https://${1}` |
+| Status | **301** |
+| Preserve query string | **off** |
+
+**"Preserve query string" is deliberately off.** The wildcard captures the query
+string inside `${1}` already; enabling it appends a second copy and a calculator
+permalink comes back as `?p=320000?p=320000`. Verified, not assumed.
+
+**Deploying it raises a warning that is wrong.** Cloudflare reports *"This rule
+may not apply to your traffic — your DNS configuration may not be proxying
+traffic for www"*, because `www` is a Worker custom domain rather than an
+ordinary proxied record. Choose **Ignore and deploy rule anyway**. The rule
+works; see the gate below for how to prove it rather than believe either party.
+
+Do **not** choose *Create a new proxied DNS record* from that dialog. A hostname
+cannot be both a Worker custom domain and an ordinary proxied record, and there
+is no need to find out which way Cloudflare resolves the conflict.
+
+### Always Use HTTPS
+
+Cloudflare → **SSL/TLS** → **Edge Certificates** → **Always Use HTTPS** → on.
+
+Without it, `http://` on either hostname serves `200` in plaintext. The app's own
+HSTS header does not cover this: HSTS is ignored on a non-secure response, so it
+protects returning browsers and does nothing for a crawler's first contact.
+
+The redirect-loop warning shown beside this toggle does not apply here — the
+Worker serves HTTP without redirecting, so there is no origin-side redirect to
+loop against.
+
+### Gate
+
+All four combinations must terminate at the apex over HTTPS. Run after any change
+to the zone:
+
+```
+curl -s -o /dev/null -w "%{http_code} -> %{redirect_url}\n" http://quickoper.com/about
+curl -s -o /dev/null -w "%{http_code} -> %{redirect_url}\n" http://www.quickoper.com/about
+curl -s -o /dev/null -w "%{http_code} -> %{redirect_url}\n" https://www.quickoper.com/about
+curl -s -o /dev/null -w "%{http_code}\n" https://quickoper.com/about
+```
+
+Expected: `301`, `301`, `301`, `200`. The apex over HTTPS must be the only `200`.
+
+Then prove the rule reaches traffic ahead of the Worker, which is the check the
+dashboard warning makes you doubt:
+
+```
+curl -s -o /dev/null -w "%{http_code}\n" https://www.quickoper.com/not-a-real-page
+```
+
+Expected **301**. A `404` means the Worker answered and the rule is not firing —
+the Worker's own `not_found_handling` produced it.
+
+And that a permalink survives the chain with its parameters:
+
+```
+curl -s -o /dev/null -L -w "%{num_redirects} %{url_effective}\n" "http://www.quickoper.com/finance/mortgage-overpayment-calculator?p=320000&r=6.706&y=30"
+```
+
+Expected: 2 hops, ending at the apex with `?p=320000&r=6.706&y=30` intact.
+
+---
+
 ## Why the site's DNS moves at all
 
 Cloudflare Workers static assets serve the site, and a Worker custom domain
