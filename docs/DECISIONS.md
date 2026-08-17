@@ -1777,6 +1777,74 @@ overflow. It is the scrollbar: `window.scrollTo(9999, y)` leaves `scrollX` at
 **0**, so the page does not scroll horizontally at all. Fifth time (D29, D36,
 D50, D54, D59) — suspect the instrument first.
 
+### D62 — At a fixed rate, the term is the payment
+
+`/15-year-vs-30-year-mortgage`. Fourth page written for a query, and the second
+chosen from D60's evidence rather than a guess.
+
+**The headline is the ordinary one:** on the anchor loan, halving the term raises
+the payment **36.7%** ($2,066.16 → $2,823.91) and removes **55.6%** of the
+interest ($423,821.51 → $188,303.66, a difference of **$235,517.85**). The
+borrower hands over **2.32×** what they borrowed over thirty years and **1.59×**
+over fifteen.
+
+**The two findings worth the page are not that.**
+
+**Both loans are charged identical interest in month one — $1,788.27.** Same
+balance, same rate, so the same charge; interest does not know the term. What
+differs is the remainder: **$277.89** of principal against **$1,035.64**, which
+is **3.7×** as much principal from a payment only 36.7% larger, because the extra
+lands entirely on the balance rather than being split. Principal first beats
+interest in month **237** on the long term and month **57** on the short one.
+
+**And the term turns out not to be a property of the product at all.** Paying the
+15-year amount on the 30-year *contract* clears it in **180 months having charged
+$188,303.66** — identical to a real 15-year loan, to the cent. Computed with
+`compareOverpayment`, and the page **branches on whether the two actually match**
+rather than asserting they do; the "identical, to the cent" sentence only renders
+because the engine produced it. If per-period rounding ever separated them the
+prose would say so and quote the gap. D55's rule applied to an identity rather
+than a direction.
+
+What genuinely differs between the products is obligation — on the short term the
+larger payment is compulsory. The page says that and stops, because whether that
+is worth anything is not arithmetic (D1).
+
+**The rate is held constant across both terms, and that is a modelling choice
+with a stated consequence.** Lenders normally price a 15-year product below a
+30-year one. We have no citable 15-year quote and CLAUDE.md forbids inventing a
+rate, so the comparison holds it fixed and isolates the term. That makes every
+gap on the page **conservative** — a genuinely lower short-term rate widens all
+of them — and saying so is what keeps a missing figure from reading as an
+oversight. This is the same discipline as D40: cite what you have, derive the
+rest, never fill a gap with a plausible number.
+
+**No new engine code.** Everything here is `calculateMortgage` and
+`compareOverpayment` as they already stood, which is the difference between a
+page the data suggested and a page that needed a feature built first.
+
+**A D55 defect shipped past every gate and was caught by reading the page.** An
+FAQ entry asked *"Why is the first payment identical on both?"* — and the first
+payments are **$2,066.16 and $2,823.91**, which differ by $757.75. It is the
+first month's *interest* that is identical, which is what the answer beneath it
+correctly explained. A true number under a false question, on the one page whose
+entire point is that those two things are different. Twenty pages of gates, 172
+tests and a clean typecheck all passed it.
+
+Third time this exact class has appeared (D47, D55) and it keeps arriving the
+same way: the computation is right, the label is written by hand, and no checker
+reads English. The defence remains the one D55 named — read the rendered page —
+and it is the only reason this was found.
+
+**Also found while verifying, and deliberately not fixed here.** Every page on
+the site logs two console errors: `<svg> attribute height: Expected length,
+"auto"`, from `height="auto"` on the `<svg>` in `ProofChart.astro`. `auto` is not
+a valid SVG length. Confirmed pre-existing by reproducing it on
+`/biweekly-mortgage-payments`, which this pull request does not touch. It renders
+correctly because browsers ignore the invalid attribute, and **nothing in CI
+reads browser console output**, which is why it has survived. Left for its own
+change rather than bundled into a content page.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

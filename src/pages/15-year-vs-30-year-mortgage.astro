@@ -1,0 +1,503 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
+import Rule from '../components/ornament/Rule.astro';
+import RelatedTools from '../components/RelatedTools.astro';
+import { SITE } from '../lib/site';
+import { sourceRef } from '../lib/schema';
+
+import { calculateMortgage, compareOverpayment } from '../lib/calc/mortgage';
+import { format, fromMajor, subtract, sum, type Minor } from '../lib/calc/money';
+
+const LAST_VERIFIED = '2026-08-17';
+const CURRENCY = 'USD';
+
+const SOURCES = [
+  {
+    label: 'CFPB — What is an amortization schedule?',
+    url: 'https://www.consumerfinance.gov/ask-cfpb/what-is-an-amortization-schedule-en-100/',
+    retrieved: '2026-08-12',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * EVERY FIGURE IS COMPUTED AT BUILD TIME BY THE REAL MORTGAGE ENGINE.
+ *
+ * Same discipline as /minimum-payments, /biweekly-mortgage-payments and
+ * /mortgage-overpayment-timing (D32, D54, D58, D61). Zero client JavaScript.
+ *
+ * THE RATE IS HELD CONSTANT ACROSS BOTH TERMS, AND THAT IS A MODELLING CHOICE
+ * WITH A CONSEQUENCE. In the market a 15-year product is normally priced below
+ * a 30-year one, which would widen every gap on this page. We do not have a
+ * citable 15-year rate and CLAUDE.md forbids inventing one, so the comparison
+ * holds the rate fixed and isolates the single variable the reader controls:
+ * the term. The page says so in its own section rather than letting the reader
+ * assume the market quotes one rate for both.
+ *
+ * The anchor carries through: $320,000 at 6.706% over 30 years reproduces
+ * calculator.net's published $2,066.16 payment to the cent (D39).
+ */
+const AMOUNT = 320_000;
+const RATE_PERCENT = 6.706;
+
+const principal = fromMajor(AMOUNT);
+const annualRate = RATE_PERCENT / 100;
+
+const term = (years: number) => {
+  const result = calculateMortgage({
+    principal,
+    annualRate,
+    termMonths: years * 12,
+    monthlyOverpayment: 0 as Minor,
+  });
+  const first = result.schedule[0]!;
+  const crossoverIndex = result.schedule.findIndex((m) => m.principalPaid > m.interest);
+  return {
+    years,
+    payment: result.contractualPayment,
+    totalInterest: result.totalInterest,
+    totalPaid: result.totalPaid,
+    months: result.months,
+    firstInterest: first.interest,
+    firstPrincipal: first.principalPaid,
+    firstInterestShare: (
+      (first.interest / (first.interest + first.principalPaid)) *
+      100
+    ).toFixed(1),
+    crossoverMonth: result.schedule[crossoverIndex]!.month,
+    yearOnePrincipal: sum(result.schedule.slice(0, 12).map((m) => m.principalPaid)),
+    /** What the borrower hands over, as a multiple of what they borrowed. */
+    multiple: (result.totalPaid / principal).toFixed(2),
+  };
+};
+
+const thirty = term(30);
+const fifteen = term(15);
+
+const paymentGap = subtract(fifteen.payment, thirty.payment);
+const interestGap = subtract(thirty.totalInterest, fifteen.totalInterest);
+const paymentUpPercent = ((fifteen.payment / thirty.payment - 1) * 100).toFixed(1);
+const interestDownPercent = (
+  (1 - fifteen.totalInterest / thirty.totalInterest) *
+  100
+).toFixed(1);
+/** How many times more principal the shorter term retires in month one. */
+const firstPrincipalRatio = (fifteen.firstPrincipal / thirty.firstPrincipal).toFixed(1);
+
+/**
+ * THE PAGE'S CENTRAL FINDING, COMPUTED RATHER THAN ASSERTED.
+ *
+ * Take the 30-year contract and pay the 15-year amount. If the resulting
+ * schedule matches a real 15-year loan, then at a fixed rate the term is not a
+ * property of the product at all — it is the payment. The prose reads these
+ * values rather than claiming the result, so it cannot state an identity the
+ * engine does not produce (D55).
+ */
+const thirtyPaidLikeFifteen = compareOverpayment({
+  principal,
+  annualRate,
+  termMonths: 30 * 12,
+  monthlyOverpayment: paymentGap,
+});
+const matchedMonths = thirtyPaidLikeFifteen.overpaid.months;
+const matchedInterest = thirtyPaidLikeFifteen.overpaid.totalInterest;
+const identical =
+  matchedMonths === fifteen.months && matchedInterest === fifteen.totalInterest;
+const matchedInterestGap = subtract(matchedInterest, fifteen.totalInterest);
+
+const money = (amount: Minor) => format(amount, CURRENCY);
+const loan = (major: number) => format(fromMajor(major), CURRENCY);
+
+const FAQ = [
+  {
+    q: 'How much more is a 15-year mortgage payment?',
+    a: `On ${loan(AMOUNT)} at ${RATE_PERCENT}%, ${money(fifteen.payment)} against ${money(thirty.payment)} — ${money(paymentGap)} more a month, or ${paymentUpPercent}% more. The interest over the life of the loan falls by ${interestDownPercent}%, from ${money(thirty.totalInterest)} to ${money(fifteen.totalInterest)}. The payment rises by about a third and the interest more than halves, because the money is borrowed for half as long.`,
+  },
+  {
+    // NOT "why is the first payment identical" — the payments differ by
+    // $757.75. It is the first month's INTEREST that is identical. A true
+    // number under a false question is D55's defect, and this shipped past
+    // every gate; found by reading the rendered page.
+    q: "Why is the first month's interest identical on both?",
+    a: `Because interest is charged on the balance, and on day one the balance and the rate are the same. Both loans are charged ${money(thirty.firstInterest)} of interest in month one. What differs is what is left over: ${money(thirty.firstPrincipal)} of principal on the 30-year against ${money(fifteen.firstPrincipal)} on the 15-year — ${firstPrincipalRatio} times as much, from a payment only ${paymentUpPercent}% larger.`,
+  },
+  {
+    // "rate of payment" reads as an interest rate here, which is the one word
+    // this page cannot afford to blur. It is the payment amount.
+    q: 'Is a 30-year paid at the 15-year payment amount the same as a 15-year loan?',
+    a: identical
+      ? `At the same interest rate, yes — identically, to the cent. Paying ${money(fifteen.payment)} on the 30-year contract clears it in ${matchedMonths} months having charged ${money(matchedInterest)} of interest, which is exactly what the 15-year schedule produces. At a fixed rate the term is not a property of the product; it is the payment. What differs is whether the larger payment is compulsory.`
+      : `At the same interest rate it is very close but not exact: paying ${money(fifteen.payment)} on the 30-year contract clears it in ${matchedMonths} months with ${money(matchedInterest)} of interest, ${money(matchedInterestGap)} from the 15-year figure, the difference being per-period rounding.`,
+  },
+  {
+    q: 'Do 15-year mortgages have lower interest rates?',
+    a: 'Usually, yes — lenders generally price a shorter term below a longer one. This page deliberately holds the rate constant across both, because it has no citable 15-year quote to use and will not invent one. Holding it constant isolates the effect of the term alone, and it makes the comparison conservative: a genuinely lower 15-year rate would widen every gap shown here.',
+  },
+  {
+    q: 'How much does the house end up costing?',
+    a: `On these figures, ${thirty.multiple} times the amount borrowed over 30 years — ${money(thirty.totalPaid)} handed over against ${loan(AMOUNT)} received. Over 15 years it is ${fifteen.multiple} times, or ${money(fifteen.totalPaid)}. Neither figure includes tax, insurance, fees or any deposit.`,
+  },
+  {
+    q: 'When does more of the payment go to principal than interest?',
+    a: `Month ${thirty.crossoverMonth} on the 30-year — more than two-thirds of the way through the term. Month ${fifteen.crossoverMonth} on the 15-year, which is under five years. The crossover depends on the rate and the term, not on the amount borrowed.`,
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: '15-year versus 30-year mortgage',
+        item: `${SITE.url}/15-year-vs-30-year-mortgage`,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="What a 15-year mortgage costs against a 30-year | QuickOper"
+  description={`On ${loan(AMOUNT)} at ${RATE_PERCENT}%, the 15-year payment is ${paymentUpPercent}% higher and the interest is ${interestDownPercent}% lower — ${money(interestGap)} less. Both loans are charged the same interest in month one. Computed month by month.`}
+  structuredData={structuredData}
+>
+  <article class="prose-like">
+    <p class="engraved-fine text-ink-mute">Worked derivation</p>
+
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+      What a 15-year mortgage costs against a 30-year
+    </h1>
+
+    <p class="text-ink-soft mt-4 text-lg">
+      The payment rises by about a third. The interest more than halves.
+    </p>
+
+    <NoteFrame class="mt-8">
+      <p class="engraved-fine text-ink-mute">The same loan, two terms</p>
+      <p class="text-ink mt-2 text-2xl font-semibold sm:text-3xl">
+        {paymentUpPercent}% more a month removes {interestDownPercent}% of the interest.
+      </p>
+      <p class="text-ink-soft numeric mt-3">
+        {loan(AMOUNT)} at {RATE_PERCENT}%. Over 30 years the payment is{' '}
+        <strong class="text-ink">{money(thirty.payment)}</strong> and the interest is{' '}
+        <strong class="text-ink">{money(thirty.totalInterest)}</strong>. Over 15 years it
+        is{' '}
+        <strong class="text-ink">{money(fifteen.payment)}</strong> and{' '}
+        <strong class="text-ink">{money(fifteen.totalInterest)}</strong>.
+      </p>
+      <p class="text-ink-soft numeric mt-2">
+        {money(paymentGap)} more each month.{' '}
+        <strong class="text-ink">{money(interestGap)}</strong> less interest in total.
+      </p>
+    </NoteFrame>
+
+    <Rule class="mt-12" />
+
+    <section class="mt-10 space-y-4">
+      <h2 class="section-head text-ink">Side by side</h2>
+
+      <div class="mt-6 overflow-x-auto">
+        <table class="numeric w-full text-sm">
+          <thead>
+            <tr class="border-line-strong text-ink border-b text-left">
+              <th class="py-2 pr-4 font-semibold">&nbsp;</th>
+              <th class="py-2 pr-4 text-right font-semibold">30 years</th>
+              <th class="py-2 text-right font-semibold">15 years</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-line text-ink-soft border-b">
+              <td class="py-2 pr-4">Monthly payment</td>
+              <td class="py-2 pr-4 text-right">{money(thirty.payment)}</td>
+              <td class="text-ink py-2 text-right font-semibold"
+                >{money(fifteen.payment)}</td
+              >
+            </tr>
+            <tr class="border-line text-ink-soft border-b">
+              <td class="py-2 pr-4">Total interest</td>
+              <td class="py-2 pr-4 text-right">{money(thirty.totalInterest)}</td>
+              <td class="text-ink py-2 text-right font-semibold">
+                {money(fifteen.totalInterest)}
+              </td>
+            </tr>
+            <tr class="border-line text-ink-soft border-b">
+              <td class="py-2 pr-4">Total handed over</td>
+              <td class="py-2 pr-4 text-right">{money(thirty.totalPaid)}</td>
+              <td class="text-ink py-2 text-right font-semibold"
+                >{money(fifteen.totalPaid)}</td
+              >
+            </tr>
+            <tr class="border-line text-ink-soft border-b">
+              <td class="py-2 pr-4">As a multiple of the amount borrowed</td>
+              <td class="py-2 pr-4 text-right">{thirty.multiple}×</td>
+              <td class="text-ink py-2 text-right font-semibold">{fifteen.multiple}×</td>
+            </tr>
+            <tr class="border-line text-ink-soft border-b">
+              <td class="py-2 pr-4">Principal repaid in year one</td>
+              <td class="py-2 pr-4 text-right">{money(thirty.yearOnePrincipal)}</td>
+              <td class="text-ink py-2 text-right font-semibold">
+                {money(fifteen.yearOnePrincipal)}
+              </td>
+            </tr>
+            <tr class="border-line text-ink-soft border-b">
+              <td class="py-2 pr-4">Month principal first beats interest</td>
+              <td class="py-2 pr-4 text-right">{thirty.crossoverMonth}</td>
+              <td class="text-ink py-2 text-right font-semibold"
+                >{fifteen.crossoverMonth}</td
+              >
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="mt-4">
+        Over thirty years the borrower hands over{' '}
+        <strong class="text-ink numeric">{thirty.multiple} times</strong> what they borrowed.
+        Over fifteen, <strong class="text-ink numeric">{fifteen.multiple} times</strong>.
+        Neither figure includes tax, insurance, fees or a deposit — it is the loan alone.
+      </p>
+    </section>
+
+    <section class="mt-14 space-y-4">
+      <h2 class="section-head text-ink">
+        Both loans are charged the same interest in month one
+      </h2>
+
+      <p>
+        This is the part that makes the rest make sense. On day one the balance is{' '}
+        {loan(AMOUNT)} on both loans and the rate is {RATE_PERCENT}% on both. Interest is
+        charged on the balance, so both are charged exactly{' '}
+        <strong class="text-ink numeric">{money(thirty.firstInterest)}</strong>.
+      </p>
+
+      <div class="border-line rounded-panel bg-sunken mt-4 border p-4">
+        <p class="text-ink-soft numeric">
+          30-year, month 1: {money(thirty.firstInterest)} interest,{' '}
+          {money(thirty.firstPrincipal)} principal — {thirty.firstInterestShare}%
+          interest.
+        </p>
+        <p class="text-ink numeric mt-2 font-semibold">
+          15-year, month 1: {money(fifteen.firstInterest)} interest,{' '}
+          {money(fifteen.firstPrincipal)} principal — {fifteen.firstInterestShare}%
+          interest.
+        </p>
+      </div>
+
+      <p class="mt-4">
+        The interest is identical. What differs is what is left over after it. A payment{
+          ' '
+        }
+        {paymentUpPercent}% larger retires{' '}
+        <strong class="text-ink numeric">{firstPrincipalRatio} times</strong> as much principal,
+        because the extra lands entirely on the balance rather than being split.
+      </p>
+
+      <p>
+        That compounds. A smaller balance next month means a smaller interest charge,
+        which leaves more of the next payment for principal, and so on for the whole term.
+        The shorter loan is not charged a better rate here — it simply spends less time
+        owing money.
+      </p>
+    </section>
+
+    <section class="mt-14 space-y-4">
+      <h2 class="section-head text-ink">The term is the payment</h2>
+
+      <p>
+        Take the 30-year contract and pay the 15-year amount —{' '}
+        {money(fifteen.payment)} instead of {money(thirty.payment)}, an extra{' '}
+        {money(paymentGap)} a month, with nothing else changed.
+      </p>
+
+      <div class="border-line rounded-panel bg-sunken mt-4 border p-4">
+        <p class="text-ink-soft numeric">
+          A real 15-year loan: {fifteen.months} months, {money(fifteen.totalInterest)} of interest.
+        </p>
+        <p class="text-ink numeric mt-2 font-semibold">
+          The 30-year, paid at the 15-year amount: {matchedMonths} months,{' '}
+          {money(matchedInterest)} of interest.
+        </p>
+      </div>
+
+      {
+        identical ? (
+          <p class="mt-4">
+            Identical, to the cent. At a fixed rate the term of a mortgage is not really a
+            property of the product — it is the size of the payment. Two loans described
+            very differently produce the same schedule when the same money goes in.
+          </p>
+        ) : (
+          <p class="mt-4">
+            {money(matchedInterestGap)} apart over {matchedMonths} months, which is
+            per-period rounding rather than a difference in kind. At a fixed rate the term
+            of a mortgage is very nearly a restatement of the size of the payment.
+          </p>
+        )
+      }
+
+      <p>
+        What genuinely differs is obligation. On the 15-year contract the larger payment
+        is compulsory; on the 30-year it is not. That is a real difference between the two
+        products, and it is not an arithmetic one — this page cannot tell you what it is
+        worth to you.
+      </p>
+    </section>
+
+    <section class="mt-14 space-y-4">
+      <h2 class="section-head text-ink">A worked example you can check</h2>
+
+      <p>
+        Month one, on either loan. The balance is {loan(AMOUNT)} and the nominal annual rate
+        is {RATE_PERCENT}%, so the interest is the balance times the rate divided by
+        twelve:
+      </p>
+
+      <p class="border-line rounded-panel bg-sunken numeric text-ink border p-4">
+        {AMOUNT.toLocaleString('en-US')} × {RATE_PERCENT}% ÷ 12 ={' '}
+        {((AMOUNT * annualRate) / 12).toFixed(4)} →{' '}
+        <strong>{money(thirty.firstInterest)}</strong>
+      </p>
+
+      <p>
+        Subtract that from each payment and you have the principal each retires in month
+        one: {money(thirty.firstPrincipal)} and {money(fifteen.firstPrincipal)}.
+      </p>
+
+      <p>
+        In a spreadsheet, <code>=PMT(0.06706/12, 360, -320000)</code> gives{' '}
+        {money(thirty.payment)} and <code>=PMT(0.06706/12, 180, -320000)</code> gives{' '}
+        {money(fifteen.payment)}. Multiply each by its number of payments, subtract{' '}
+        {loan(AMOUNT)}, and you have the interest columns above to within the final
+        payment's rounding.{' '}
+        <a class="text-brand underline" href="/verify">Our verification page</a> walks through
+        the same checks in more detail.
+      </p>
+    </section>
+
+    <section class="mt-14 space-y-4">
+      <h2 class="section-head text-ink">What this does not model</h2>
+
+      <ul class="text-ink-soft list-disc space-y-2 pl-5">
+        <li>
+          <strong class="text-ink">The same rate on both terms.</strong> Lenders normally price
+          a 15-year product below a 30-year one. This page holds the rate constant because it
+          has no citable 15-year quote and will not invent one. That makes every gap here <em
+            >conservative</em
+          > — a genuinely lower 15-year rate would widen all of them.
+        </li>
+        <li>
+          <strong class="text-ink">Anything but the loan.</strong> No property tax, insurance,
+          HOA, closing costs, points or deposit. The figures are what the lender charges for
+          the money, nothing else.
+        </li>
+        <li>
+          <strong class="text-ink">Qualifying.</strong> A larger required payment is a larger
+          income test, so the two terms are not always both available to the same borrower for
+          the same house.
+        </li>
+        <li>
+          <strong class="text-ink">What else the money could do.</strong> Whether a larger compulsory
+          payment is worth making is not an arithmetic question and this page does not answer
+          it.
+        </li>
+      </ul>
+
+      <p>
+        The schedule is a US fixed-rate loan with interest charged monthly at the nominal
+        annual rate divided by twelve — the convention a US lender's note describes, and
+        the one the mortgage calculator on this site uses.
+      </p>
+    </section>
+
+    <section class="mt-14" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="section-head text-ink">Common questions</h2>
+      <dl class="mt-4 grid gap-x-8 gap-y-5 lg:grid-cols-2">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="text-ink font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="section-head text-ink">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          Every figure on this page is produced at build time by the same engine the
+          mortgage calculator runs, on {loan(AMOUNT)} at {RATE_PERCENT}%. That loan's
+          30-year payment of {money(thirty.payment)} matches calculator.net's published figure
+          for the same inputs to the cent, which is the anchor everything here is measured against.
+          No interest rate on this page is quoted from a lender; the same rate is applied to
+          both terms deliberately, and the section above says why.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper shows how
+        a calculation works and shows its working. It does not know your circumstances and cannot
+        tell you which term to borrow over. Nothing here is financial, tax or investment advice.
+        Your lender's quote and your own note are the authority on what either loan would actually
+        cost you.
+      </p>
+    </aside>
+
+    <RelatedTools
+      hubNote="every tool here shows the full schedule rather than one figure"
+      links={[
+        {
+          href: '/finance/mortgage-overpayment-calculator',
+          label: 'Mortgage overpayment calculator',
+          note: 'put your own loan in and see what any extra amount removes, month by month',
+        },
+        {
+          href: '/mortgage-overpayment-timing',
+          label: 'What an extra payment does in year one versus year twenty',
+          note: 'why the same money is worth several times more early than late',
+        },
+        {
+          href: '/verify',
+          label: 'Check our arithmetic yourself',
+          note: 'reproduce both payments against a spreadsheet in about a minute',
+        },
+      ]}
+    />
+  </article>
+</BaseLayout>
