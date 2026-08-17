@@ -883,6 +883,37 @@ does not exist. Exit 1; exit 0 once the block is removed.
 **What it deliberately does not check:** whether the header *values* are wise.
 Whether HSTS should be a year is a judgement, not a fact derivable from `dist/`.
 
+### D46 — Every page on the site was a 307, and both config files were correct
+
+The first deploy after the nameserver switch served the entire site as redirects.
+
+`astro.config.mjs` sets `trailingSlash: 'never'`, so the build produces slash-less
+routes, the sitemap lists slash-less URLs, and every `<link rel="canonical">` is
+slash-less. Cloudflare Workers static assets defaults to
+`html_handling = "auto-trailing-slash"`, which **adds** a slash and 307s to it.
+
+So the crawl path for every page was: Google reads `/about` from the sitemap →
+**307** to `/about/` → lands on a page whose canonical says `/about`. A site that
+redirects away from the URL it declares as canonical, on all ten pages at once.
+
+Fixed by setting `html_handling = "drop-trailing-slash"` in `wrangler.toml`,
+which serves `/about` directly from `about/index.html` and redirects `/about/` to
+`/about` — the shape `astro.config.mjs` had asserted all along.
+
+**Why nothing caught it.** `astro.config.mjs` was right. `wrangler.toml` was right
+*as written* — it simply said nothing about the setting, and the unstated default
+was wrong. Two files that must agree, consumed by two different tools, neither
+validating the other. That is D45's shape (`_headers` parsed at deploy time,
+after CI) and it recurs in D52 (`_redirects` versus the affiliate registry).
+
+`scripts/check-deploy-config.mjs` now compares them and fails when `trailingSlash`
+and `html_handling` disagree.
+
+**Found by querying the live site**, not by a gate. Ten checks read `dist/`; a
+307 does not exist in `dist/`. Every page being a redirect was invisible to all
+of them, and to the GitHub, CI and Cloudflare dashboards, all three of which
+reported success.
+
 ### D47 — The arithmetic was right, the test was right, and the sentence was false
 
 Found on the live deployment by changing one number: a first debt of $3,000 at
@@ -945,6 +976,30 @@ verified the same way, at defaults and at the stalling inputs.
 
 **Cost: 0.12KB** on the worst page (18.27 → 18.39, 1.11 spare), for one ternary
 and two strings.
+
+### D48 — Delete the previous host's records after the custom domain, never before
+
+The instinct is to clear the retired Vercel `A` and `www` records first, then
+attach the Worker custom domain to a clean name. It is wrong, and it fails slowly
+rather than loudly.
+
+Removing the address record before the Worker is attached leaves the name with
+**no answer at all**. Every resolver that asks during that window caches the
+emptiness for the zone's negative-cache TTL — **1800 seconds**. The site then
+stays dark for up to half an hour *after* it is actually working, and the obvious
+reaction, detaching and re-attaching the custom domain, restarts the clock while
+fixing nothing.
+
+Attaching the custom domain replaces those records itself, so the name never has
+a moment without an answer. `docs/DNS.md` orders it that way and says why in two
+places — at the record table and again at step 8 — because the wrong order is the
+intuitive one and a runbook that only states the right order invites the reader
+to improve on it.
+
+**The general rule:** when replacing a live DNS record, add the replacement
+before removing the original. Negative caching makes a gap far more expensive
+than an overlap, and the cost is paid at the moment you most want to be watching
+something else.
 
 ### D49 — Merging to main is the release
 
@@ -1596,6 +1651,71 @@ verified, and the resting state is what the complaint was about.
 **The generalisation, now earned three times over** (D29, D36, D50, D54, and
 here): when a browser measurement contradicts something the source plainly says,
 suspect the measurement first. It has been the measurement every time.
+
+### D60 — The first week of live data, and two hostnames sharing one crawl budget
+
+Six days after launch, the first real numbers. They are recorded here because
+Search Console does not keep them for ever and nobody can re-derive them later.
+
+**Search Console, 7 days to 2026-08-17:** 60 impressions, **0 clicks**, average
+position **66.9**. The sitemap was submitted on 2026-08-11, status Success, all
+17 URLs discovered. `URL Inspection` confirms **5 pages indexed** — the three
+calculators, `/finance` and `/minimum-payments`; the Page indexing report lagged
+at 4 and is not the authoritative surface.
+
+**Every impression came from one page.** All 14 ranking queries are mortgage
+overpayment variants and all of them resolve to
+`/finance/mortgage-overpayment-calculator`. The other sixteen pages contributed
+nothing.
+
+**Cloudflare, same window:** 80 unique visitors over 7 days. In 24 hours, 351
+requests of which **179 were 4xx** — vulnerability scanners probing `/.env.test`,
+`/backend/.env`, `/.ssh/known_hosts`, `/.cursor/mcp.json`. Nothing here has
+secrets to leak, but it means the visitor counts are mostly not people.
+
+**The number that mattered: GoogleBot made 1 request in 24 hours. AppleBot made
+57.** That is the whole budget, and it reframes what "not indexed" means — the 4
+URLs sitting in *Discovered – currently not indexed* are not rejected, they are
+queued behind a crawler that visits once a day.
+
+**So the site was serving itself twice.** `www.quickoper.com` returned **200** on
+every path — a complete duplicate, because the launch attached Worker custom
+domains to both the apex and www (D43 step 8). Canonical tags pointed at the apex
+and Google was honouring them, so nothing was penalised. But half of a
+once-a-day crawl was being spent on a mirror. Separately, `http://` on both
+hostnames also returned 200; the HSTS header the app sends is ignored on a
+plaintext response, so a first-time crawler got served unencrypted.
+
+Fixed with two zone settings, both recorded in `docs/DNS.md` because **neither
+lives in this repository and no gate can see them**: a Redirect Rule 301ing
+`https://www.*` to the apex, and *Always Use HTTPS*. Verified across all four
+combinations of scheme and hostname, including that a calculator permalink keeps
+every query parameter through a two-hop chain.
+
+**Cloudflare's own warning was wrong, and that is the part worth keeping.**
+Deploying the redirect rule raised a dialog: *"This rule may not apply to your
+traffic — your DNS configuration may not be proxying traffic for www."* The
+reasoning was plausible: www was a Worker custom domain rather than a proxied
+DNS record, and a whole detach-and-recreate procedure was drafted on the strength
+of it. The rule works. Proven by requesting a path that does not exist —
+`https://www.quickoper.com/not-a-real-page` returns **301**, not the Worker's
+own 404, so the Rules engine is demonstrably answering ahead of the Worker.
+
+That is D59's generalisation arriving from a new direction. D59 said to suspect
+the *measurement* when it contradicts the source. Here the vendor's own warning
+was the thing that was wrong, and the measurement was right. The stable rule
+underneath both: **a claim about behaviour is worth less than one request that
+exercises it.**
+
+**On the queries, and what is deliberately not being built.** All 14 use British
+vocabulary — "overpayment" rather than the American "extra payment" — and one is
+`mortgage overpayment penalty calculator`, which is an early repayment charge.
+Rule 13 names UK early repayment charges explicitly as a *legitimate* jurisdiction
+variant, because the calculation genuinely differs. That is the first
+evidence-backed candidate this project has had. **It is not being built on 60
+impressions.** One week of data is a rumour, and D57's reasoning about not
+diluting the site applies to over-fitting just as much as to thin pages. Recorded
+so the next session knows to watch it, not to act on it.
 
 ### D26 — Indexability is an invariant, and it is checked
 
