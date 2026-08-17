@@ -1,0 +1,521 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NoteFrame from '../components/ornament/NoteFrame.astro';
+import Rule from '../components/ornament/Rule.astro';
+import RelatedTools from '../components/RelatedTools.astro';
+import { SITE } from '../lib/site';
+import { sourceRef } from '../lib/schema';
+
+import { calculateMortgage, compareLumpSum } from '../lib/calc/mortgage';
+import { format, fromMajor, sum, type Minor } from '../lib/calc/money';
+
+const LAST_VERIFIED = '2026-08-17';
+const CURRENCY = 'USD';
+
+const SOURCES = [
+  {
+    label: 'CFPB — What is an amortization schedule?',
+    url: 'https://www.consumerfinance.gov/ask-cfpb/what-is-an-amortization-schedule-en-100/',
+    retrieved: '2026-08-12',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * EVERY FIGURE ON THIS PAGE IS COMPUTED AT BUILD TIME BY THE REAL ENGINE.
+ *
+ * Same discipline as /minimum-payments, /biweekly-mortgage-payments and the
+ * homepage ProofChart (D32, D54, D58): the page runs the code the calculator
+ * runs, so it cannot state a number the product does not produce and cannot go
+ * stale when the engine changes. Zero client JavaScript — .astro frontmatter
+ * never reaches the browser.
+ *
+ * THE LOAN IS THE SITE'S ANCHOR LOAN. $320,000 at 6.706% over 30 years is the
+ * one whose contractual payment reproduces calculator.net's published $2,066.16
+ * to the cent (D39). Every saving below is a difference against that schedule,
+ * so the anchor carries through rather than being restated.
+ *
+ * WHY A CLOSED FORM IS NOT USED. The interest avoided by retiring principal
+ * early looks like `L · ((1 + i)^(n − m) − 1)`, and that is out by up to 29
+ * cents against the walker on a month-1 lump because it ignores the per-period
+ * cent rounding a real schedule performs. D7 forbids tolerances; the figures
+ * here come from `compareLumpSum`, which walks the same loop as the calculator.
+ */
+const AMOUNT = 320_000;
+const RATE_PERCENT = 6.706;
+const YEARS = 30;
+
+const principal = fromMajor(AMOUNT);
+const annualRate = RATE_PERCENT / 100;
+const termMonths = YEARS * 12;
+
+const loanInput = { principal, annualRate, termMonths, monthlyOverpayment: 0 as Minor };
+const baseline = calculateMortgage(loanInput);
+
+/** The payment split at chosen points. Read straight off the real schedule. */
+const SPLIT_MONTHS = [1, 60, 120, 240, 300, 360];
+const split = SPLIT_MONTHS.map((month) => {
+  const row = baseline.schedule[month - 1]!;
+  const total = row.interest + row.principalPaid;
+  return {
+    month,
+    year: Math.ceil(month / 12),
+    interest: row.interest,
+    principal: row.principalPaid,
+    // One decimal, always. `Math.round` alone drops the trailing zero and month
+    // 240 renders as "49%" beside "86.6%" and "0.6%" — found by reading the page.
+    interestShare: ((row.interest / total) * 100).toFixed(1),
+  };
+});
+
+/**
+ * THE CROSSOVER IS FOUND, NOT TYPED.
+ *
+ * The month principal first exceeds interest is the page's structural claim and
+ * it is derived from the schedule, so it cannot drift from the table beside it
+ * if the anchor loan ever changes. D55's rule: never state which side is which,
+ * compute it.
+ */
+const crossoverIndex = baseline.schedule.findIndex((m) => m.principalPaid > m.interest);
+const crossover = baseline.schedule[crossoverIndex]!;
+const beforeCrossover = baseline.schedule[crossoverIndex - 1]!;
+
+/** The same lump sum, at three moments in the same loan. */
+const LUMP = fromMajor(5_000);
+const LUMP_MONTHS = [1, 121, 241];
+const lumps = LUMP_MONTHS.map((month) => {
+  const r = compareLumpSum(loanInput, LUMP, month);
+  return {
+    month,
+    year: Math.ceil(month / 12),
+    interestSaved: r.interestSaved,
+    monthsSaved: r.monthsSaved,
+  };
+});
+
+const earliest = lumps[0]!;
+const latest = lumps[lumps.length - 1]!;
+/** How many times better the early lump is. Derived, to one decimal. */
+const ratio = Math.round((earliest.interestSaved / latest.interestSaved) * 10) / 10;
+
+/** Principal retired in a given calendar year of the loan. */
+const principalInYear = (year: number) =>
+  sum(baseline.schedule.slice((year - 1) * 12, year * 12).map((m) => m.principalPaid));
+
+const YEAR_ONE_PRINCIPAL = principalInYear(1);
+const YEAR_TWENTY_PRINCIPAL = principalInYear(20);
+const YEAR_THIRTY_PRINCIPAL = principalInYear(30);
+
+const money = (amount: Minor) => format(amount, CURRENCY);
+const loan = (major: number) => format(fromMajor(major), CURRENCY);
+const yearsAndMonths = (months: number) => `${Math.floor(months / 12)}y ${months % 12}m`;
+
+/** Month-one interest, long-hand, for the check the reader can do by calculator. */
+const monthOneInterestExact = (AMOUNT * annualRate) / 12;
+
+const FAQ = [
+  {
+    q: 'Why does an extra payment early save so much more than the same payment later?',
+    a: `Because interest is charged on the balance, every month, for the whole of the remaining term. A dollar of principal retired in month 1 is removed from ${termMonths - 1} future interest charges; the same dollar retired in month 241 is removed from ${termMonths - 241}. The amount is identical and the number of charges it escapes is not. On ${loan(AMOUNT)} at ${RATE_PERCENT}%, ${money(LUMP)} paid in month 1 removes ${money(earliest.interestSaved)} of interest and ${money(LUMP)} paid in month 241 removes ${money(latest.interestSaved)}.`,
+  },
+  {
+    q: 'Why is almost all of my early payment going to interest?',
+    a: `Because the balance is at its largest at the start, and interest is charged on the balance. On this loan the first payment of ${money(baseline.contractualPayment)} is ${money(split[0]!.interest)} of interest and ${money(split[0]!.principal)} of principal — ${split[0]!.interestShare}% interest. Nothing is being withheld; the split is simply what the balance produces. It shifts month by month as the balance falls.`,
+  },
+  {
+    q: 'When does more of the payment go to principal than to interest?',
+    a: `On this loan, month ${crossover.month} — ${yearsAndMonths(crossover.month - 1)} in. That month is ${money(crossover.interest)} of interest against ${money(crossover.principalPaid)} of principal. The month before it is still the other way round: ${money(beforeCrossover.interest)} against ${money(beforeCrossover.principalPaid)}. The crossover point depends on the rate and the term, not on the amount borrowed.`,
+  },
+  {
+    q: 'Does it mean an extra payment later is pointless?',
+    a: `No — it is worth less, not nothing. ${money(LUMP)} in month 241 still removes ${money(latest.interestSaved)} of interest and ${latest.monthsSaved} months from this schedule. The page computes the difference so it can be seen; what to do about it depends on circumstances a calculator does not know.`,
+  },
+  {
+    q: 'Will my servicer apply a lump sum to the principal?',
+    a: 'That depends on your servicer and how the payment is labelled. Extra money is only worth what this page computes if it reduces the principal, rather than sitting in suspense, being applied to future scheduled payments, or triggering a recast that lowers the payment instead of shortening the term. Ask how they apply it, and check the next statement.',
+  },
+  {
+    q: 'Does this apply to a UK mortgage?',
+    a: 'The mechanism does — interest charged on a balance is worth more to reduce early wherever the loan is. The arithmetic here does not transfer directly. This schedule uses the US monthly convention, interest at the nominal annual rate divided by twelve, and it models no early repayment charge. A UK loan with an ERC or a capped annual overpayment allowance is a different calculation and is not modelled here.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Overpayment timing',
+        item: `${SITE.url}/mortgage-overpayment-timing`,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="What an extra payment does in year one versus year twenty | QuickOper"
+  description={`On ${loan(AMOUNT)} at ${RATE_PERCENT}%, ${money(LUMP)} paid in month 1 removes ${money(earliest.interestSaved)} of interest. The same ${money(LUMP)} in month 241 removes ${money(latest.interestSaved)}. Identical money, ${ratio} times the effect, computed month by month.`}
+  structuredData={structuredData}
+>
+  <article class="prose-like">
+    <p class="engraved-fine text-ink-mute">Worked derivation</p>
+
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+      What an extra payment does in year one versus year twenty
+    </h1>
+
+    <p class="text-ink-soft mt-4 text-lg">
+      The same money, at two different moments, is not worth the same thing.
+    </p>
+
+    <NoteFrame class="mt-8">
+      <p class="engraved-fine text-ink-mute">The whole finding</p>
+      <p class="text-ink mt-2 text-2xl font-semibold sm:text-3xl">
+        {money(LUMP)} in month 1 removes {money(earliest.interestSaved)}. The same{' '}
+        {money(LUMP)} in month {latest.month} removes {money(latest.interestSaved)}.
+      </p>
+      <p class="text-ink-soft numeric mt-3">
+        One loan — {loan(AMOUNT)} at {RATE_PERCENT}% over {YEARS} years, contractual payment{
+          ' '
+        }
+        <strong class="text-ink">{money(baseline.contractualPayment)}</strong>. One
+        amount. Paid once, at two different moments.
+      </p>
+      <p class="text-ink-soft numeric mt-2">
+        The early payment is worth{' '}
+        <strong class="text-ink">{ratio} times</strong> the late one, and it removes{' '}
+        <strong class="text-ink">{earliest.monthsSaved} months</strong> against{' '}
+        <strong class="text-ink">{latest.monthsSaved}</strong>.
+      </p>
+    </NoteFrame>
+
+    <Rule class="mt-12" />
+
+    <section class="mt-10 space-y-4">
+      <h2 class="section-head text-ink">Why the early payment is worth more</h2>
+
+      <p>
+        Interest is charged on the balance, every month, for the whole of the remaining
+        term. That single sentence contains the entire effect.
+      </p>
+
+      <p>
+        A dollar of principal retired in month 1 is a dollar that is not in the balance
+        when any of the remaining{' '}
+        <strong class="text-ink numeric">{termMonths - 1}</strong> interest charges are calculated.
+        The same dollar retired in month {latest.month} escapes only{' '}
+        <strong class="text-ink numeric">{termMonths - latest.month}</strong> of them. The amount
+        is identical; the number of charges it avoids is not.
+      </p>
+
+      <p>
+        So the value of an extra payment is not really about the payment. It is about how
+        much of the term is left in front of it.
+      </p>
+    </section>
+
+    <section class="mt-14 space-y-4">
+      <h2 class="section-head text-ink">Where each payment actually goes</h2>
+
+      <p>
+        Before the extra payment, look at the ordinary one. Every month of this loan the
+        borrower pays exactly{' '}
+        <strong class="text-ink numeric">{money(baseline.contractualPayment)}</strong>,
+        and every month it is divided differently.
+      </p>
+
+      <div class="mt-6 overflow-x-auto">
+        <table class="numeric w-full text-sm">
+          <thead>
+            <tr class="border-line-strong text-ink border-b text-left">
+              <th class="py-2 pr-4 font-semibold">Month</th>
+              <th class="py-2 pr-4 font-semibold">Year</th>
+              <th class="py-2 pr-4 text-right font-semibold">Interest</th>
+              <th class="py-2 pr-4 text-right font-semibold">Principal</th>
+              <th class="py-2 text-right font-semibold">Interest share</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              split.map((row) => (
+                <tr class="border-line text-ink-soft border-b">
+                  <td class="py-2 pr-4">{row.month}</td>
+                  <td class="py-2 pr-4">{row.year}</td>
+                  <td class="py-2 pr-4 text-right">{money(row.interest)}</td>
+                  <td class="text-ink py-2 pr-4 text-right font-semibold">
+                    {money(row.principal)}
+                  </td>
+                  <td class="py-2 text-right">{row.interestShare}%</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="mt-4">
+        The first payment is{' '}
+        <strong class="text-ink numeric">{split[0]!.interestShare}% interest</strong>. Of{
+          ' '
+        }
+        {money(baseline.contractualPayment)} paid, {money(split[0]!.principal)} reduces what
+        is owed. Nothing is being withheld and no fee is being taken — the split is simply what
+        a large balance produces.
+      </p>
+
+      <p>
+        Across the whole of the first year, the balance falls by{' '}
+        <strong class="text-ink numeric">{money(YEAR_ONE_PRINCIPAL)}</strong>. Across the
+        twentieth year it falls by{' '}
+        <strong class="text-ink numeric">{money(YEAR_TWENTY_PRINCIPAL)}</strong>, and
+        across the thirtieth by{' '}
+        <strong class="text-ink numeric">{money(YEAR_THIRTY_PRINCIPAL)}</strong> — for the same
+        twelve payments of the same size.
+      </p>
+    </section>
+
+    <section class="mt-14 space-y-4">
+      <h2 class="section-head text-ink">The month it turns over</h2>
+
+      <p>
+        There is a specific month where more of the payment starts going to the principal
+        than to the interest. On this loan it is{' '}
+        <strong class="text-ink numeric">month {crossover.month}</strong> —{' '}
+        {yearsAndMonths(crossover.month - 1)} into a {YEARS}-year term.
+      </p>
+
+      <div class="border-line rounded-panel bg-sunken mt-4 border p-4">
+        <p class="text-ink-soft numeric">
+          Month {beforeCrossover.month}: {money(beforeCrossover.interest)} interest against{
+            ' '
+          }
+          {money(beforeCrossover.principalPaid)} principal — interest still wins.
+        </p>
+        <p class="text-ink numeric mt-2 font-semibold">
+          Month {crossover.month}: {money(crossover.interest)} interest against{' '}
+          {money(crossover.principalPaid)} principal — principal wins for the first time.
+        </p>
+      </div>
+
+      <p class="mt-4">
+        That is more than two-thirds of the way through the term. It is also not typed
+        into this page: it is found by walking the schedule for the first month where
+        principal exceeds interest, so it stays correct if the loan above ever changes.
+      </p>
+
+      <p>
+        The crossover depends on the rate and the term, not on how much was borrowed. A
+        higher rate pushes it later; a shorter term pulls it earlier.
+      </p>
+    </section>
+
+    <section class="mt-14 space-y-4">
+      <h2 class="section-head text-ink">The same {money(LUMP)}, at three moments</h2>
+
+      <p>
+        Now the extra payment. One lump sum, paid once, on top of that month's contractual
+        payment, with everything else unchanged.
+      </p>
+
+      <div class="mt-6 overflow-x-auto">
+        <table class="numeric w-full text-sm">
+          <thead>
+            <tr class="border-line-strong text-ink border-b text-left">
+              <th class="py-2 pr-4 font-semibold">Paid in</th>
+              <th class="py-2 pr-4 text-right font-semibold">Interest removed</th>
+              <th class="py-2 text-right font-semibold">Months removed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              lumps.map((row) => (
+                <tr class="border-line text-ink-soft border-b">
+                  <td class="py-2 pr-4">
+                    Month {row.month} (year {row.year})
+                  </td>
+                  <td class="text-ink py-2 pr-4 text-right font-semibold">
+                    {money(row.interestSaved)}
+                  </td>
+                  <td class="py-2 text-right">{row.monthsSaved}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="mt-4">
+        Identical amount, identical loan, <strong class="text-ink">{ratio} times</strong> the
+        interest removed. The late payment is not worthless —{' '}
+        {money(latest.interestSaved)} and {latest.monthsSaved} months is a real result — but
+        it is a different order of thing from {money(earliest.interestSaved)}.
+      </p>
+
+      <p>
+        The ordering here is not asserted in prose. The rows are produced by running the
+        engine at each month, and a fixture sweeps six points across the term asserting
+        that the saving only ever falls as the payment is made later.
+      </p>
+    </section>
+
+    <section class="mt-14 space-y-4">
+      <h2 class="section-head text-ink">A worked example you can check</h2>
+
+      <p>
+        Take the first month. The balance is {loan(AMOUNT)} and the nominal annual rate is{
+          ' '
+        }
+        {RATE_PERCENT}%, so the month's interest is the balance times the rate divided by
+        twelve:
+      </p>
+
+      <p class="border-line rounded-panel bg-sunken numeric text-ink border p-4">
+        {AMOUNT.toLocaleString('en-US')} × {RATE_PERCENT}% ÷ 12 ={' '}
+        {monthOneInterestExact.toFixed(4)} → <strong>{money(split[0]!.interest)}</strong>
+      </p>
+
+      <p>
+        Rounded half-up on the cent, which is where every figure on this site rounds. The
+        contractual payment is {money(baseline.contractualPayment)}, so the principal
+        repaid that month is the difference:{' '}
+        <strong class="text-ink numeric">{money(split[0]!.principal)}</strong>.
+      </p>
+
+      <p>
+        In a spreadsheet, <code>=PMT(0.06706/12, 360, -320000)</code> gives the payment and{
+          ' '
+        }
+        <code>=IPMT(0.06706/12, 1, 360, -320000)</code> gives the first month's interest. Change
+        the second argument of <code>IPMT</code> to 240 and you have the year-twenty row of
+        the table above.{' '}
+        <a class="text-brand underline" href="/verify">Our verification page</a> walks through
+        the same checks in more detail.
+      </p>
+    </section>
+
+    <section class="mt-14 space-y-4">
+      <h2 class="section-head text-ink">What this does not model</h2>
+
+      <p>
+        The schedule is a US fixed-rate loan with interest charged monthly at the nominal
+        annual rate divided by twelve. That is what the mortgage calculator on this site
+        computes, and it is the convention a US lender's note describes.
+      </p>
+
+      <ul class="text-ink-soft list-disc space-y-2 pl-5">
+        <li>
+          <strong class="text-ink">Recasting.</strong> Some servicers respond to a large lump
+          sum by recalculating the payment downward over the original term rather than shortening
+          the term. That produces a different, smaller saving than the one above.
+        </li>
+        <li>
+          <strong class="text-ink">Early repayment charges.</strong> Not modelled at all. A
+          loan that charges for overpaying — common on UK fixed-rate deals — has to net that
+          charge against these figures, and the answer can reverse.
+        </li>
+        <li>
+          <strong class="text-ink">How the extra money is applied.</strong> The arithmetic assumes
+          it reduces the principal in the month it is paid. Money held in suspense, or treated
+          as the next scheduled payment made early, does not do this.
+        </li>
+        <li>
+          <strong class="text-ink">Everything outside the loan.</strong> What else the money
+          could have done, tax treatment, and whether a balance is worth clearing at all are
+          not arithmetic questions and this page does not answer them.
+        </li>
+      </ul>
+    </section>
+
+    <section class="mt-14" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="section-head text-ink">Common questions</h2>
+      <dl class="mt-4 grid gap-x-8 gap-y-5 lg:grid-cols-2">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="text-ink font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="section-head text-ink">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          Every figure in the tables and the prose is produced at build time by the same
+          engine the mortgage calculator runs, on {loan(AMOUNT)} at {RATE_PERCENT}% over{
+            ' '
+          }
+          {YEARS} years. That loan's contractual payment of{' '}
+          {money(baseline.contractualPayment)} matches calculator.net's published figure for
+          the same inputs to the cent, which is the anchor every saving here is measured against.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper shows how
+        a calculation works and shows its working. It does not know your circumstances and cannot
+        tell you whether to put money into a mortgage rather than anywhere else. Nothing here
+        is financial, tax or investment advice. Your note and your servicer are the authority
+        on how your loan treats extra payments.
+      </p>
+    </aside>
+
+    <RelatedTools
+      hubNote="every tool here shows the full schedule rather than one figure"
+      links={[
+        {
+          href: '/finance/mortgage-overpayment-calculator',
+          label: 'Mortgage overpayment calculator',
+          note: 'put your own loan in and see what any extra amount removes, month by month',
+        },
+        {
+          href: '/biweekly-mortgage-payments',
+          label: 'Biweekly mortgage payments and the thirteenth payment',
+          note: 'the same arithmetic where the extra arrives once a year instead of once',
+        },
+        {
+          href: '/verify',
+          label: 'Check our arithmetic yourself',
+          note: 'reproduce the payment and the interest split against a spreadsheet',
+        },
+      ]}
+    />
+  </article>
+</BaseLayout>
