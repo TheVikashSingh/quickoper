@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-08, after PR #29.
+**Updated:** 2026-08-12, after PR #46.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -10,9 +10,16 @@ changes the answer to "what exists" or "what is next".
 1. `CLAUDE.md` — the rules.
 2. `docs/DECISIONS.md` — why the rules are what they are, and what has already
    been tried and disproven. Read the **Superseded** section before proposing
-   any optimisation.
+   any optimisation. **57 entries; the last fifteen (D43–D59) are the launch and
+   everything it exposed** — read those before touching deploy config, contrast,
+   or any page that states a computed figure in prose.
 3. This file — what exists, what is next, what is blocked on the operator.
-4. `docs/VERIFICATION.md` — how the operator independently checks the arithmetic.
+4. `docs/LOCAL.md` — how to run and check the site, **and this machine's tooling
+   constraints**: `gh` is not on PATH, PowerShell 5.1 has no `&&`, never prefix
+   with `cd … &&`, never write long `node -e` one-liners.
+5. `docs/VERIFICATION.md` — how the operator independently checks the arithmetic.
+6. `docs/DNS.md` — the launch runbook. Historical now, but it is where the
+   registrar, zone and Cloudflare arrangement are written down.
 
 ---
 
