@@ -156,6 +156,13 @@ function amortise(
    * overpaid schedule, which is supposed to finish early on its own.
    */
   termCap?: number,
+  /**
+   * A single extra amount paid once, on top of `payment`, in one named month.
+   * Threaded through this loop rather than given its own walker: two
+   * amortisation paths that must agree is the shape that produced D59, and the
+   * rounding policy has to be identical or the comparison is meaningless.
+   */
+  lump?: { readonly amount: Minor; readonly month: number },
 ): { schedule: MortgageMonth[]; totalInterest: Minor; totalPaid: Minor } {
   const i = annualRate / 12;
   const schedule: MortgageMonth[] = [];
@@ -171,11 +178,17 @@ function amortise(
     // Rounded here, every month, before anything else uses it.
     const interest = minor(roundToInteger(balance * i, 'half-up'));
 
+    // The lump is an exact minor amount added to this month's payment. It is
+    // not rounded — it is already whole cents — so it introduces no drift of
+    // its own; the schedule's rounding is entirely the per-period interest.
+    const scheduled =
+      lump !== undefined && lump.month === month ? add(payment, lump.amount) : payment;
+
     // The final payment is whatever is left plus this month's interest — never
     // the full contractual amount, and never one cent short of clearing it.
     const due = add(balance, interest);
     const lastMonth = termCap !== undefined && month >= termCap;
-    const actual = payment >= due || lastMonth ? due : payment;
+    const actual = scheduled >= due || lastMonth ? due : scheduled;
 
     const principalPaid = subtract(actual, interest);
     const closing = subtract(balance, principalPaid);
@@ -268,6 +281,72 @@ export function compareOverpayment(input: MortgageInput): OverpaymentComparison 
     overpaidPayment,
     input.termMonths,
   );
+
+  const overpaid: MortgageResult = {
+    contractualPayment: baseline.contractualPayment,
+    schedule: walked.schedule,
+    months: walked.schedule.length,
+    totalInterest: walked.totalInterest,
+    totalPaid: walked.totalPaid,
+  };
+
+  return {
+    baseline,
+    overpaid,
+    monthsSaved: baseline.months - overpaid.months,
+    interestSaved: subtract(baseline.totalInterest, overpaid.totalInterest),
+  };
+}
+
+/**
+ * The same loan with one lump sum paid once, in a month you choose.
+ *
+ * Distinct from `compareOverpayment`, which pays extra every month for ever.
+ * Both matter and they answer different questions: this one is "I have a bonus,
+ * does it matter when I use it", and the answer is that it matters enormously.
+ *
+ * WHY THE TIMING DOMINATES. A payment reduces the balance, and every future
+ * month's interest is charged on that balance. Retiring a pound of principal in
+ * month 1 removes it from every one of the remaining 359 interest charges;
+ * retiring the same pound in month 359 removes it from one. The saving is
+ * therefore a function of how much of the term is left, not of the amount alone.
+ *
+ * ROUNDING is exactly `amortise`'s and there is no second code path — the lump
+ * rides the same loop. The lump itself is a whole number of minor units, so it
+ * contributes no rounding of its own.
+ *
+ * A CLOSED FORM IS NOT USED, deliberately. `L · ((1 + i)^(n − m) − 1)` looks
+ * exact and is not: measured against this walker it is out by up to 29 cents on
+ * a month-1 lump, because it ignores the per-period cent rounding the schedule
+ * actually performs. D7 requires exact assertions rather than tolerances, so the
+ * figure a page publishes has to come from the walker, not the algebra.
+ */
+export function compareLumpSum(
+  input: MortgageInput,
+  lumpSum: Minor,
+  /** 1-based, and within the contractual term. */
+  lumpMonth: number,
+): OverpaymentComparison {
+  if (lumpSum < 0) {
+    throw new MortgageError('A lump sum cannot be negative.');
+  }
+  if (!Number.isInteger(lumpMonth) || lumpMonth < 1) {
+    throw new MortgageError('The lump-sum month must be a whole month from 1.');
+  }
+  if (lumpMonth > input.termMonths) {
+    throw new MortgageError('The lump-sum month falls after the loan has ended.');
+  }
+
+  const baseline = calculateMortgage({ ...input, monthlyOverpayment: ZERO });
+
+  // The cap is passed for the same reason it is in compareOverpayment: with a
+  // lump of zero this schedule would otherwise run to 361 months against the
+  // baseline's 360 and report saving minus one cent. A comparison whose no-op
+  // is not a no-op is broken (D39).
+  const walked = amortise(input.principal, input.annualRate, baseline.contractualPayment, input.termMonths, {
+    amount: lumpSum,
+    month: lumpMonth,
+  });
 
   const overpaid: MortgageResult = {
     contractualPayment: baseline.contractualPayment,

@@ -4,6 +4,7 @@ import {
   MortgageError,
   balanceSeries,
   calculateMortgage,
+  compareLumpSum,
   compareOverpayment,
   contractualPayment,
 } from '../../src/lib/calc/mortgage';
@@ -200,5 +201,72 @@ describe('balanceSeries', () => {
     expect(series[series.length - 1]).toBe(0);
     // One opening balance plus one closing balance per month.
     expect(series).toHaveLength(result.months + 1);
+  });
+});
+
+/**
+ * compareLumpSum — one extra payment, once, in a month you choose.
+ *
+ * EVERY EXPECTED VALUE HERE WAS READ OFF A FAILING ASSERTION (D7's technique),
+ * not predicted. They are exact, never tolerances, for the reason D7 gives: a
+ * loose bound absorbs the rounding regression it exists to catch.
+ *
+ * The anchor is inherited rather than restated. The baseline these figures are
+ * differences against is the same $320,000 at 6.706% over 360 months that
+ * reproduces calculator.net's published $2,066.16 payment to the cent, asserted
+ * at the top of this file. A saving is only as trustworthy as the schedule it
+ * is subtracted from.
+ *
+ * Reproducible in a spreadsheet by the method on /verify: build the 360-row
+ * amortisation, add the lump to one month's payment, and difference the
+ * interest columns.
+ */
+describe('compareLumpSum', () => {
+  const LUMP = fromMajor(5_000);
+  const loan = { principal: PRINCIPAL, annualRate: RATE, termMonths: TERM, monthlyOverpayment: ZERO };
+
+  it('saves far more in month 1 than the same lump in month 241', () => {
+    const early = compareLumpSum(loan, LUMP, 1);
+    const late = compareLumpSum(loan, LUMP, 241);
+
+    expect(toMajor(early.interestSaved)).toBe(30332.98);
+    expect(early.monthsSaved).toBe(17);
+
+    expect(toMajor(late.interestSaved)).toBe(4604.94);
+    expect(late.monthsSaved).toBe(4);
+  });
+
+  it('is worth less the longer it is left — swept across the term', () => {
+    // The page's whole claim. Monotonic, not merely "bigger at the ends".
+    const months = [1, 61, 121, 181, 241, 301];
+    const saved = months.map((m) => compareLumpSum(loan, LUMP, m).interestSaved);
+
+    for (let n = 1; n < saved.length; n += 1) {
+      expect(saved[n]!).toBeLessThan(saved[n - 1]!);
+    }
+  });
+
+  it('a lump of zero is exactly a no-op (D39)', () => {
+    // The regression D39 records: a comparison whose no-op is not a no-op is
+    // broken. Without the term cap this reports minus one cent.
+    const none = compareLumpSum(loan, ZERO, 1);
+    expect(none.interestSaved).toBe(0);
+    expect(none.monthsSaved).toBe(0);
+    expect(none.overpaid.months).toBe(TERM);
+  });
+
+  it('never costs more interest than the baseline, at any month', () => {
+    for (const m of [1, 2, 180, 359, 360]) {
+      const r = compareLumpSum(loan, LUMP, m);
+      expect(r.overpaid.totalInterest).toBeLessThanOrEqual(r.baseline.totalInterest);
+      expect(r.interestSaved).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('rejects inputs that cannot describe a real payment', () => {
+    expect(() => compareLumpSum(loan, fromMajor(-1), 1)).toThrow(MortgageError);
+    expect(() => compareLumpSum(loan, LUMP, 0)).toThrow(MortgageError);
+    expect(() => compareLumpSum(loan, LUMP, 1.5)).toThrow(MortgageError);
+    expect(() => compareLumpSum(loan, LUMP, TERM + 1)).toThrow(MortgageError);
   });
 });

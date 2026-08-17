@@ -1717,6 +1717,66 @@ impressions.** One week of data is a rumour, and D57's reasoning about not
 diluting the site applies to over-fitting just as much as to thin pages. Recorded
 so the next session knows to watch it, not to act on it.
 
+### D61 — Timing beats amount, and the closed form was not close enough
+
+`/mortgage-overpayment-timing` — the third page written for a query rather than
+derived from a tool, and the first built on what Search Console actually
+returned (D60) rather than on a guess about what would rank.
+
+**The finding.** On the site's anchor loan — $320,000 at 6.706% over 30 years —
+**$5,000 paid once in month 1 removes $30,332.98 of interest and 17 months. The
+same $5,000 in month 241 removes $4,604.94 and 4 months.** Identical amount,
+identical loan, **6.6 times** the effect. The value of an extra payment is
+governed by how much of the term is left in front of it, not by its size.
+
+Two supporting figures, both read off the real schedule: the first payment is
+**86.6% interest** ($1,788.27 against $277.89 of principal), and principal does
+not exceed interest until **month 237** — more than two-thirds through a
+thirty-year term. The crossover is *found* by walking the schedule for the first
+month where principal wins, never typed, so it cannot drift from the table beside
+it (D55).
+
+**A closed form was written first and rejected on measurement.** The interest
+avoided by retiring principal early looks like `L · ((1 + i)^(n − m) − 1)`, and
+it is wrong: measured against the walker it is out by **29 cents** on a month-1
+lump and 2–3 cents elsewhere, because it ignores the per-period cent rounding a
+real schedule performs. It would have been the cheaper implementation and it
+would have published a figure the product does not produce. D7 forbids
+tolerances, so the page's numbers come from `compareLumpSum`.
+
+**The lump rides the existing `amortise` loop rather than getting its own
+walker.** A second amortisation path that has to agree with the first is D59's
+shape exactly — one gets fixed, the other does not. The lump is a whole number of
+minor units added to one month's payment, so it contributes no rounding of its
+own; all drift remains the per-period interest.
+
+**Five fixtures, every expected value read off a failing assertion** (D7's
+technique) and every one exact. One of them sweeps six points across the term
+asserting the saving only ever *falls* as the payment is made later — the page's
+central claim is directional, and D55 says the defence for directional prose is a
+provably monotonic engine rather than careful wording.
+
+**Found while writing it: `/biweekly-mortgage-payments` was missing from
+`llms.txt` entirely.** It shipped in D58 and was never listed, so the page most
+likely to be quoted by a retrieval system for a fortnightly-payments question was
+invisible to the file that exists to serve exactly that. Third time a page has
+existed without appearing where something looks for it (D41, D50). Both entries
+added here. **Nothing checks this** — `check-links.mjs` asserts calculators
+appear in the homepage list, and no gate compares `llms.txt` against the build.
+Recorded as a known gap rather than fixed, because the honest fix is a gate and
+this pull request is already carrying an engine change.
+
+**One defect found by reading the rendered page, as usual.** The interest-share
+column used `Math.round(x * 10) / 10`, which drops a trailing zero — month 240
+rendered as **"49%"** in a column reading 86.6%, 81.3%, 73.9%, 28.8%, 0.6%. Every
+gate was green. It is `toFixed(1)` now.
+
+**And one measurement that was wrong before the design was.** At 375px the page
+reported `scrollWidth 384` against `clientWidth 375` and looked like a horizontal
+overflow. It is the scrollbar: `window.scrollTo(9999, y)` leaves `scrollX` at
+**0**, so the page does not scroll horizontally at all. Fifth time (D29, D36,
+D50, D54, D59) — suspect the instrument first.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

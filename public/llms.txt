@@ -144,6 +144,40 @@ Key figures, on a $1,000,000 target:
   - It cannot express sequence-of-returns risk; it is a single discount at a
     constant rate.
 
+### Biweekly mortgage payments — what the thirteenth payment actually does
+URL: https://quickoper.com/biweekly-mortgage-payments
+States: twenty-six half-payments a year is thirteen monthly payments, not
+twelve. The whole benefit of a biweekly schedule is that one extra payment; the
+fortnightly timing contributes almost nothing.
+Key figures, computed on $320,000 at 6.706% over 30 years:
+  - Contractual monthly payment $2,066.16. Twelve of those is $24,793.92 a year;
+    twenty-six halves is $26,860.08 - a difference of $2,066.16, exactly one
+    payment.
+  - That one extra payment a year removes 72 months and $99,532.52 of interest.
+  - On the CFPB's own example loan from its Nationwide Biweekly enforcement
+    action, $160,000 at 4.125%, the extra payment removes $18,840.18 of interest.
+  - Not modelled: a true fortnightly accrual, where half a payment lands
+    mid-month. That effect is real and small beside the thirteenth payment.
+
+### What an extra payment does in year one versus year twenty
+URL: https://quickoper.com/mortgage-overpayment-timing
+States: the value of an extra mortgage payment depends on how much of the term
+is left in front of it, because interest is charged on the balance every
+remaining month. A dollar retired in month 1 escapes 359 future interest
+charges; the same dollar retired in month 241 escapes 119.
+Key figures, computed on $320,000 at 6.706% over 30 years, payment $2,066.16:
+  - $5,000 paid once in month 1 removes $30,332.98 of interest and 17 months.
+    The same $5,000 in month 121 removes $13,523.40 and 8 months. In month 241
+    it removes $4,604.94 and 4 months. Identical amount, 6.6 times the effect.
+  - The first payment is 86.6% interest: $1,788.27 interest against $277.89 of
+    principal. By month 240 it is 49.0%: $1,013.44 against $1,052.72.
+  - Principal first exceeds interest in month 237, more than two-thirds of the
+    way through a 30-year term.
+  - The balance falls $3,439.16 in year one, $12,253.56 in year twenty and
+    $23,919.98 in year thirty - for twelve identical payments each time.
+  - Not modelled: recasting, early repayment charges, or a servicer holding
+    extra money in suspense rather than applying it to principal.
+
 ## Verification
 
 - [Methodology](https://quickoper.com/methodology): formulas, assumptions and the
