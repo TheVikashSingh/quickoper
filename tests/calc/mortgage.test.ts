@@ -8,7 +8,7 @@ import {
   compareOverpayment,
   contractualPayment,
 } from '../../src/lib/calc/mortgage';
-import { ZERO, fromMajor, toMajor } from '../../src/lib/calc/money';
+import { ZERO, fromMajor, subtract, toMajor } from '../../src/lib/calc/money';
 
 /**
  * THE ANCHOR (D7).
@@ -273,5 +273,105 @@ describe('compareLumpSum', () => {
     expect(() => compareLumpSum(loan, LUMP, 0)).toThrow(MortgageError);
     expect(() => compareLumpSum(loan, LUMP, 1.5)).toThrow(MortgageError);
     expect(() => compareLumpSum(loan, LUMP, TERM + 1)).toThrow(MortgageError);
+  });
+});
+
+/**
+ * THE 15-YEAR TERM — previously asserted nowhere.
+ *
+ * Every fixture above this block uses a 360-month term. `/15-year-vs-30-year-
+ * mortgage` publishes a 180-month payment and its total interest as headline
+ * figures, and until this block nothing pinned either of them: an engine change
+ * could have moved a published number with a fully green suite.
+ *
+ * ANCHORING, STATED HONESTLY. These values are NOT taken from a published
+ * third-party schedule the way the 360-month payment above is taken from
+ * calculator.net (D39). They are the amortisation formula applied at n = 180,
+ * reproducible by anyone with `=PMT(0.06706/12, 180, -320000)`, and confirmed
+ * against a second independent implementation written outside this repository.
+ *
+ * What makes them trustworthy is inherited rather than restated: the CONVENTION
+ * they depend on — nominal annual rate over twelve, half-up on the cent every
+ * period, contractual term as a hard stop — is what the 360-month anchor
+ * validates against a real third party. A formula cannot adjudicate a
+ * convention; that is what the anchor is for, and it is the same convention at
+ * either term.
+ */
+describe('the 15-year term', () => {
+  const SHORT = 180;
+  const shortLoan = {
+    principal: PRINCIPAL,
+    annualRate: RATE,
+    termMonths: SHORT,
+    monthlyOverpayment: ZERO,
+  };
+
+  it('produces the payment and total interest the page publishes', () => {
+    const r = calculateMortgage(shortLoan);
+    expect(toMajor(r.contractualPayment)).toBe(2823.91);
+    expect(toMajor(r.totalInterest)).toBe(188303.66);
+    expect(toMajor(r.totalPaid)).toBe(508303.66);
+    expect(r.months).toBe(SHORT);
+  });
+
+  it('charges the same first-month interest as the 30-year loan', () => {
+    // The page's central explanatory claim: interest is charged on the balance,
+    // and on day one the balance and rate are identical, so the term cannot
+    // change the first charge. Only the remainder differs.
+    const short = calculateMortgage(shortLoan);
+    const long = calculateMortgage({
+      principal: PRINCIPAL,
+      annualRate: RATE,
+      termMonths: TERM,
+      monthlyOverpayment: ZERO,
+    });
+
+    expect(short.schedule[0]!.interest).toBe(long.schedule[0]!.interest);
+    expect(toMajor(short.schedule[0]!.interest)).toBe(1788.27);
+
+    expect(toMajor(short.schedule[0]!.principalPaid)).toBe(1035.64);
+    expect(toMajor(long.schedule[0]!.principalPaid)).toBe(277.89);
+  });
+
+  it('reaches the principal-over-interest crossover far earlier', () => {
+    const at = (months: number) => {
+      const r = calculateMortgage({
+        principal: PRINCIPAL,
+        annualRate: RATE,
+        termMonths: months,
+        monthlyOverpayment: ZERO,
+      });
+      return r.schedule.find((m) => m.principalPaid > m.interest)!.month;
+    };
+
+    expect(at(SHORT)).toBe(57);
+    expect(at(TERM)).toBe(237);
+  });
+
+  it('is reproduced exactly by a 30-year contract paid at the 15-year amount', () => {
+    /**
+     * The strongest sentence on the page — "identical, to the cent" — and the
+     * page branches on this rather than asserting it. This fixture is what
+     * stops that branch silently flipping: if per-period rounding ever
+     * separated the two, the page would quietly switch to its "very close but
+     * not exact" wording and nobody would notice the claim had weakened.
+     */
+    const short = calculateMortgage(shortLoan);
+    const long = calculateMortgage({
+      principal: PRINCIPAL,
+      annualRate: RATE,
+      termMonths: TERM,
+      monthlyOverpayment: ZERO,
+    });
+
+    const matched = compareOverpayment({
+      principal: PRINCIPAL,
+      annualRate: RATE,
+      termMonths: TERM,
+      monthlyOverpayment: subtract(short.contractualPayment, long.contractualPayment),
+    });
+
+    expect(matched.overpaid.months).toBe(short.months);
+    expect(matched.overpaid.totalInterest).toBe(short.totalInterest);
   });
 });

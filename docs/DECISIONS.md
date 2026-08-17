@@ -1845,6 +1845,61 @@ correctly because browsers ignore the invalid attribute, and **nothing in CI
 reads browser console output**, which is why it has survived. Left for its own
 change rather than bundled into a content page.
 
+### D63 — One module of three satisfies rule 3, and the 15-year term was pinned by nothing
+
+Prompted by the operator: *"it is a YMYL domain, be extra careful with your
+calculations."* The right response to that is not reassurance, so the mortgage
+figures were re-derived by a second implementation written **outside this
+repository**, importing none of the engine, and compared against what the built
+pages actually say. Thirty-three checks: payment, term, totals reconciling,
+every lump-sum saving, every percentage, every multiple, both crossovers, the
+identity claim, and cross-page agreement on the shared loan. **All passed.**
+
+Two independent implementations agreeing is worth more than a green suite. It is
+also not the same as being right, and the audit surfaced two things that were.
+
+**1. Every mortgage fixture used a 360-month term.** `/15-year-vs-30-year-
+mortgage` publishes **$2,823.91** and **$188,303.66** as headline figures, and
+until this entry nothing in the suite asserted either. An engine change could
+have moved a number on a live YMYL page with every gate green. Four fixtures now
+pin the payment, the totals, the equal first-month interest across terms, both
+crossover months, and the "identical, to the cent" identity — the last one
+specifically because the page *branches* on that identity, so without a fixture
+it could silently downgrade itself to the weaker wording and nobody would see it.
+
+**2. Rule 3 is satisfied by one module of three, and the other two say so in
+their own comments.** The rule asks for a fixture matching *"a real published
+third-party schedule, not a formula we derived"*:
+
+| Module | Anchor | Third party? |
+|---|---|---|
+| `mortgage.ts` | calculator.net's published $2,066.16 / $743,818.78 / $423,818.78 | **yes** |
+| `debt-payoff.ts` | "the standard loan payment formula… $193.33" | no — a formula |
+| `coast-fire.ts` | "the compound interest formula FV = PV × (1 + r)^n" | no — a formula |
+
+Both are honest about it in their own headers, and both are genuinely checkable
+by a reader with a spreadsheet, which is far better than self-consistency. But a
+formula cannot adjudicate a **convention**, and conventions are where money bugs
+live. The mortgage anchor earned its keep on exactly that: it settled half-up
+against round-up, $2,066.16 against $2,066.17, which both readings of "the
+formula" permit. Nothing plays that role for the other two engines.
+
+**Not fixed here, and the reason is not laziness.** Manufacturing an anchor by
+finding some calculator that agrees with us is the appearance of verification,
+not verification. `docs/VERIFICATION.md` already names **investor.gov** for the
+compound-interest check, which is a published third-party tool and the natural
+anchor for `coast-fire.ts` — it simply has never been run. The honest sequence is
+that the operator runs it, and its output is recorded as the fixture's source.
+Recorded as a known gap so the next session does not read D7's summary table and
+conclude all three engines are externally anchored. They are not.
+
+**What the audit does not prove, stated so it is not over-read.** Both
+implementations use `annualRate / 12` and half-up per-period rounding. Had that
+convention been wrong for a US fixed-rate loan, both would be wrong identically
+and all thirty-three checks would still pass. The single thing standing between
+this site and a consistent, confident, undetectable error is one retrieved figure
+from one competitor, dated 2026-08-08, now supporting four published pages.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

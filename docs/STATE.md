@@ -146,6 +146,13 @@ Nothing in code depends on these, but launch does.
    happened without it, so it is now overdue rather than pending: the site is
    publicly claiming figures nobody outside this repository has checked.
 
+   **It is now load-bearing, not just reassuring (D63).** Only `mortgage.ts` is
+   anchored to a published third-party schedule; `debt-payoff.ts` and
+   `coast-fire.ts` are anchored to formulas, which cannot adjudicate a rounding
+   or compounding convention. The investor.gov step in this document is the
+   natural third-party anchor for `coast-fire.ts` — running it and recording the
+   output is what would close that gap.
+
 6. ~~**Canonical hostname and scheme.**~~ **Done, 2026-08-17.** Both the apex and
    `www` were serving `200`, as was plain `http://` on each — four addresses for
    one site, against a crawl budget of one GoogleBot visit a day. Fixed with a
@@ -294,7 +301,7 @@ Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
 file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: three
-calculators, eight derivation pages, five trust pages, 19 substantive pages, 172
+calculators, eight derivation pages, five trust pages, 19 substantive pages, 176
 tests, ten CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.
