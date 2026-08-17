@@ -24,6 +24,51 @@ a clean lockfile install.
 
 ---
 
+## For an agent: this machine's tooling
+
+These were given verbally at the start of a session and lived nowhere, so every
+new session rediscovered them by failing. They are here now.
+
+**`gh` is not on a fresh PATH.** It is installed at `C:\Program Files\GitHub CLI`.
+Invoke it by full path:
+
+```
+"C:/Program Files/GitHub CLI/gh.exe" pr create --repo TheVikashSingh/quickoper ...
+```
+
+**Never prefix a command with `cd <path> &&`.** It defeats every permission
+pattern the operator has approved and triggers a prompt on every call. Use the
+tools' own directory flags instead:
+
+```
+git -C C:/dev/quickoper status
+```
+
+```
+npm --prefix C:/dev/quickoper run verify
+```
+
+**Multi-line `git commit -m` breaks in PowerShell 5.1.** Write the message to a
+file and use `-F`:
+
+```
+git -C C:/dev/quickoper commit -F /path/to/message.txt
+```
+
+**Do not write long `node -e "..."` one-liners.** Bash mangled the quoting four
+times in one session — `$`, backslashes and MSYS path conversion all interfere.
+Write a real script file and run it, or use the editing tools. The same applies
+to `curl` format strings: MSYS rewrites a leading `/` into a Windows path, so
+`-w "/foo -> %{http_code}"` comes back as `C:/Program Files/Git/foo`. Set
+`MSYS_NO_PATHCONV=1` or avoid leading slashes in literals.
+
+**PDF text can be extracted** with `pdftotext -layout` (Git Bash ships it).
+There is no Python on this machine and no PDF *writer* — the project's answer to
+"produce a PDF" is the browser's print pipeline, which is also D11's answer for
+the site itself.
+
+---
+
 ## Normal loop: look at the site
 
 Stop anything already on the port first (see below), then:
