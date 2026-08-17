@@ -223,7 +223,12 @@ describe('balanceSeries', () => {
  */
 describe('compareLumpSum', () => {
   const LUMP = fromMajor(5_000);
-  const loan = { principal: PRINCIPAL, annualRate: RATE, termMonths: TERM, monthlyOverpayment: ZERO };
+  const loan = {
+    principal: PRINCIPAL,
+    annualRate: RATE,
+    termMonths: TERM,
+    monthlyOverpayment: ZERO,
+  };
 
   it('saves far more in month 1 than the same lump in month 241', () => {
     const early = compareLumpSum(loan, LUMP, 1);

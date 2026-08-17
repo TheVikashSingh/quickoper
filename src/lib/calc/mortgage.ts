@@ -343,10 +343,16 @@ export function compareLumpSum(
   // lump of zero this schedule would otherwise run to 361 months against the
   // baseline's 360 and report saving minus one cent. A comparison whose no-op
   // is not a no-op is broken (D39).
-  const walked = amortise(input.principal, input.annualRate, baseline.contractualPayment, input.termMonths, {
-    amount: lumpSum,
-    month: lumpMonth,
-  });
+  const walked = amortise(
+    input.principal,
+    input.annualRate,
+    baseline.contractualPayment,
+    input.termMonths,
+    {
+      amount: lumpSum,
+      month: lumpMonth,
+    },
+  );
 
   const overpaid: MortgageResult = {
     contractualPayment: baseline.contractualPayment,

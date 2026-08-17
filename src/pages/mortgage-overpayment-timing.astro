@@ -191,8 +191,8 @@ const structuredData = [
         One loan — {loan(AMOUNT)} at {RATE_PERCENT}% over {YEARS} years, contractual payment{
           ' '
         }
-        <strong class="text-ink">{money(baseline.contractualPayment)}</strong>. One amount.
-        Paid once, at two different moments.
+        <strong class="text-ink">{money(baseline.contractualPayment)}</strong>. One
+        amount. Paid once, at two different moments.
       </p>
       <p class="text-ink-soft numeric mt-2">
         The early payment is worth{' '}
@@ -215,10 +215,10 @@ const structuredData = [
       <p>
         A dollar of principal retired in month 1 is a dollar that is not in the balance
         when any of the remaining{' '}
-        <strong class="text-ink numeric">{termMonths - 1}</strong> interest charges are
-        calculated. The same dollar retired in month {latest.month} escapes only{' '}
-        <strong class="text-ink numeric">{termMonths - latest.month}</strong> of them. The
-        amount is identical; the number of charges it avoids is not.
+        <strong class="text-ink numeric">{termMonths - 1}</strong> interest charges are calculated.
+        The same dollar retired in month {latest.month} escapes only{' '}
+        <strong class="text-ink numeric">{termMonths - latest.month}</strong> of them. The amount
+        is identical; the number of charges it avoids is not.
       </p>
 
       <p>
@@ -233,8 +233,8 @@ const structuredData = [
       <p>
         Before the extra payment, look at the ordinary one. Every month of this loan the
         borrower pays exactly{' '}
-        <strong class="text-ink numeric">{money(baseline.contractualPayment)}</strong>, and
-        every month it is divided differently.
+        <strong class="text-ink numeric">{money(baseline.contractualPayment)}</strong>,
+        and every month it is divided differently.
       </p>
 
       <div class="mt-6 overflow-x-auto">
@@ -268,20 +268,22 @@ const structuredData = [
 
       <p class="mt-4">
         The first payment is{' '}
-        <strong class="text-ink numeric">{split[0]!.interestShare}% interest</strong>. Of{' '}
+        <strong class="text-ink numeric">{split[0]!.interestShare}% interest</strong>. Of{
+          ' '
+        }
         {money(baseline.contractualPayment)} paid, {money(split[0]!.principal)} reduces what
-        is owed. Nothing is being withheld and no fee is being taken — the split is simply
-        what a large balance produces.
+        is owed. Nothing is being withheld and no fee is being taken — the split is simply what
+        a large balance produces.
       </p>
 
       <p>
         Across the whole of the first year, the balance falls by{' '}
         <strong class="text-ink numeric">{money(YEAR_ONE_PRINCIPAL)}</strong>. Across the
         twentieth year it falls by{' '}
-        <strong class="text-ink numeric">{money(YEAR_TWENTY_PRINCIPAL)}</strong>, and across
-        the thirtieth by{' '}
-        <strong class="text-ink numeric">{money(YEAR_THIRTY_PRINCIPAL)}</strong> — for the
-        same twelve payments of the same size.
+        <strong class="text-ink numeric">{money(YEAR_TWENTY_PRINCIPAL)}</strong>, and
+        across the thirtieth by{' '}
+        <strong class="text-ink numeric">{money(YEAR_THIRTY_PRINCIPAL)}</strong> — for the same
+        twelve payments of the same size.
       </p>
     </section>
 
@@ -309,9 +311,9 @@ const structuredData = [
       </div>
 
       <p class="mt-4">
-        That is more than two-thirds of the way through the term. It is also not typed into
-        this page: it is found by walking the schedule for the first month where principal
-        exceeds interest, so it stays correct if the loan above ever changes.
+        That is more than two-thirds of the way through the term. It is also not typed
+        into this page: it is found by walking the schedule for the first month where
+        principal exceeds interest, so it stays correct if the loan above ever changes.
       </p>
 
       <p>
@@ -364,8 +366,8 @@ const structuredData = [
 
       <p>
         The ordering here is not asserted in prose. The rows are produced by running the
-        engine at each month, and a fixture sweeps six points across the term asserting that
-        the saving only ever falls as the payment is made later.
+        engine at each month, and a fixture sweeps six points across the term asserting
+        that the saving only ever falls as the payment is made later.
       </p>
     </section>
 
@@ -373,7 +375,9 @@ const structuredData = [
       <h2 class="section-head text-ink">A worked example you can check</h2>
 
       <p>
-        Take the first month. The balance is {loan(AMOUNT)} and the nominal annual rate is{' '}
+        Take the first month. The balance is {loan(AMOUNT)} and the nominal annual rate is{
+          ' '
+        }
         {RATE_PERCENT}%, so the month's interest is the balance times the rate divided by
         twelve:
       </p>
@@ -385,18 +389,20 @@ const structuredData = [
 
       <p>
         Rounded half-up on the cent, which is where every figure on this site rounds. The
-        contractual payment is {money(baseline.contractualPayment)}, so the principal repaid
-        that month is the difference:{' '}
+        contractual payment is {money(baseline.contractualPayment)}, so the principal
+        repaid that month is the difference:{' '}
         <strong class="text-ink numeric">{money(split[0]!.principal)}</strong>.
       </p>
 
       <p>
-        In a spreadsheet, <code>=PMT(0.06706/12, 360, -320000)</code> gives the payment and{' '}
-        <code>=IPMT(0.06706/12, 1, 360, -320000)</code> gives the first month's interest.
-        Change the second argument of <code>IPMT</code> to 240 and you have the year-twenty
-        row of the table above.{' '}
-        <a class="text-brand underline" href="/verify">Our verification page</a> walks
-        through the same checks in more detail.
+        In a spreadsheet, <code>=PMT(0.06706/12, 360, -320000)</code> gives the payment and{
+          ' '
+        }
+        <code>=IPMT(0.06706/12, 1, 360, -320000)</code> gives the first month's interest. Change
+        the second argument of <code>IPMT</code> to 240 and you have the year-twenty row of
+        the table above.{' '}
+        <a class="text-brand underline" href="/verify">Our verification page</a> walks through
+        the same checks in more detail.
       </p>
     </section>
 
@@ -411,9 +417,9 @@ const structuredData = [
 
       <ul class="text-ink-soft list-disc space-y-2 pl-5">
         <li>
-          <strong class="text-ink">Recasting.</strong> Some servicers respond to a large
-          lump sum by recalculating the payment downward over the original term rather than
-          shortening the term. That produces a different, smaller saving than the one above.
+          <strong class="text-ink">Recasting.</strong> Some servicers respond to a large lump
+          sum by recalculating the payment downward over the original term rather than shortening
+          the term. That produces a different, smaller saving than the one above.
         </li>
         <li>
           <strong class="text-ink">Early repayment charges.</strong> Not modelled at all. A
@@ -421,9 +427,9 @@ const structuredData = [
           charge against these figures, and the answer can reverse.
         </li>
         <li>
-          <strong class="text-ink">How the extra money is applied.</strong> The arithmetic
-          assumes it reduces the principal in the month it is paid. Money held in suspense,
-          or treated as the next scheduled payment made early, does not do this.
+          <strong class="text-ink">How the extra money is applied.</strong> The arithmetic assumes
+          it reduces the principal in the month it is paid. Money held in suspense, or treated
+          as the next scheduled payment made early, does not do this.
         </li>
         <li>
           <strong class="text-ink">Everything outside the loan.</strong> What else the money
@@ -465,11 +471,12 @@ const structuredData = [
         }
         <li>
           Every figure in the tables and the prose is produced at build time by the same
-          engine the mortgage calculator runs, on {loan(AMOUNT)} at {RATE_PERCENT}% over{' '}
+          engine the mortgage calculator runs, on {loan(AMOUNT)} at {RATE_PERCENT}% over{
+            ' '
+          }
           {YEARS} years. That loan's contractual payment of{' '}
           {money(baseline.contractualPayment)} matches calculator.net's published figure for
-          the same inputs to the cent, which is the anchor every saving here is measured
-          against.
+          the same inputs to the cent, which is the anchor every saving here is measured against.
         </li>
       </ul>
       <p class="text-ink-mute mt-4 text-sm">
@@ -483,10 +490,10 @@ const structuredData = [
     >
       <p>
         <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper shows how
-        a calculation works and shows its working. It does not know your circumstances and
-        cannot tell you whether to put money into a mortgage rather than anywhere else.
-        Nothing here is financial, tax or investment advice. Your note and your servicer are
-        the authority on how your loan treats extra payments.
+        a calculation works and shows its working. It does not know your circumstances and cannot
+        tell you whether to put money into a mortgage rather than anywhere else. Nothing here
+        is financial, tax or investment advice. Your note and your servicer are the authority
+        on how your loan treats extra payments.
       </p>
     </aside>
 
