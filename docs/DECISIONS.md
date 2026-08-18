@@ -1836,14 +1836,20 @@ same way: the computation is right, the label is written by hand, and no checker
 reads English. The defence remains the one D55 named — read the rendered page —
 and it is the only reason this was found.
 
-**Also found while verifying, and deliberately not fixed here.** Every page on
-the site logs two console errors: `<svg> attribute height: Expected length,
-"auto"`, from `height="auto"` on the `<svg>` in `ProofChart.astro`. `auto` is not
-a valid SVG length. Confirmed pre-existing by reproducing it on
-`/biweekly-mortgage-payments`, which this pull request does not touch. It renders
-correctly because browsers ignore the invalid attribute, and **nothing in CI
-reads browser console output**, which is why it has survived. Left for its own
-change rather than bundled into a content page.
+**Also found while verifying, and deliberately not fixed here.** The homepage
+logs two console errors: `<svg> attribute height: Expected length, "auto"`, from
+`height="auto"` on the `<svg>` in `ProofChart.astro`. `auto` is not a valid SVG
+length. It renders correctly because browsers ignore the invalid attribute, and
+**nothing in CI reads browser console output**, which is why it has survived.
+Left for its own change rather than bundled into a content page.
+
+> **Corrected in D65.** This entry originally said *"every page on the site"* and
+> claimed the error was reproduced on `/biweekly-mortgage-payments`. Both are
+> false. `ProofChart` is imported by `src/pages/index.astro` and nothing else, so
+> the homepage is the only page that has ever emitted it. The reading came from a
+> console buffer that persisted across navigations in the same browser session —
+> the instrument again (D59), and this time it got as far as a merged decision
+> record before anyone checked.
 
 ### D63 — One module of three satisfies rule 3, and the 15-year term was pinned by nothing
 
@@ -1981,6 +1987,52 @@ the schedule buttons 37px on a phone. Both clear WCAG 2.2 SC 2.5.8 (AA, 24×24)
 and miss SC 2.5.5 (AAA, 44×44). They are identical on all four calculators, so
 raising them on this page alone would make it the odd one out — it is a
 site-wide change or none.
+
+### D65 — An invalid SVG attribute, and a console buffer that reached a merged decision
+
+`ProofChart.astro` set `height="auto"` on its `<svg>`. `auto` is not a valid SVG
+length, so the browser rejected the attribute and logged
+`<svg> attribute height: Expected length, "auto".` on every render.
+
+**The fix is a deletion, and it changes nothing visually.** That is the whole
+argument for it being safe: the browser was *already* discarding the attribute
+and sizing the element from `width="100%"` plus the `viewBox`, which is exactly
+what it does now. Measured after: rendered ratio **3.200** against a viewBox
+ratio of **3.200**, in both themes, with all three series still drawn. Height is
+now left to CSS (`h-auto`) rather than asserted in an attribute that could not
+be honoured.
+
+**Why no gate caught it.** Ten checks read `dist/`; the markup they read is
+*valid HTML* and the string `height="auto"` is unremarkable in it. The defect
+only exists once a browser parses the attribute as an SVG length, and **nothing
+in CI reads browser console output**. Ninth time a real defect surfaced because
+a check was asked a question it had not been asked before (D18, D26, D31, D41,
+D45).
+
+**No gate was added, and the reasoning is D27's.** A console-error gate means
+Playwright and a headless run in CI for a class of defect that has appeared once.
+The same argument was made and accepted against contrast checking. If a second
+console defect appears, that changes.
+
+**The part worth keeping is the correction.** D61 recorded this as *"every page
+on the site logs two console errors"* and said it had been reproduced on
+`/biweekly-mortgage-payments`. Both claims were false. `ProofChart` is imported
+by `src/pages/index.astro` and by nothing else — verified twice, against the
+imports and against the built output, where exactly one file in `dist/` contains
+the chart's SVG. The other pages mention ProofChart only in code comments citing
+D32, which is what the original grep matched.
+
+What produced the false reading was a **console buffer persisting across
+navigations**: the errors seen on later pages were carried over from an earlier
+visit to the homepage in the same browser session. D59's rule — suspect the
+measurement before the source — has now been earned six times, and this is the
+first time a bad measurement got past review and into a merged decision record.
+D61 is annotated rather than rewritten, because a decisions file that quietly
+edits its own history is worth less than one that shows where it was wrong.
+
+**The generalisation:** a console read is only evidence for the page that was
+loaded *after* the buffer was last clear. Navigate, then read, and confirm the
+element you are blaming is actually on the page you are reading.
 
 ### D26 — Indexability is an invariant, and it is checked
 
