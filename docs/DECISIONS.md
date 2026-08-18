@@ -2250,6 +2250,56 @@ input list, debt rows and results in one component. Splitting the debt-row edito
 into its own module would not help the total. What would help is the thing
 nothing has tried — reducing what that island renders, not where it hydrates.
 
+### D69 — The llms.txt gate, and a gate that CI cannot yet run
+
+D61 found `/biweekly-mortgage-payments` absent from `llms.txt` for two pull
+requests, recorded it as a known gap, and explicitly declined to build the check
+because that pull request was already carrying an engine change.
+`scripts/check-llms.mjs` closes it.
+
+**Fourth time a page has existed without appearing where something looks for
+it.** D41: orphaned from the navigation. D50: absent from the homepage's own
+calculator list. D61: absent from `llms.txt`. Three of the four were found by a
+human noticing. Twice is a pattern; four times is a gate.
+
+**Why it matters more than tidiness.** CLAUDE.md treats AI assistants as a
+first-class traffic channel, on the reasoning that retrieval systems weight
+structure and specificity far above backlink profile — the one axis where a new
+domain is not automatically last. `llms.txt` is the entirety of that surface. A
+page missing from it is not untidy, it is absent from the channel this site is
+best positioned to win. The Cloudflare logs make that concrete: **AppleBot hit
+57 times in the day GoogleBot hit once** (D60).
+
+**It fails safe, which is the whole design.** Requirement is the default: every
+URL in the sitemap must have a `URL:` line unless its path is explicitly
+exempted. The alternative — a list of pages to check — would have checked
+nothing for anything newly added, which is precisely how the original defect
+survived two pull requests. Add a page and forget, and this fails naming it.
+
+**It checks the reverse direction too.** An entry pointing at a page the build no
+longer produces is a dead citation, and a retrieval system that follows it gets a
+404 with this site's name on it.
+
+**Proven to fail, in both directions and in the fail-safe one** (D18: a gate that
+has never failed is not a gate). Repointing the biweekly entry at a nonexistent
+path produced two failures at once — the real page missing, and the invented one
+stale. Injecting a brand-new URL into the sitemap failed naming it. Exit 1 each
+time; exit 0 restored.
+
+**Nothing was found today.** All 12 tool and derivation pages are catalogued and
+no entry is stale. That is a regression guard rather than a fix, and it is
+recorded as such — the defect class is proven real, this instance is not.
+
+**THE GATE DOES NOT RUN IN CI YET, AND THAT IS A REAL LIMITATION.** The workflow
+runs each check as its own named step rather than invoking `npm run verify`, so
+adding the script and the npm script is not enough. `.github/workflows/` is
+denied to an agent by the permission rules, and CLAUDE.md forbids modifying
+workflow permissions — correctly, since a release path an agent can rewrite is
+not a release path. The step is therefore an operator action, written out in the
+pull request body. **Until it is added, this gate only runs when someone runs
+`npm run verify` locally**, which is exactly the "assumed rather than known"
+state D45 records `_headers` sitting in before the first deploy failed on it.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
