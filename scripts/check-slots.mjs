@@ -58,6 +58,7 @@ const HOSTS = {
   'DebtPayoffCalculator.tsx': 'finance/debt-payoff-calculator/index.html',
   'CoastFireCalculator.tsx': 'finance/coast-fire-calculator/index.html',
   'MortgageCalculator.tsx': 'finance/mortgage-overpayment-calculator/index.html',
+  'UkErcCalculator.tsx': 'finance/uk-early-repayment-charge-calculator/index.html',
   'QuickCost.tsx': 'index.html',
 };
 

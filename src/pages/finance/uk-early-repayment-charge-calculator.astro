@@ -1,0 +1,434 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TrustStrip from '../../components/ornament/TrustStrip.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { UkErcCalculator } from '../../components/calculators/UkErcCalculator';
+import { SITE } from '../../lib/site';
+import { sourceRef } from '../../lib/schema';
+
+import { calculateUkErc } from '../../lib/calc/uk-erc';
+import { UK } from '../../lib/calc/contracts';
+import { format, fromMajor, type Minor } from '../../lib/calc/money';
+
+const LAST_VERIFIED = '2026-08-18';
+
+const SOURCES = [
+  {
+    label:
+      'FCA Handbook — MCOB 12.3 Early repayment charges: regulated mortgage contracts',
+    url: 'https://handbook.fca.org.uk/handbook/mcob12/mcob12s3',
+    retrieved: '2026-08-18',
+  },
+].map((s) => sourceRef.parse(s));
+
+/**
+ * THE EXAMPLES ARE COMPUTED AT BUILD TIME BY THE REAL ENGINE.
+ *
+ * Same discipline as /minimum-payments and /mortgage-overpayment-timing (D54,
+ * D61): the page runs the code the calculator runs, so it cannot print a figure
+ * the product does not produce. Zero client JavaScript from this frontmatter.
+ *
+ * THE SCENARIOS ARE ILLUSTRATIVE SHAPES, NOT MARKET DATA. Nothing here quotes a
+ * lender's rate, allowance or charge, because CLAUDE.md forbids inventing one
+ * and no citable source gives a figure that would be true for any particular
+ * reader. Both numbers a reader needs are read off their own offer — MCOB
+ * 12.3.1R requires the charge to be expressible as a cash value, so it is there.
+ */
+const money = (amount: Minor): string => format(amount, UK.currency, UK.locale);
+const pounds = (major: number): string => money(fromMajor(major));
+
+const COMFORTABLE = {
+  balance: 250_000,
+  ratePercent: 4.5,
+  years: 25,
+  fixedMonths: 36,
+  allowancePercent: 10,
+  ercPercent: 3,
+  overpayment: 40_000,
+};
+
+const PUNISHING = {
+  balance: 250_000,
+  ratePercent: 1.5,
+  years: 25,
+  fixedMonths: 6,
+  allowancePercent: 10,
+  ercPercent: 5,
+  overpayment: 50_000,
+};
+
+const run = (s: typeof COMFORTABLE) =>
+  calculateUkErc({
+    balance: fromMajor(s.balance),
+    annualRate: s.ratePercent / 100,
+    remainingMonths: s.years * 12,
+    fixedPeriodMonths: s.fixedMonths,
+    allowancePercent: s.allowancePercent,
+    ercPercent: s.ercPercent,
+    overpayment: fromMajor(s.overpayment),
+  });
+
+const good = run(COMFORTABLE);
+const bad = run(PUNISHING);
+
+const FAQ = [
+  {
+    q: 'What is an early repayment charge?',
+    a: 'A fee your lender applies when you repay more of a fixed or discounted mortgage deal than its terms allow. The FCA requires it to be "able to be expressed as a cash value" and to be "a reasonable pre-estimate of the costs" the lender incurs (MCOB 12.3.1R), which is why the figure is written on your offer rather than being something a calculator can guess.',
+  },
+  {
+    q: 'How much can I overpay without a charge?',
+    a: `Whatever your own deal allows — commonly stated as a percentage of the balance each year. This tool takes that percentage as an input rather than assuming one, because it varies by lender, by product and sometimes by year of the deal. On the illustration here, ${COMFORTABLE.allowancePercent}% of ${pounds(COMFORTABLE.balance)} is ${money(good.allowance)}, so an overpayment of ${pounds(COMFORTABLE.overpayment)} leaves ${money(good.chargeable)} exposed to the charge.`,
+  },
+  {
+    q: 'Is it worth paying the charge?',
+    a: `That depends on two things people rarely compare: how long is left on your fixed rate, and your rate. On the illustration — ${COMFORTABLE.ratePercent}% with ${COMFORTABLE.fixedMonths} months still fixed — the ${money(good.charge)} charge is outrun by ${money(good.interestSavedOverFixedPeriod)} of interest removed inside the fixed period alone. Change it to ${PUNISHING.ratePercent}% with ${PUNISHING.fixedMonths} months left and a ${PUNISHING.ercPercent}% charge, and the same comparison runs ${money(bad.netOverFixedPeriod)}. The tool computes both; it does not tell you what to do.`,
+  },
+  {
+    q: 'Why do you show two different savings figures?',
+    a: 'Because only one of them is contractual. Your rate is fixed for a known number of months, so the interest removed inside that window rests on no assumption at all. The figure for the whole remaining term assumes today’s rate runs to the end, which for a UK deal it will not — the deal expires and the rate changes. Quoting only the larger number would be quoting a forecast as though it were arithmetic.',
+  },
+  {
+    q: 'Does the charge apply to the whole overpayment or just the excess?',
+    a: 'This tool models the common shape: the allowance is free, and the charge applies to the amount above it. Some lenders word it differently, and a few apply the charge to the whole repayment once the allowance is breached. Read your own terms — and if yours works the other way, put the whole overpayment in as the chargeable amount rather than trusting this model.',
+  },
+  {
+    q: 'What is not included here?',
+    a: 'Exit or deeds-release fees, any product fee added to the loan, the rate you will move to when the deal ends, and whether the money would do more elsewhere. The first two are cash amounts you can add yourself; the third is unknowable today; the fourth is not an arithmetic question.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'UK early repayment charge calculator',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/finance/uk-early-repayment-charge-calculator`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'GBP' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      { '@type': 'ListItem', position: 2, name: 'Finance', item: `${SITE.url}/finance` },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'UK early repayment charge calculator',
+        item: `${SITE.url}/finance/uk-early-repayment-charge-calculator`,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="UK early repayment charge calculator — is the charge worth paying? | QuickOper"
+  description={`Work out what an early repayment charge costs against the interest an overpayment removes. On ${pounds(COMFORTABLE.balance)} at ${COMFORTABLE.ratePercent}% with ${COMFORTABLE.fixedMonths} months fixed, a ${money(good.charge)} charge is outrun by ${money(good.interestSavedOverFixedPeriod)} inside the fixed period. Worked out in your browser.`}
+  structuredData={structuredData}
+>
+  <article>
+    <p class="engraved-fine text-ink-mute">Verified calculation · United Kingdom</p>
+
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+      UK early repayment charge calculator
+    </h1>
+
+    <p class="text-ink-soft mt-3 text-lg">
+      What the charge costs, against what the overpayment removes — separated into the
+      part that is contractual and the part that is an assumption.
+    </p>
+
+    <TrustStrip
+      class="mt-5"
+      items={[
+        { label: 'Nothing you type is sent anywhere' },
+        { label: 'No lender terms invented — you supply both', href: '/methodology' },
+        { label: 'Full schedule, chart and CSV' },
+      ]}
+    />
+
+    <div class="mt-10">
+      <UkErcCalculator client:load>
+        <Fragment slot="privacy">
+          Worked out in your browser. Nothing you type is sent anywhere, nothing is saved,
+          and the shareable link carries figures only — never your lender.
+        </Fragment>
+
+        <Fragment slot="method">
+          <div class="space-y-3">
+            <p>Two calculations, kept apart on purpose:</p>
+            <p class="numeric bg-surface rounded-control p-3">
+              allowance = balance × allowance%
+              <br />
+              chargeable = overpayment − allowance (never below zero)
+              <br />
+              charge = chargeable × charge%
+            </p>
+            <p>
+              The saving is the interest the schedule no longer charges once the balance
+              drops. Interest is worked out on the balance each month, so a smaller
+              balance is charged less in every month that follows.
+            </p>
+          </div>
+        </Fragment>
+
+        <Fragment slot="assumptions">
+          <div class="space-y-3">
+            <p>
+              Figures round to the penny every month, the way a statement does, and the
+              final payment is adjusted to clear the balance exactly.
+            </p>
+            <p>
+              The contractual figure covers only the months your rate is actually fixed.
+              The whole-term figure assumes today's rate runs to the end of the mortgage,
+              which for a fixed deal it will not — it is shown because it bounds the
+              answer from above, not because it is a prediction.
+            </p>
+          </div>
+        </Fragment>
+
+        <Fragment slot="terms">
+          Not modelled: exit and deeds-release fees, a product fee added to the loan, the
+          rate you move to when the deal ends, or a lender that charges on the whole
+          repayment rather than the excess. Your offer is the authority on all four.
+        </Fragment>
+      </UkErcCalculator>
+    </div>
+
+    <section class="prose-like text-ink-soft mt-16 space-y-4">
+      <h2 class="section-head text-ink">Why this needs its own calculator</h2>
+
+      <p>
+        A United States fixed-rate mortgage and a United Kingdom fixed-rate deal are not
+        the same product with a different currency symbol. A US note fixes the rate for
+        the whole term and generally lets a borrower overpay freely. A UK deal fixes the
+        rate for a few years, allows a stated percentage of the balance to be repaid each
+        year without penalty, and charges a percentage of anything above that.
+      </p>
+
+      <p>
+        That is a different <em>rule</em>, not a different word, which is the only basis
+        on which this site builds a country-specific tool at all. The interest arithmetic
+        underneath is identical and is shared with the mortgage calculator — interest on a
+        balance behaves the same everywhere. What is different is the charge, and the fact
+        that the rate has an expiry date.
+      </p>
+
+      <h2 class="section-head text-ink">The two numbers you have to supply</h2>
+
+      <p>
+        This calculator asks for your overpayment allowance and your charge percentage
+        rather than assuming them, and that is a deliberate cost. It makes the tool slower
+        to use than one that fills in ten per cent and three per cent for you.
+      </p>
+
+      <p>
+        The reason is that neither figure is a fact about the United Kingdom. Both are
+        contractual terms that vary by lender, by product, and often by which year of the
+        deal you are in — a charge frequently steps down as the fixed period runs out. Any
+        number we filled in would be wrong for most readers and, worse, uncheckable by all
+        of them. The regulator's own framing supports reading them off your paperwork:
+        MCOB 12.3.1R requires an early repayment charge to be
+        <strong class="text-ink">"able to be expressed as a cash value"</strong> and to be
+        <strong class="text-ink">"a reasonable pre-estimate of the costs"</strong> the lender
+        incurs. It is a stated number on your offer, not an estimate you need us to guess.
+      </p>
+
+      <h2 class="section-head text-ink">A worked example you can check</h2>
+
+      <p>
+        Take {pounds(COMFORTABLE.balance)} outstanding at {COMFORTABLE.ratePercent}% with{
+          ' '
+        }
+        {COMFORTABLE.years} years left, {COMFORTABLE.fixedMonths} months still fixed, a{
+          ' '
+        }
+        {COMFORTABLE.allowancePercent}% annual allowance and a {COMFORTABLE.ercPercent}%
+        charge. The contractual monthly payment is{' '}
+        <strong class="text-ink numeric">{money(good.contractualPayment)}</strong>.
+      </p>
+
+      <p>
+        Overpay {pounds(COMFORTABLE.overpayment)}. The allowance covers{' '}
+        {money(good.allowance)} of it, which leaves{' '}
+        <strong class="text-ink numeric">{money(good.chargeable)}</strong> chargeable. At{
+          ' '
+        }
+        {COMFORTABLE.ercPercent}% the charge is{' '}
+        <strong class="text-ink numeric">{money(good.charge)}</strong> — a figure you can confirm
+        by multiplying, which is the whole of that step.
+      </p>
+
+      <p>
+        Against it, the overpayment removes{' '}
+        <strong class="text-ink numeric">
+          {money(good.interestSavedOverFixedPeriod)}
+        </strong>{' '}
+        of interest <em
+          >within the {COMFORTABLE.fixedMonths} months that are actually fixed</em
+        >. That figure needs no assumption: the rate is contractual for those months. Net,
+        inside the fixed period alone, the overpayment is{' '}
+        <strong class="text-ink numeric">{money(good.netOverFixedPeriod)}</strong> ahead.
+      </p>
+
+      <p>
+        Over the full {COMFORTABLE.years} years the removed interest is{' '}
+        <strong class="text-ink numeric">
+          {money(good.interestSavedOverRemainingTerm)}
+        </strong>{' '}
+        and the schedule shortens by {good.monthsSaved} months — but that number assumes a rate
+        that expires in {COMFORTABLE.fixedMonths} months. It is real arithmetic on an assumption
+        that will not hold, and this page says so rather than leading with the bigger figure.
+      </p>
+
+      <h2 class="section-head text-ink">When the charge actually wins</h2>
+
+      <p>
+        The comparison flips, and it flips on the two things people rarely look at. Take
+        the same balance at {PUNISHING.ratePercent}% with only{' '}
+        {PUNISHING.fixedMonths} months of the deal left and a {PUNISHING.ercPercent}%
+        charge, overpaying {pounds(PUNISHING.overpayment)}.
+      </p>
+
+      <p>
+        The charge is <strong class="text-ink numeric">{money(bad.charge)}</strong>. The
+        interest removed inside the remaining fixed months is only{' '}
+        <strong class="text-ink numeric">
+          {money(bad.interestSavedOverFixedPeriod)}
+        </strong>
+        , so on the contractual horizon the overpayment is{' '}
+        <strong class="text-ink numeric">{money(bad.netOverFixedPeriod)}</strong> — the charge
+        is the larger number.
+      </p>
+
+      {
+        bad.breakEvenOverpayment !== null && (
+          <p>
+            On those figures the crossing point is{' '}
+            <strong class="text-ink numeric">{money(bad.breakEvenOverpayment)}</strong>:
+            up to there the interest removed still covers the charge, and past it the
+            charge is larger. The calculator finds that point by searching the schedule
+            penny by penny rather than solving it algebraically, because a schedule that
+            rounds every month does not have a clean algebraic answer.
+          </p>
+        )
+      }
+
+      <p>
+        The rule of thumb the arithmetic produces is worth stating plainly: a charge is a{
+          ' '
+        }
+        <em>one-off</em> percentage, while the saving is your rate working over the months that
+        remain fixed. So the comparison is roughly your charge percentage against your rate
+        multiplied by the years left on the deal. A 3% charge against 4.5% with three years
+        to run is not a close contest. The same 3% with three months to run is a different answer
+        entirely.
+      </p>
+
+      <h2 class="section-head text-ink">What this deliberately will not tell you</h2>
+
+      <p>
+        Whether to overpay. That depends on what else the money could do, on whether you
+        would rather hold it accessible, and on circumstances no calculator can see. This
+        page computes two quantities and shows its working; the decision is not arithmetic
+        and is not ours to make.
+      </p>
+
+      <p>
+        It also stops at the end of your fixed period for anything it calls contractual.
+        What happens afterwards depends on the rate you move to, and there is no honest
+        way to compute that today.
+      </p>
+    </section>
+
+    <section class="mt-14" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" class="section-head text-ink">Common questions</h2>
+      <dl class="mt-4 grid gap-x-8 gap-y-5 lg:grid-cols-2">
+        {
+          FAQ.map((item) => (
+            <div class="avoid-break">
+              <dt class="text-ink font-semibold">{item.q}</dt>
+              <dd class="text-ink-soft mt-1">{item.a}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="mt-14" aria-labelledby="sources-heading">
+      <h2 id="sources-heading" class="section-head text-ink">Sources</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((source) => (
+            <li>
+              <a class="text-brand underline" href={source.url} rel="noopener">
+                {source.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {source.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+        <li>
+          Every figure in the worked examples is produced at build time by the same engine
+          the calculator above runs. No interest rate, allowance or charge on this page is
+          quoted from any lender — the scenarios are illustrative shapes, and the two
+          figures that matter are the ones you read off your own offer.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 text-sm">
+        Written and maintained by {SITE.author.name}. Last verified {LAST_VERIFIED}.
+      </p>
+    </section>
+
+    <aside
+      class="rounded-panel border-line bg-sunken text-ink-soft avoid-break mt-14 border p-4 text-sm"
+      aria-label="Disclaimer"
+    >
+      <p>
+        <strong class="text-ink">This is arithmetic, not advice.</strong> QuickOper shows how
+        a calculation works and shows its working. It is not authorised by the Financial Conduct
+        Authority, it does not know your circumstances, and it cannot tell you whether to overpay
+        or which deal to take. Nothing here is financial, tax, mortgage or investment advice.
+        Your mortgage offer and your lender are the authority on your allowance, your charge
+        and how an overpayment is applied.
+      </p>
+    </aside>
+
+    <RelatedTools
+      hubNote="every tool here shows the full schedule rather than one figure"
+      links={[
+        {
+          href: '/finance/mortgage-overpayment-calculator',
+          label: 'Mortgage overpayment calculator',
+          note: 'the same interest arithmetic without a charge, on the US monthly convention',
+        },
+        {
+          href: '/mortgage-overpayment-timing',
+          label: 'What an extra payment does in year one versus year twenty',
+          note: 'why the month an overpayment lands in changes what it is worth',
+        },
+        {
+          href: '/verify',
+          label: 'Check our arithmetic yourself',
+          note: 'reproduce the payment and the interest split against a spreadsheet',
+        },
+      ]}
+    />
+  </article>
+</BaseLayout>

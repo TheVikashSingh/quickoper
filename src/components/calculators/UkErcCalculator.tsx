@@ -1,0 +1,532 @@
+/**
+ * UK early repayment charge calculator — the island.
+ *
+ * All arithmetic lives in lib/calc/uk-erc.ts. This file collects inputs and
+ * renders results; it never computes (CLAUDE.md rule 1).
+ *
+ * CURRENCY AND LOCALE COME FROM THE JURISDICTION MODULE, not from a literal in
+ * this file and not from a country flag threaded through props. That is rule
+ * 13's requirement made concrete: the island asks the engine which jurisdiction
+ * it computes for and formats accordingly, so there is no `switch (country)`
+ * here or anywhere else.
+ *
+ * PRIVACY: every figure is worked out in this browser. Nothing is transmitted
+ * and nothing is written to storage. The shareable link carries the seven
+ * figures so a scenario can be reopened — no name, no identifier, and in
+ * particular no lender.
+ *
+ * Static prose arrives from the .astro page as named slots (D28). Slot names
+ * must be single words: the @astrojs/preact server pass camel-cases them and
+ * the client pass does not, so a hyphenated slot hydrates to undefined.
+ */
+
+import { useCallback, useMemo } from 'preact/hooks';
+import type { JSX } from 'preact';
+
+import { JURISDICTION, UkErcError, calculateUkErc } from '../../lib/calc/uk-erc';
+import { balanceSeries, compareLumpSum } from '../../lib/calc/mortgage';
+import { ZERO, format, fromMajor, negate, type Minor } from '../../lib/calc/money';
+import { downloadCsv, toCsv, type CsvColumn } from '../../lib/csv';
+import { encodeParams, parseParams, type ParamSpec } from '../../lib/params';
+import { useUrlState } from '../../lib/url-state';
+import { LineChart } from '../chart/LineChart';
+import { ScheduleTable, type Column } from '../ui/ScheduleTable';
+
+/** Short keys, range-checked, rendered as text only (rule 11). */
+const PARAMS = {
+  b: { min: 1000, max: 10_000_000, fallback: 250_000 },
+  r: { min: 0, max: 25, fallback: 4.5 },
+  y: { min: 1, max: 40, fallback: 25 },
+  f: { min: 1, max: 120, fallback: 36 },
+  a: { min: 0, max: 100, fallback: 10 },
+  e: { min: 0, max: 100, fallback: 3 },
+  o: { min: 0, max: 10_000_000, fallback: 40_000 },
+} as const satisfies ParamSpec;
+
+type State = { [K in keyof typeof PARAMS]: number };
+
+interface Row {
+  month: number;
+  payment: Minor;
+  interest: Minor;
+  principal: Minor;
+  balance: Minor;
+}
+
+export interface Prose {
+  readonly privacy?: JSX.Element;
+  readonly method?: JSX.Element;
+  readonly assumptions?: JSX.Element;
+  readonly terms?: JSX.Element;
+}
+
+const money = (amount: Minor): string =>
+  format(amount, JURISDICTION.currency, JURISDICTION.locale);
+
+const plural = (n: number, one: string, many: string): string =>
+  `${n} ${n === 1 ? one : many}`;
+
+export function UkErcCalculator(prose: Prose): JSX.Element {
+  const [state, setState] = useUrlState<State>({
+    decode: (search) => parseParams(PARAMS, search),
+    encode: (value) => encodeParams(value),
+    initial: parseParams(PARAMS, ''),
+  });
+
+  const set = useCallback(
+    (key: keyof State, value: number) => setState({ ...state, [key]: value }),
+    [state, setState],
+  );
+
+  const outcome = useMemo(() => {
+    const remainingMonths = Math.round(state.y) * 12;
+    const fixedPeriodMonths = Math.min(Math.round(state.f), remainingMonths);
+    try {
+      const input = {
+        balance: fromMajor(state.b),
+        annualRate: state.r / 100,
+        remainingMonths,
+        fixedPeriodMonths,
+        allowancePercent: state.a,
+        ercPercent: state.e,
+        overpayment: fromMajor(Math.min(state.o, state.b)),
+      };
+      return {
+        result: calculateUkErc(input),
+        schedules: compareLumpSum(
+          {
+            principal: input.balance,
+            annualRate: input.annualRate,
+            termMonths: input.remainingMonths,
+            monthlyOverpayment: ZERO,
+          },
+          input.overpayment,
+          1,
+        ),
+        fixedPeriodMonths,
+        error: null as string | null,
+      };
+    } catch (error) {
+      return {
+        result: null,
+        schedules: null,
+        fixedPeriodMonths,
+        error: error instanceof UkErcError ? error.message : 'Check the figures above.',
+      };
+    }
+  }, [state]);
+
+  const { result, schedules, fixedPeriodMonths, error } = outcome;
+
+  const rows: Row[] = useMemo(
+    () =>
+      schedules === null
+        ? []
+        : schedules.overpaid.schedule.map((m) => ({
+            month: m.month,
+            payment: m.payment,
+            interest: m.interest,
+            principal: m.principalPaid,
+            balance: m.closingBalance,
+          })),
+    [schedules],
+  );
+
+  const columns: Column<Row>[] = [
+    { key: 'm', header: 'Month', value: (r) => String(r.month) },
+    { key: 'p', header: 'Payment', value: (r) => money(r.payment) },
+    { key: 'i', header: 'Interest', value: (r) => money(r.interest) },
+    { key: 'c', header: 'Principal', value: (r) => money(r.principal) },
+    { key: 'b', header: 'Balance', value: (r) => money(r.balance) },
+  ];
+
+  const csvColumns: CsvColumn<Row>[] = [
+    { header: 'Month', value: (r) => r.month },
+    { header: 'Payment', value: (r) => r.payment / 100 },
+    { header: 'Interest', value: (r) => r.interest / 100 },
+    { header: 'Principal', value: (r) => r.principal / 100 },
+    { header: 'Balance', value: (r) => r.balance / 100 },
+  ];
+
+  return (
+    <div class="space-y-8">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <fieldset class="border-line rounded-panel space-y-3 border p-4">
+          <legend class="engraved-fine text-ink-mute px-1">Your mortgage</legend>
+          <Field
+            label="Balance outstanding"
+            id="erc-b"
+            value={state.b}
+            step={1000}
+            prefix="£"
+            onChange={(v) => set('b', v)}
+          />
+          <Field
+            label="Interest rate"
+            id="erc-r"
+            value={state.r}
+            step={0.01}
+            suffix="%"
+            onChange={(v) => set('r', v)}
+          />
+          <Field
+            label="Years left on the mortgage"
+            id="erc-y"
+            value={state.y}
+            step={1}
+            onChange={(v) => set('y', v)}
+          />
+        </fieldset>
+
+        <fieldset class="border-line rounded-panel space-y-3 border p-4">
+          <legend class="engraved-fine text-ink-mute px-1">
+            Your deal, from your offer
+          </legend>
+          <Field
+            label="Months left on the fixed rate"
+            id="erc-f"
+            value={state.f}
+            step={1}
+            hint="After this the rate changes, so nothing beyond it is contractual."
+            onChange={(v) => set('f', v)}
+          />
+          <Field
+            label="Penalty-free overpayment allowance"
+            id="erc-a"
+            value={state.a}
+            step={1}
+            suffix="% a year"
+            onChange={(v) => set('a', v)}
+          />
+          <Field
+            label="Early repayment charge"
+            id="erc-e"
+            value={state.e}
+            step={0.1}
+            suffix="% of the excess"
+            onChange={(v) => set('e', v)}
+          />
+        </fieldset>
+      </div>
+
+      <div class="border-line-strong rounded-panel bg-sunken border p-4">
+        <Field
+          label="Overpayment you are considering"
+          id="erc-o"
+          value={state.o}
+          step={1000}
+          prefix="£"
+          onChange={(v) => set('o', v)}
+        />
+      </div>
+
+      {prose.privacy !== undefined && <div>{prose.privacy}</div>}
+
+      {error !== null && (
+        <p role="alert" class="border-caution text-ink rounded-panel border p-4">
+          {error}
+        </p>
+      )}
+
+      {result !== null && schedules !== null && (
+        <>
+          <Verdict
+            net={result.netOverFixedPeriod}
+            charge={result.charge}
+            saved={result.interestSavedOverFixedPeriod}
+            months={fixedPeriodMonths}
+          />
+
+          <section class="space-y-3">
+            <h3 class="engraved-fine text-ink-mute">What the charge comes to</h3>
+            <div class="overflow-x-auto">
+              <table class="numeric w-full text-sm">
+                <tbody>
+                  <Line
+                    label={`Penalty-free this year (${state.a}% of the balance)`}
+                    value={money(result.allowance)}
+                  />
+                  <Line
+                    label="Of your overpayment, free of charge"
+                    value={money(result.withinAllowance)}
+                  />
+                  <Line
+                    label="Above the allowance, and chargeable"
+                    value={money(result.chargeable)}
+                  />
+                  <Line
+                    label={`Early repayment charge (${state.e}% of that)`}
+                    value={money(result.charge)}
+                    strong
+                  />
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="grid gap-4 sm:grid-cols-2">
+            <Horizon
+              eyebrow="Contractual — no assumption"
+              title={`Over the ${plural(fixedPeriodMonths, 'month', 'months')} left on your fix`}
+              saved={result.interestSavedOverFixedPeriod}
+              charge={result.charge}
+              net={result.netOverFixedPeriod}
+              money={money}
+            />
+            <Horizon
+              eyebrow="Assumes this rate never changes"
+              title={`Over the whole ${plural(Math.round(state.y), 'year', 'years')} remaining`}
+              saved={result.interestSavedOverRemainingTerm}
+              charge={result.charge}
+              net={result.netOverRemainingTerm}
+              money={money}
+            />
+          </section>
+
+          <BreakEven
+            amount={result.breakEvenOverpayment}
+            money={money}
+            months={fixedPeriodMonths}
+          />
+
+          {prose.method !== undefined && <div>{prose.method}</div>}
+
+          <section class="space-y-3">
+            <h3 class="engraved-fine text-ink-mute">
+              Balance, with and without the overpayment
+            </h3>
+            <LineChart
+              ariaLabel="Balance remaining by month, with and without the overpayment"
+              height={240}
+              formatY={(v) => `£${Math.round(v / 100_000)}k`}
+              formatX={(i) => `${Math.round(i / 12)}y`}
+              series={[
+                {
+                  id: 'b',
+                  label: 'Contractual payments only',
+                  points: balanceSeries(schedules.baseline),
+                },
+                {
+                  id: 'o',
+                  label: 'With the overpayment',
+                  points: balanceSeries(schedules.overpaid),
+                },
+              ]}
+            />
+          </section>
+
+          <section class="space-y-3">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 class="engraved-fine text-ink-mute">
+                The schedule after overpaying —{' '}
+                {plural(schedules.overpaid.months, 'month', 'months')}
+              </h3>
+              <button
+                type="button"
+                class="rounded-control border-line-strong text-ink hover:bg-sunken border px-3 py-1.5 text-sm"
+                onClick={() =>
+                  downloadCsv('uk-overpayment-schedule.csv', toCsv(rows, csvColumns))
+                }
+              >
+                Download CSV
+              </button>
+            </div>
+            <ScheduleTable
+              rows={rows}
+              columns={columns}
+              caption="Month-by-month schedule after the overpayment: payment, interest, principal and remaining balance."
+            />
+          </section>
+
+          {prose.assumptions !== undefined && <div>{prose.assumptions}</div>}
+          {prose.terms !== undefined && <div>{prose.terms}</div>}
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The headline. Every directional word is read off the sign of the net rather
+ * than written by hand — D55's rule, and the reason this cannot say "ahead"
+ * while the arithmetic says otherwise.
+ */
+function Verdict({
+  net,
+  charge,
+  saved,
+  months,
+}: {
+  net: Minor;
+  charge: Minor;
+  saved: Minor;
+  months: number;
+}): JSX.Element {
+  const ahead = net >= 0;
+  return (
+    <div
+      class={`rounded-panel border p-4 ${ahead ? 'border-line-strong bg-surface' : 'border-caution bg-surface'}`}
+    >
+      <p class="engraved-fine text-ink-mute">
+        {ahead ? 'The saving covers the charge' : 'The charge outweighs the saving'}
+      </p>
+      <p class="text-ink numeric mt-2 text-2xl font-semibold sm:text-3xl">
+        {money(net >= 0 ? net : (Math.abs(net) as Minor))} {ahead ? 'ahead' : 'behind'}
+      </p>
+      <p class="text-ink-soft numeric mt-2 text-sm">
+        Within the {plural(months, 'month', 'months')} that are contractually fixed, the
+        overpayment removes {money(saved)} of interest and costs {money(charge)} in
+        charge.
+      </p>
+    </div>
+  );
+}
+
+function Horizon({
+  eyebrow,
+  title,
+  saved,
+  charge,
+  net,
+  money: fmt,
+}: {
+  eyebrow: string;
+  title: string;
+  saved: Minor;
+  charge: Minor;
+  net: Minor;
+  money: (a: Minor) => string;
+}): JSX.Element {
+  return (
+    <div class="border-line rounded-panel border p-4">
+      <p class="engraved-fine text-ink-mute">{eyebrow}</p>
+      <p class="text-ink mt-1 text-sm font-semibold">{title}</p>
+      <dl class="numeric mt-3 space-y-1 text-sm">
+        <Pair label="Interest removed" value={fmt(saved)} />
+        {/* Negated through Intl rather than prefixed with a literal minus: a
+            hand-written U+2212 sat one line above Intl's U+002D on the Net row,
+            two different minus glyphs in one money table. Found by reading it. */}
+        <Pair label="Charge" value={fmt(negate(charge))} />
+        <Pair label="Net" value={fmt(net)} strong />
+      </dl>
+    </div>
+  );
+}
+
+function BreakEven({
+  amount,
+  money: fmt,
+  months,
+}: {
+  amount: Minor | null;
+  money: (a: Minor) => string;
+  months: number;
+}): JSX.Element {
+  return (
+    <div class="border-line rounded-panel bg-sunken border p-4">
+      <p class="engraved-fine text-ink-mute">How far the charge can be outrun</p>
+      {amount === null ? (
+        <p class="text-ink-soft mt-2 text-sm">
+          On these figures the interest removed stays ahead of the charge for{' '}
+          <strong class="text-ink">any</strong> overpayment up to the whole balance. The
+          charge never overtakes, so there is no crossing point to quote.
+        </p>
+      ) : (
+        <p class="text-ink-soft numeric mt-2 text-sm">
+          Up to <strong class="text-ink">{fmt(amount)}</strong>, the interest removed
+          inside the fixed {plural(months, 'month', 'months')} still covers the charge.
+          Past that the charge is the larger number.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Line({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}): JSX.Element {
+  return (
+    <tr class="border-line border-b">
+      <td class="text-ink-soft py-2 pr-4">{label}</td>
+      <td
+        class={`py-2 text-right ${strong ? 'text-ink font-semibold' : 'text-ink-soft'}`}
+      >
+        {value}
+      </td>
+    </tr>
+  );
+}
+
+function Pair({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}): JSX.Element {
+  return (
+    <div class="flex items-baseline justify-between gap-3">
+      <dt class="text-ink-soft">{label}</dt>
+      <dd class={strong ? 'text-ink font-semibold' : 'text-ink-soft'}>{value}</dd>
+    </div>
+  );
+}
+
+interface FieldProps {
+  label: string;
+  id: string;
+  value: number;
+  step: number;
+  onChange: (value: number) => void;
+  prefix?: string;
+  suffix?: string;
+  hint?: string;
+}
+
+function Field({
+  label,
+  id,
+  value,
+  step,
+  onChange,
+  prefix,
+  suffix,
+  hint,
+}: FieldProps): JSX.Element {
+  const hintId = hint === undefined ? undefined : `${id}-hint`;
+  return (
+    <div>
+      <label for={id} class="text-ink block text-sm font-medium">
+        {label}
+      </label>
+      {hint !== undefined && (
+        <p id={hintId} class="text-ink-mute mt-0.5 text-xs">
+          {hint}
+        </p>
+      )}
+      <div class="mt-1 flex items-center gap-1.5">
+        {prefix !== undefined && <span class="text-ink-mute text-sm">{prefix}</span>}
+        <input
+          id={id}
+          type="number"
+          inputmode="decimal"
+          min={0}
+          step={step}
+          value={value}
+          aria-describedby={hintId}
+          onInput={(e) => onChange(Number((e.target as HTMLInputElement).value) || 0)}
+          class="numeric rounded-control border-line-strong bg-surface w-full border px-3 py-2 text-right"
+        />
+        {suffix !== undefined && <span class="text-ink-mute text-sm">{suffix}</span>}
+      </div>
+    </div>
+  );
+}

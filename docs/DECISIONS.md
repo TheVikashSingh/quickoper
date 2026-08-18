@@ -1900,6 +1900,88 @@ and all thirty-three checks would still pass. The single thing standing between
 this site and a consistent, confident, undetectable error is one retrieved figure
 from one competitor, dated 2026-08-08, now supporting four published pages.
 
+### D64 — Tool 4 is the first jurisdiction variant, and `contracts.ts` finally exists
+
+`/finance/uk-early-repayment-charge-calculator`. The first tool built for a
+country rather than a convention, and the first thing that made rule 13's
+architecture necessary instead of theoretical.
+
+**Why it clears rule 13 where a currency switcher did not.** A UK fixed deal
+allows a percentage of the balance to be repaid each year without penalty and
+charges a percentage of the excess. A US fixed-rate note has no such term. That
+is a different *rule*, not a different word — which is exactly the distinction
+rule 13 draws, and exactly why the earlier proposal to put a **£** on the US
+engine was rejected: it would have changed the symbol and nothing else, on an
+engine whose header says UK early repayment charges are not modelled.
+
+**`src/lib/calc/contracts.ts` was specified in rule 13 from the first commit and
+had never been written.** It exists now, and deliberately does very little: it
+carries the presentation facts a jurisdiction fixes — id, label, currency, locale
+— so no caller ever branches on a country to format a figure. It does **not** try
+to abstract "a mortgage" across countries. That abstraction would be wrong for
+D6's reason: the same word meaning different things is how a compounding
+convention gets silently misapplied. The island reads `JURISDICTION.currency`
+off the engine, so there is no `switch (country)` and no hardcoded `£`.
+
+**Both contractual figures are inputs, and that is a deliberate cost.** The
+allowance and the charge vary by lender, by product and often by year of the
+deal, so any number filled in would be wrong for most readers and uncheckable by
+all of them. It makes the tool slower to use than a competitor that guesses. The
+regulator supports the choice: **MCOB 12.3.1R** requires a charge to be *"able to
+be expressed as a cash value"* and *"a reasonable pre-estimate of the costs"* —
+it is a stated number on the borrower's offer, not something to estimate. Read
+at handbook.fca.org.uk on 2026-08-18, quoted rather than paraphrased (D56).
+
+**The two horizons are the honest heart of it.** A UK deal is fixed for a few
+years and then reverts to a rate nobody can know, so a saving quoted over a
+25-year remaining term is a forecast wearing a schedule's clothes. The tool
+reports the interest removed *within the contractually fixed months* — which
+rests on no assumption at all — separately from the whole-term figure, which is
+labelled as assuming a rate that expires. Collapsing them into one number is
+what every competitor does and it is the thing this tool exists not to do.
+
+**The finding, which is not what the charge's prominence suggests.** On an
+illustrative £250,000 at 4.5% with 36 months still fixed, a £450 charge is
+outrun by **£5,598.91** of interest removed inside the fixed period alone. The
+comparison reverses on the two things borrowers rarely check — the rate, and how
+long is left — not on the charge percentage they fixate on. At 1.5% with six
+months left and a 5% charge, the same overpayment runs **£936.71 behind**, with
+the crossing point at **£28,581.69**. The rule of thumb the arithmetic produces:
+a charge is a one-off percentage, the saving is the rate working over the months
+still fixed.
+
+**The break-even is bisected, not solved.** D61 rejected a closed form because a
+schedule that rounds every period has no clean algebraic answer; the same applies
+here, so the crossing point is found by bisection on whole pence. Its fixture is
+**self-verifying**: it asserts the net is non-negative *at* £28,581.69 and
+negative *one penny past it*. Asserting the number alone would prove nothing
+about the search that produced it. It returns `null` — never a misleading finite
+number — whenever the saving stays ahead all the way to the full balance, which
+at ordinary rates is the common case.
+
+**The byte cost was measured before the UI was written, and it landed on another
+page.** A fifth island pulls `mortgage.ts` out of the mortgage calculator's own
+chunk and into a shared one, so that page moved **16.32 → 16.70 KB with its own
+code untouched** — D23's phenomenon again, and the third time splitting across
+island boundaries has cost rather than saved. Affordable because it had 3.18 KB
+spare; the binding page, debt payoff at 0.99 KB, does not import `mortgage.ts`
+and is unchanged at 18.51. The new page sits at **17.43 KB**. Had the binding
+page moved, the tool would have needed rethinking rather than the budget raising
+(rule 9).
+
+**Two things found by reading the rendered page, as usual.** The charge row
+rendered `− £1,250.00` with a hand-written U+2212 one line above Intl's U+002D
+on the net row — two different minus glyphs in one money table. It is negated
+through Intl now, so a single glyph is used throughout. And the mobile pass
+confirmed the first input sits at 629px of an 830px viewport, above the fold on
+a 375px screen, which is the constraint D34 fought for.
+
+**Not fixed, and stated rather than left implied:** the theme toggle is 31px and
+the schedule buttons 37px on a phone. Both clear WCAG 2.2 SC 2.5.8 (AA, 24×24)
+and miss SC 2.5.5 (AAA, 44×44). They are identical on all four calculators, so
+raising them on this page alone would make it the odd one out — it is a
+site-wide change or none.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

@@ -28,8 +28,8 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 20 (19 substantive — `/404` is not) |
-| Working calculators | 3 |
+| Pages built | 21 (20 substantive — `/404` is not) |
+| Working calculators | 4 |
 | Tests | 167 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · deploy config |
 | Worst-page JS | 18.51 KB of 19.5 KB (0.99 KB spare) |
@@ -168,7 +168,7 @@ Nothing in code depends on these, but launch does.
 
 ## Next
 
-**The content threshold is met.** The build produces 20 pages, of which 19 are
+**The content threshold is met.** The build produces 21 pages, of which 20 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -221,7 +221,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **19** — none to go |
+| 15+ substantive pages | **20** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |
@@ -300,8 +300,8 @@ downstream, and that clock does not start until the domain resolves.
 Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
 file. That is the whole context; the git history and PR bodies carry the detail.
 
-**Where the project actually is.** Feature-complete for v1 content: three
-calculators, eight derivation pages, five trust pages, 19 substantive pages, 176
+**Where the project actually is.** Feature-complete for v1 content: four
+calculators, eight derivation pages, five trust pages, 20 substantive pages, 193
 tests, ten CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.

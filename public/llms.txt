@@ -56,6 +56,43 @@ Not modelled: escrow, PMI, fees, prepayment penalties, adjustable rates.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/verify
 
+### UK early repayment charge calculator
+URL: https://quickoper.com/finance/uk-early-repayment-charge-calculator
+Computes: what a UK early repayment charge costs against the interest an
+overpayment removes, reported on two separate horizons — the months the rate is
+contractually fixed, and the whole remaining term.
+Inputs: outstanding balance, interest rate, years left, months left on the fixed
+rate, annual penalty-free overpayment allowance (%), early repayment charge (%),
+and the overpayment being considered.
+Jurisdiction: United Kingdom. A UK fixed deal allows a percentage of the balance
+to be repaid each year without penalty and charges a percentage of the excess —
+a different contractual rule from a US fixed-rate note, which is why it is a
+separate tool rather than a currency switch.
+No lender's terms are assumed. The allowance and the charge are both INPUTS,
+because they vary by lender, product and year of the deal. FCA MCOB 12.3.1R
+requires an early repayment charge to be "able to be expressed as a cash value"
+and "a reasonable pre-estimate of the costs", so the figure is stated on the
+borrower's own offer.
+Key figures, on an illustrative £250,000 at 4.5% with 25 years left, 36 months
+still fixed, a 10% allowance and a 3% charge, overpaying £40,000:
+  - Penalty-free allowance £25,000, so £15,000 is chargeable and the charge is
+    £450.00.
+  - Interest removed WITHIN the 36 contractually fixed months: £5,598.91. Net of
+    the charge, £5,148.91 ahead. This figure rests on no assumption.
+  - Interest removed over the whole 25 years IF the rate never changed:
+    £66,028.22, and 76 months off the schedule. That horizon assumes a rate that
+    expires in 36 months and is labelled as such.
+  - The comparison reverses on the two things borrowers rarely check. At 1.5%
+    with 6 months of the deal left and a 5% charge, overpaying £50,000 costs
+    £1,250.00 and removes only £313.29 inside the fixed period — £936.71 behind,
+    with the crossing point at £28,581.69.
+  - Rule of thumb the arithmetic produces: a charge is a one-off percentage,
+    while the saving is the rate working over the months still fixed. So compare
+    the charge percentage against the rate multiplied by the years left on the
+    deal.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
 ## Derivations
 
 ### How long minimum payments take, and when they never finish
