@@ -2180,6 +2180,76 @@ this has been looked at in use. Doing all of them at once would have put the
 shared chunk on the binding page, which is precisely the measurement that came
 back clean only because it was avoided.
 
+### D68 — Three calculators got dates. Debt payoff could not, and the number said so
+
+D67 put calendar months on the mortgage schedule and left the other three to be
+decided on measurement. Measured: **two of the three, and debt payoff is
+excluded.**
+
+| Page | Before | After |
+|---|---|---|
+| UK early repayment charge | 17.80 KB | **18.68 KB** (0.82 spare) |
+| Coast FIRE | 16.62 KB | **17.28 KB** (2.22 spare) |
+| Mortgage overpayment | 17.40 KB | **17.58 KB** (shared-chunk cost) |
+| **Debt payoff** | 18.51 KB | **18.51 KB — not changed** |
+
+**Debt payoff was wired, measured at 19.37 KB, and reverted.** That is 0.13 KB
+of headroom against 19.5. It *passes* the gate, which is exactly why it needed a
+judgement rather than a green tick: D34 called 0.01 KB headroom "untenable" and
+moved the budget rather than live with it, and shipping at 0.13 would leave the
+next person to touch that island with a build that fails for reasons they did
+not cause.
+
+**Every escape route was checked before concluding, and each one closed:**
+
+**`client:visible` does not apply to this metric.** D10 names it as "the honest
+fix" for budget pressure. It is not, for this gate: `check-js-budget.mjs` follows
+each page's entry points and walks **static imports transitively**, and a
+`client:visible` island still declares its `component-url` in the HTML. The bytes
+are deferred at runtime and counted all the same. Worth recording because D10's
+advice reads as available and is not — the real-world load improves, the number
+does not move.
+
+**D28's prose extraction is exhausted on that island.** Scanned for static
+sentences still living in `DebtPayoffCalculator`'s JSX: **245 characters across 7
+strings**, and most are structural labels — "Download spreadsheet (CSV)", "Name
+on the report (optional)" — not prose. Extracting them would yield a rounding
+error and make the component worse.
+
+**Raising the budget is refused by the tooling itself.** `check-js-budget.mjs`
+prints, on failure: *"Do not raise the budget. Find what got added and remove
+it."* Rule 9's own framing is that needing a raise is evidence the change is
+wrong. On 0.13 KB of headroom for a convenience column, the change is wrong.
+
+**Where the bytes actually are**, since it was measured anyway:
+`DebtPayoffCalculator.js` is **4.55 KB — the largest chunk on the site**, ahead
+of preact itself at 4.31. `dates.js` is only **0.59 KB**, but it is unavoidable
+once a second island imports it, because Rollup promotes it to a shared chunk.
+That promotion is what moved the mortgage page 17.40 → 17.58 with its own code
+untouched — D23's phenomenon for the fourth time.
+
+**Coast FIRE got a year, not a month, and no new input.** Its schedule is indexed
+by **age**, not by month, and `s` is already taken there by annual spending. The
+calendar year is therefore *derived*: `currentYear + (age − currentAge)`. No
+second input to justify, no param collision, and the reader has already supplied
+everything it needs. Verified that changing the age re-derives correctly — age 45
+still maps to the current year, not to a frozen offset.
+
+**The UK tool renders "Sept 2026" where the US ones render "Sep 2026"**, because
+`formatYearMonth` is given `JURISDICTION.locale`. That is the rule 13 contract
+from D64 doing real work rather than sitting in a type — the date format follows
+the jurisdiction without anything branching on a country.
+
+**Backward compatibility re-verified on both.** A link carrying only the
+financial params restores all of them and falls back to the current month, which
+is the whole reason D67 kept the anchor outside the wholesale spec.
+
+**What would make debt payoff possible later**, recorded so it is not
+rediscovered: the island is 4.55 KB and is the only one still carrying its full
+input list, debt rows and results in one component. Splitting the debt-row editor
+into its own module would not help the total. What would help is the thing
+nothing has tried — reducing what that island renders, not where it hydrates.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

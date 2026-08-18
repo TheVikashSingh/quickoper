@@ -25,6 +25,7 @@ import {
 import { absolute, format, fromMajor, toMajor, type Minor } from '../../lib/calc/money';
 import { downloadCsv, toCsv, type CsvColumn } from '../../lib/csv';
 import { encodeParams, parseParams, type ParamSpec } from '../../lib/params';
+import { currentYearMonth } from '../../lib/dates';
 import { useUrlState } from '../../lib/url-state';
 import { LineChart } from '../chart/LineChart';
 import { ScheduleTable, type Column } from '../ui/ScheduleTable';
@@ -274,8 +275,20 @@ function Results({
 }): JSX.Element {
   const years = Math.round(state.r) - Math.round(state.a);
 
+  /**
+   * The calendar year each row falls in, DERIVED from age rather than asked for.
+   *
+   * Coast FIRE is a year-by-year projection indexed by age, so there is no
+   * monthly schedule to anchor and no second input to justify — the reader has
+   * already given their current age. Read from the clock in the browser, never
+   * at build time, or a static page would bake in the year it deployed (D67).
+   */
+  const baseYear = Math.floor(currentYearMonth() / 100);
+  const yearFor = (age: number) => baseYear + (age - Math.round(state.a));
+
   const columns: Column<Row>[] = [
     { key: 'age', header: 'Age', value: (r) => String(r.age) },
+    { key: 'yr', header: 'Year', value: (r) => String(yearFor(r.age)) },
     { key: 'bal', header: 'Projected', value: (r) => format(r.balance, CURRENCY) },
     { key: 'tgt', header: 'Coast target', value: (r) => format(r.coastTarget, CURRENCY) },
     {
@@ -288,6 +301,7 @@ function Results({
 
   const csvColumns: CsvColumn<Row>[] = [
     { header: 'Age', value: (r) => r.age },
+    { header: 'Year', value: (r) => yearFor(r.age) },
     { header: 'Projected balance', value: (r) => toMajor(r.balance) },
     { header: 'Coast target', value: (r) => toMajor(r.coastTarget) },
     { header: 'Coasting', value: (r) => (r.coasting ? 'yes' : 'no') },

@@ -20,14 +20,23 @@
  * the client pass does not, so a hyphenated slot hydrates to undefined.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 
 import { JURISDICTION, UkErcError, calculateUkErc } from '../../lib/calc/uk-erc';
 import { balanceSeries, compareLumpSum } from '../../lib/calc/mortgage';
 import { ZERO, format, fromMajor, negate, type Minor } from '../../lib/calc/money';
 import { downloadCsv, toCsv, type CsvColumn } from '../../lib/csv';
-import { encodeParams, parseParams, type ParamSpec } from '../../lib/params';
+import { encodeParams, parseNumber, parseParams, type ParamSpec } from '../../lib/params';
+import {
+  MAX_YEAR_MONTH,
+  MIN_YEAR_MONTH,
+  addMonths,
+  currentYearMonth,
+  formatYearMonth,
+  parseYearMonth,
+  toInputValue,
+} from '../../lib/dates';
 import { useUrlState } from '../../lib/url-state';
 import { LineChart } from '../chart/LineChart';
 import { ScheduleTable, type Column } from '../ui/ScheduleTable';
@@ -67,11 +76,30 @@ const plural = (n: number, one: string, many: string): string =>
   `${n} ${n === 1 ? one : many}`;
 
 export function UkErcCalculator(prose: Prose): JSX.Element {
+  /** Read through a ref so a shared link carries the anchor too (D67). */
+  const startRef = useRef(0);
+
   const [state, setState] = useUrlState<State>({
     decode: (search) => parseParams(PARAMS, search),
-    encode: (value) => encodeParams(value),
+    encode: (value) => encodeParams({ ...value, s: startRef.current }),
     initial: parseParams(PARAMS, ''),
   });
+
+  /**
+   * Deliberately outside the PARAMS spec: parseParams resets the WHOLE scenario
+   * when a field is missing, so a required anchor would blank every permalink
+   * already shared (D67). Read from the clock in the browser, never at build.
+   */
+  const [startMonth, setStartMonth] = useState<number>(() => currentYearMonth());
+  startRef.current = startMonth;
+  useEffect(() => {
+    const fromUrl = parseNumber(new URLSearchParams(window.location.search).get('s'), {
+      min: MIN_YEAR_MONTH,
+      max: MAX_YEAR_MONTH,
+      fallback: 0,
+    });
+    if (fromUrl !== null) setStartMonth(fromUrl);
+  }, []);
 
   /**
    * The PDF export is the browser's own print pipeline (D11). No library: jsPDF
@@ -161,6 +189,11 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
 
   const columns: Column<Row>[] = [
     { key: 'm', header: 'Month', value: (r) => String(r.month) },
+    {
+      key: 'd',
+      header: 'Due',
+      value: (r) => formatYearMonth(addMonths(startMonth, r.month), JURISDICTION.locale),
+    },
     { key: 'p', header: 'Payment', value: (r) => money(r.payment) },
     { key: 'i', header: 'Interest', value: (r) => money(r.interest) },
     { key: 'c', header: 'Principal', value: (r) => money(r.principal) },
@@ -169,6 +202,10 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
 
   const csvColumns: CsvColumn<Row>[] = [
     { header: 'Month', value: (r) => r.month },
+    {
+      header: 'Due',
+      value: (r) => formatYearMonth(addMonths(startMonth, r.month), JURISDICTION.locale),
+    },
     { header: 'Payment', value: (r) => r.payment / 100 },
     { header: 'Interest', value: (r) => r.interest / 100 },
     { header: 'Principal', value: (r) => r.principal / 100 },
@@ -248,7 +285,7 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
         </fieldset>
       </div>
 
-      <div class="border-line-strong rounded-panel bg-sunken border p-4">
+      <div class="border-line-strong rounded-panel bg-sunken grid gap-3 border p-4 sm:grid-cols-2">
         <Field
           label="Overpayment you are considering"
           id="erc-o"
@@ -257,6 +294,30 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
           prefix="£"
           onChange={(v) => set('o', v)}
         />
+        <div>
+          <label for="erc-s" class="text-ink block text-sm font-medium">
+            First payment
+          </label>
+          <p id="erc-s-hint" class="text-ink-mute mt-0.5 text-xs">
+            Month and year only — the schedule shows months, not days.
+          </p>
+          <input
+            id="erc-s"
+            type="month"
+            value={toInputValue(startMonth)}
+            min={toInputValue(MIN_YEAR_MONTH)}
+            max={toInputValue(MAX_YEAR_MONTH)}
+            aria-describedby="erc-s-hint"
+            onInput={(e) => {
+              const parsed = parseYearMonth((e.target as HTMLInputElement).value);
+              if (parsed === null) return;
+              setStartMonth(parsed);
+              startRef.current = parsed;
+              setState({ ...state });
+            }}
+            class="numeric rounded-control border-line-strong bg-surface mt-1 w-full border px-3 py-2"
+          />
+        </div>
       </div>
 
       {prose.privacy !== undefined && <div>{prose.privacy}</div>}

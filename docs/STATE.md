@@ -176,16 +176,15 @@ affiliate plumbing and the share image. What is left is mostly waiting.
 
 1. ~~**Launch.**~~ Done. ~~**Affiliate plumbing.**~~ Done (D52).
    ~~**`public/og.png`.**~~ Done (D51).
-2. **Export Search Console data** once there is any, to `.gsc/` (gitignored),
-   and tell the next session. **This is the first point in the project where
-   keyword decisions stop being guesswork.** Every topic so far was chosen by
-   what is provable from first principles (D2), not by what anybody searches —
-   defensible, but not the same thing as targeting. Queries at position 8–20 are
-   where a content edit realistically moves the needle.
-3. **AdSense application**, once indexed with impressions registering. Seven of
-   the plan's eight pre-application criteria are met; the outstanding one is
-   impressions, which is time rather than work. `ads.txt` waits on a publisher
-   ID that does not exist yet.
+2. ~~**Search Console data.**~~ It exists. Read the figures in "Where the
+   project actually is" above — they are recorded there because Search Console
+   does not keep them and nothing else can re-derive them. **Keep appending to
+   that table each time it is read.** Two clusters now show impressions; that is
+   a signal about direction, not yet a content plan.
+3. **AdSense application.** Every criterion is now met, including the last one —
+   indexed with impressions registering. **The operator has deliberately
+   deferred applying** until there is more traffic. Recorded as a decision, not
+   an outstanding task. `ads.txt` waits on a publisher ID that does not exist yet.
 4. **Contrast checking in CI.** PR #9 shipped a real 4.15:1 regression, and D29,
    D30, D33, D50 and D54 each measured by hand again — six defects that every
    gate passed. Needs Playwright and a headless run, and it **must** resolve
@@ -323,15 +322,39 @@ discovered), the Vercel account is retired, the `workers.dev` route is off, and
 `docs/VERIFICATION.md` and the AdSense application, which the operator has
 deliberately deferred until there is more traffic. Neither is code.
 
-**Search Console data now exists, and it is thin.** Six days in: 60 impressions,
-0 clicks, average position 66.9, and **every impression from one page**
-(D60). Five pages are indexed of seventeen. Every topic on this site was chosen
-by what is provable from first principles (D2), never by what anyone searches;
-that is defensible and it is not targeting. Queries landing at position 8–20 are
-where a content edit actually moves something, and nothing here is close to that
-band yet. The clock started on 2026-08-11.
+**Search Console data now exists, and it is thin.** Search Console does not keep
+this for ever and it cannot be re-derived, so it is recorded here as it is read.
+
+*Six days in (2026-08-17, D60):* 60 impressions over 7 days, 0 clicks, average
+position 66.9, **every impression from one page** — the mortgage overpayment
+calculator. Five pages indexed of seventeen.
+
+*Seven days in (2026-08-18, last 24 hours):*
+
+| Page | Clicks | Impressions |
+|---|---|---|
+| `/finance/mortgage-overpayment-calculator` | 0 | **25** |
+| `/credit-card-interest` | 0 | **17** |
+
+Top queries, all 8 of them: `overpayment mortgage calculator` (8),
+`mortgage overpayment calculator` (6), then single impressions on
+`mortgage overpayment cal`, `mortgage over payment calculator`,
+`how to calculate credit card interest`,
+`how to calculate daily interest rate on credit card`, `mortgage over`.
+
+**What changed, and it is the only real signal so far: a second cluster started
+ranking.** D60 recorded one page producing 100% of impressions. That is no longer
+true — `/credit-card-interest` is now within a third of the mortgage page and
+picking up queries of its own. It is a *derivation* page, not a calculator, which
+is worth remembering when choosing what to build next. The daily-rate query was
+checked against the page and lands correctly: `/credit-card-interest` already
+covers the daily periodic rate and the average daily balance method.
+
+**Still 0 clicks, and that is expected.** At position ~67 almost nobody scrolls
+far enough. Nothing is wrong; the domain is a week old.
 
 **The one honest caveat to carry forward.** Every topic on this site was chosen by
 what can be proved from first principles, not by search demand. That is
-defensible and it is not the same as keyword targeting. Until Search Console data
-exists, any claim about what will rank is inference.
+defensible and it is not the same as keyword targeting. Two clusters showing
+impressions is a signal about *direction*, not yet evidence for a content plan —
+40-odd impressions a day is still a rumour.
