@@ -2097,6 +2097,89 @@ had to stop being the one calculator that never asked.
 **Cost: 0.37KB** on this page (17.43 → 17.80, 1.70 spare). Recorded rather than
 waved through, because that is budget being spent on something.
 
+### D67 — Calendar months on the schedule, and the budget did not have to move
+
+"Month 224" makes a reader do arithmetic before they can feel anything. "Apr
+2045" is the answer they came with. The mortgage schedule now carries a **Due**
+column and the term stat reads *last payment Dec 2049*, anchored to a first
+payment month the reader can set.
+
+**The budget was measured before any UI was written, and it held.**
+
+| | Before | After |
+|---|---|---|
+| mortgage-overpayment | 16.70 KB | **17.40 KB** (+0.70, 2.10 spare) |
+| **debt-payoff (binding page)** | 18.51 KB | **18.51 KB — unchanged** |
+
+`lib/dates.ts` is imported by one island, so it lands in that island's chunk
+rather than the shared one and the constrained page never sees it. **No budget
+raise, and no `client:visible` split.** Both were on the table and neither was
+needed — which is the order rule 9 asks for: exhaust the structural options, and
+only then discuss the number. The `client:visible` option D10 names is still
+unused and still available for whatever needs it next.
+
+**Dates are not in `calc/`, and must never be.** Rule 1 requires pure functions
+with fixture tests; a function that reads the clock is neither, and its fixtures
+would fail the following morning. The engines still return month indices. The
+clock is read in the island, and `currentYearMonth(now = new Date())` takes the
+date as a parameter so that even the one function which touches it is testable.
+`calc/` remains entirely `Date`-free.
+
+**Months are integers, not `Date` objects, and that removes two bugs rather than
+handling them.** A month is `YYYYMM` — August 2026 is `202608` — advanced by
+integer arithmetic:
+
+- **Month-end.** `new Date(2026, 0, 31)` plus one month is 3 March, not 28
+  February, because JavaScript overflows instead of clamping. A schedule
+  starting on the 31st would skip a month about seven times a year.
+- **DST.** Adding months in local time crosses daylight-saving boundaries and
+  can land an hour earlier, flipping the day at midnight.
+
+Neither is possible against an integer. There is no day component at all, which
+is also why the input asks only for month and year: a schedule anchored to "March
+2045" is exactly as useful as one anchored to "14 March 2045", and the day would
+be a precision we have not got. Formatting goes through `Date.UTC` and a UTC
+formatter, because a local-time midnight on the 1st is the *previous month*
+everywhere in the Americas — that alone would have shifted every row.
+
+**Row 1 is the month AFTER the anchor**, because a payment is made at the end of
+a period, not the start. Getting that backwards would shift all 280 rows by a
+month while looking entirely plausible.
+
+**The anchor is deliberately outside the `PARAMS` spec, and this was the sharpest
+finding.** `parseParams` falls back **wholesale** — one missing field resets every
+other one — which is right for financial inputs and would have been a real defect
+here. Adding a required `s` would have meant **every permalink already shared
+silently resetting to the default scenario**: a link carrying someone's actual
+mortgage would quietly show $320,000 at 6.706% instead. Verified by loading
+`?p=250000&r=5.5&y=25&o=300` with no date param — all four values restore intact
+and the date falls back to the current month.
+
+An absent date is not half a scenario; it is an unset display preference, so it
+is read on its own with `parseNumber` and defaults to now. A malformed one
+(`s=999999`) falls back to the current month with the financial inputs untouched
+and is not echoed back.
+
+**And it does reach the URL**, through a ref that `encode` reads, because a
+shared link carrying the figures but not the anchor would show the recipient the
+same money against a *different payoff month* — the one inconsistency a permalink
+must not have.
+
+**On the live clock that was also proposed, and declined.** A widget showing the
+current date and time was considered and rejected: it computes nothing, it
+duplicates something every device already shows in its own corner more accurately,
+it needs a `setInterval` re-rendering an island that is memoised specifically to
+avoid that, and it is a dashboard ornament on a site whose identity is a ledger
+(D3, D29). The temporal grounding it was reaching for is what the anchor month
+and the payoff date actually deliver, tied to the reader's own mortgage rather
+than to a wall clock. The print masthead already stamps the date where a date
+genuinely belongs — on a document that will outlive the tab.
+
+**Applied to one calculator, not four.** The other three keep month indices until
+this has been looked at in use. Doing all of them at once would have put the
+shared chunk on the binding page, which is precisely the measurement that came
+back clean only because it was avoided.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

@@ -5,15 +5,15 @@
  * renders results; it never computes (CLAUDE.md rule 1).
  *
  * PRIVACY: every figure is worked out in this browser. Nothing is transmitted
- * and nothing is written to storage. The shareable link carries the four
- * figures so a scenario can be reopened — no name, no identifier.
+ * and nothing is written to storage. The shareable link carries the figures and
+ * the anchor month so a scenario can be reopened — no name, no identifier.
  *
  * Static prose arrives from the .astro page as named slots (D28). Slot names
  * must be single words: the @astrojs/preact server pass camel-cases them and
  * the client pass does not, so a hyphenated slot hydrates to undefined.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 
 import {
@@ -23,7 +23,16 @@ import {
 } from '../../lib/calc/mortgage';
 import { format, fromMajor, toMajor, type Minor } from '../../lib/calc/money';
 import { downloadCsv, toCsv, type CsvColumn } from '../../lib/csv';
-import { encodeParams, parseParams, type ParamSpec } from '../../lib/params';
+import { encodeParams, parseNumber, parseParams, type ParamSpec } from '../../lib/params';
+import {
+  MAX_YEAR_MONTH,
+  MIN_YEAR_MONTH,
+  addMonths,
+  currentYearMonth,
+  formatYearMonth,
+  parseYearMonth,
+  toInputValue,
+} from '../../lib/dates';
 import { useUrlState } from '../../lib/url-state';
 import { LineChart } from '../chart/LineChart';
 import { ScheduleTable, type Column } from '../ui/ScheduleTable';
@@ -64,11 +73,44 @@ export interface Prose {
 }
 
 export function MortgageCalculator(prose: Prose): JSX.Element {
+  /**
+   * Read through a ref so `encode` always sees the current anchor month without
+   * the financial state having to re-subscribe. Without this a shared link
+   * would carry the figures but not the date, and the recipient would see the
+   * same money against a different payoff month — the one inconsistency a
+   * permalink must not have.
+   */
+  const startRef = useRef(0);
+
   const [state, setState] = useUrlState<State>({
     decode: (search) => parseParams(PARAMS, search),
-    encode: (value) => encodeParams(value),
+    encode: (value) => encodeParams({ ...value, s: startRef.current }),
     initial: parseParams(PARAMS, ''),
   });
+
+  /**
+   * The month the schedule is anchored to, as YYYYMM.
+   *
+   * DELIBERATELY OUTSIDE the PARAMS spec. parseParams falls back WHOLESALE —
+   * one missing field resets every other one — which is right for the financial
+   * inputs and wrong here: adding a required 's' would silently reset every
+   * permalink already shared to the default scenario. An absent date is not
+   * half a scenario, it is an unset display preference, so it is read on its
+   * own and defaults to the current month.
+   *
+   * Read from the clock in the BROWSER, never at build time. A date baked into
+   * static HTML is correct on the day it deploys and wrong every day after.
+   */
+  const [startMonth, setStartMonth] = useState<number>(() => currentYearMonth());
+  startRef.current = startMonth;
+  useEffect(() => {
+    const fromUrl = parseNumber(new URLSearchParams(window.location.search).get('s'), {
+      min: MIN_YEAR_MONTH,
+      max: MAX_YEAR_MONTH,
+      fallback: 0,
+    });
+    if (fromUrl !== null) setStartMonth(fromUrl);
+  }, []);
 
   // Never in the URL and never persisted — a name in a shared link identifies
   // whoever shared it. It exists only to title the printed document (D22).
@@ -164,6 +206,34 @@ export function MortgageCalculator(prose: Prose): JSX.Element {
             step={1}
             onChange={(v) => set('y', v)}
           />
+          <div>
+            <label for="s" class="text-ink block text-sm font-medium">
+              First payment
+            </label>
+            <p id="s-hint" class="text-ink-mute mt-0.5 text-xs">
+              Month and year only — the schedule shows months, not days.
+            </p>
+            <input
+              id="s"
+              type="month"
+              value={toInputValue(startMonth)}
+              min={toInputValue(MIN_YEAR_MONTH)}
+              max={toInputValue(MAX_YEAR_MONTH)}
+              aria-describedby="s-hint"
+              onInput={(e) => {
+                const parsed = parseYearMonth((e.target as HTMLInputElement).value);
+                if (parsed === null) return;
+                setStartMonth(parsed);
+                startRef.current = parsed;
+                // Re-emit the financial state so useUrlState's debounced write
+                // runs and picks the new anchor up off the ref. Without this the
+                // date would only reach the URL the next time a money field
+                // changed, which is a permalink that is right by accident.
+                setState({ ...state });
+              }}
+              class="numeric rounded-control border-line-strong bg-surface mt-1 w-full border px-3 py-2"
+            />
+          </div>
         </div>
       </section>
 
@@ -197,6 +267,7 @@ export function MortgageCalculator(prose: Prose): JSX.Element {
             comparison={outcome.result}
             overpayment={state.o}
             rate={state.r}
+            startMonth={startMonth}
             name={preparedFor}
             onName={setPreparedFor}
             prose={prose}
@@ -214,6 +285,8 @@ interface ResultsProps {
   overpayment: number;
   /** Shown in the worked example, so the reader can follow the arithmetic. */
   rate: number;
+  /** YYYYMM the schedule is anchored to. Row 1 is the month AFTER it. */
+  startMonth: number;
   name: string;
   onName: (value: string) => void;
   prose: Prose;
@@ -223,6 +296,7 @@ function Results({
   comparison,
   overpayment,
   rate,
+  startMonth,
   name,
   onName,
   prose,
@@ -241,6 +315,11 @@ function Results({
 
   const columns: Column<Row>[] = [
     { key: 'm', header: 'Month', value: (r) => String(r.month) },
+    {
+      key: 'd',
+      header: 'Due',
+      value: (r) => formatYearMonth(addMonths(startMonth, r.month)),
+    },
     { key: 'p', header: 'Payment', value: (r) => format(r.payment, CURRENCY) },
     { key: 'i', header: 'Interest', value: (r) => format(r.interest, CURRENCY) },
     { key: 'c', header: 'Principal', value: (r) => format(r.principal, CURRENCY) },
@@ -249,6 +328,7 @@ function Results({
 
   const csvColumns: CsvColumn<Row>[] = [
     { header: 'Month', value: (r) => r.month },
+    { header: 'Due', value: (r) => formatYearMonth(addMonths(startMonth, r.month)) },
     { header: 'Payment', value: (r) => toMajor(r.payment) },
     { header: 'Interest', value: (r) => toMajor(r.interest) },
     { header: 'Principal', value: (r) => toMajor(r.principal) },
@@ -273,7 +353,7 @@ function Results({
         <Stat
           label={overpayment > 0 ? 'Paid off in' : 'Term'}
           value={`${years}y ${months}m`}
-          note={`${shown.months} payments`}
+          note={`last payment ${formatYearMonth(addMonths(startMonth, shown.months))}`}
         />
         <Stat
           label="Interest over the term"
