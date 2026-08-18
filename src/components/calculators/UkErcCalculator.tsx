@@ -20,7 +20,7 @@
  * the client pass does not, so a hyphenated slot hydrates to undefined.
  */
 
-import { useCallback, useMemo } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 
 import { JURISDICTION, UkErcError, calculateUkErc } from '../../lib/calc/uk-erc';
@@ -72,6 +72,33 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
     encode: (value) => encodeParams(value),
     initial: parseParams(PARAMS, ''),
   });
+
+  /**
+   * The PDF export is the browser's own print pipeline (D11). No library: jsPDF
+   * is ~90KB gzipped against a 19.5KB budget, and the print route is the better
+   * document anyway — selectable text, real typography, and the chart printed as
+   * vector rather than a raster.
+   *
+   * Two things need JavaScript rather than CSS. Collapsed schedule rows are not
+   * in the DOM, so `beforeprint` expands them; and the masthead needs the live
+   * URL so a recipient can reopen the scenario and change the figures.
+   */
+  const [printedAt, setPrintedAt] = useState<{ url: string; date: string } | null>(null);
+  useEffect(() => {
+    const capture = () => {
+      setPrintedAt({
+        url: window.location.href,
+        date: new Date().toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+      });
+      for (const d of document.querySelectorAll('details')) d.open = true;
+    };
+    window.addEventListener('beforeprint', capture);
+    return () => window.removeEventListener('beforeprint', capture);
+  }, []);
 
   const set = useCallback(
     (key: keyof State, value: number) => setState({ ...state, [key]: value }),
@@ -150,6 +177,18 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
 
   return (
     <div class="space-y-8">
+      {printedAt !== null && (
+        <div class="print-only avoid-break">
+          <p class="engraved text-ink">UK early repayment charge</p>
+          <p class="text-ink-soft mt-1 text-sm">
+            {printedAt.date} · worked out in the browser · nothing transmitted
+          </p>
+          <p class="text-ink-mute mt-1 text-xs">
+            Reopen and change these figures: {printedAt.url}
+          </p>
+        </div>
+      )}
+
       <div class="grid gap-4 sm:grid-cols-2">
         <fieldset class="border-line rounded-panel space-y-3 border p-4">
           <legend class="engraved-fine text-ink-mute px-1">Your mortgage</legend>
@@ -238,7 +277,17 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
           />
 
           <section class="space-y-3">
-            <h3 class="engraved-fine text-ink-mute">What the charge comes to</h3>
+            {/*
+              These headings were `engraved-fine text-ink-mute` — 12.75px at
+              weight 400, i.e. SMALLER AND LIGHTER than the 15.94px body text
+              they head. Measured through a canvas they were 5.12:1 and 4.67:1,
+              both comfortably past WCAG AA, so the report that they "looked
+              dull" was never a contrast problem. It is D36 exactly: when a
+              contrast complaint measures fine, the answer is size, weight,
+              spacing or a rule. `.section-head` is the site's own device for
+              this — display face, 1.375rem, 600, over a hairline.
+            */}
+            <h3 class="section-head text-ink">What the charge comes to</h3>
             <div class="overflow-x-auto">
               <table class="numeric w-full text-sm">
                 <tbody>
@@ -266,6 +315,7 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
 
           <section class="grid gap-4 sm:grid-cols-2">
             <Horizon
+              primary
               eyebrow="Contractual — no assumption"
               title={`Over the ${plural(fixedPeriodMonths, 'month', 'months')} left on your fix`}
               saved={result.interestSavedOverFixedPeriod}
@@ -292,7 +342,7 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
           {prose.method !== undefined && <div>{prose.method}</div>}
 
           <section class="space-y-3">
-            <h3 class="engraved-fine text-ink-mute">
+            <h3 class="section-head text-ink">
               Balance, with and without the overpayment
             </h3>
             <LineChart
@@ -317,19 +367,28 @@ export function UkErcCalculator(prose: Prose): JSX.Element {
 
           <section class="space-y-3">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 class="engraved-fine text-ink-mute">
+              <h3 class="section-head text-ink">
                 The schedule after overpaying —{' '}
                 {plural(schedules.overpaid.months, 'month', 'months')}
               </h3>
-              <button
-                type="button"
-                class="rounded-control border-line-strong text-ink hover:bg-sunken border px-3 py-1.5 text-sm"
-                onClick={() =>
-                  downloadCsv('uk-overpayment-schedule.csv', toCsv(rows, csvColumns))
-                }
-              >
-                Download CSV
-              </button>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  class="rounded-control border-brand bg-brand hover:bg-brand-hover text-canvas border px-3 py-1.5 text-sm font-medium"
+                  onClick={() =>
+                    downloadCsv('uk-overpayment-schedule.csv', toCsv(rows, csvColumns))
+                  }
+                >
+                  Download spreadsheet (CSV)
+                </button>
+                <button
+                  type="button"
+                  class="rounded-control border-line-strong bg-sunken hover:bg-brand-soft hover:border-brand border px-3 py-1.5 text-sm font-medium"
+                  onClick={() => window.print()}
+                >
+                  Save as PDF or print
+                </button>
+              </div>
             </div>
             <ScheduleTable
               rows={rows}
@@ -382,6 +441,16 @@ function Verdict({
   );
 }
 
+/**
+ * The two horizons are NOT peers and should not look like peers.
+ *
+ * One rests on a rate that is contractually fixed; the other assumes a rate
+ * that expires. Rendering them identically invited the reader to pick whichever
+ * number they preferred, which is the opposite of what separating them was for.
+ * The contractual panel is now the solid one and carries the stronger boundary;
+ * the assumed panel is deliberately quieter. That is hierarchy doing the work
+ * the prose was doing alone.
+ */
 function Horizon({
   eyebrow,
   title,
@@ -389,6 +458,7 @@ function Horizon({
   charge,
   net,
   money: fmt,
+  primary,
 }: {
   eyebrow: string;
   title: string;
@@ -396,11 +466,14 @@ function Horizon({
   charge: Minor;
   net: Minor;
   money: (a: Minor) => string;
+  primary?: boolean;
 }): JSX.Element {
   return (
-    <div class="border-line rounded-panel border p-4">
-      <p class="engraved-fine text-ink-mute">{eyebrow}</p>
-      <p class="text-ink mt-1 text-sm font-semibold">{title}</p>
+    <div
+      class={`rounded-panel border p-4 ${primary ? 'border-line-strong bg-surface' : 'border-line'}`}
+    >
+      <p class={`engraved-fine ${primary ? 'text-ink' : 'text-ink-mute'}`}>{eyebrow}</p>
+      <p class="text-ink mt-1 text-base font-semibold">{title}</p>
       <dl class="numeric mt-3 space-y-1 text-sm">
         <Pair label="Interest removed" value={fmt(saved)} />
         {/* Negated through Intl rather than prefixed with a literal minus: a
@@ -423,8 +496,8 @@ function BreakEven({
   months: number;
 }): JSX.Element {
   return (
-    <div class="border-line rounded-panel bg-sunken border p-4">
-      <p class="engraved-fine text-ink-mute">How far the charge can be outrun</p>
+    <div class="border-line-strong rounded-panel bg-sunken border p-4">
+      <p class="engraved-fine text-ink">How far the charge can be outrun</p>
       {amount === null ? (
         <p class="text-ink-soft mt-2 text-sm">
           On these figures the interest removed stays ahead of the charge for{' '}

@@ -2034,6 +2034,69 @@ edits its own history is worth less than one that shows where it was wrong.
 loaded *after* the buffer was last clear. Navigate, then read, and confirm the
 element you are blaming is actually on the page you are reading.
 
+### D66 — "Dull" measured fine again, and the PDF button was missing from one calculator of four
+
+Two reports from the operator on the UK tool: the result panels looked dull in
+both themes, and there should be a way to get the result out as a PDF. Neither
+turned out to be the thing it looked like.
+
+**The contrast complaint measured fine — for the fourth time (D29, D36, D50,
+D54).** Resolved through a canvas, compositing each layer over the page colour
+first:
+
+| | Before |
+|---|---|
+| "What the charge comes to" | 12.75px, weight 400, **5.12:1** |
+| "Contractual — no assumption" | 12.75px, weight 400, **5.12:1** |
+| "How far the charge can be outrun" | 12.75px, weight 400, **4.67:1** |
+| Body text in those panels | 15.94px, **7.49:1** |
+
+Every one clears WCAG AA. Nothing was failing. The actual defect is in the
+fourth row: **the headings were smaller and lighter than the text they headed** —
+12.75px at weight 400 introducing 15.94px content. A heading with less presence
+than its own body has no hierarchy, and that reads as dull however well it
+contrasts. This is D36's finding restated: *when a contrast complaint measures
+fine, the answer is size, weight, spacing or a rule.*
+
+Those eyebrows were also **my own invention** rather than an established idiom —
+no other island uses a heading element at all, so there was nothing to be
+consistent with and `engraved-fine text-ink-mute` got used for a job it was never
+meant to do. They are `.section-head` now, which is the site's existing device
+for exactly this: display face, 1.375rem, weight 600, over a hairline.
+
+| | After (light) | After (dark) |
+|---|---|---|
+| Section headings | 23.375px, 600, **15.74:1** | **16.05:1** |
+| "Contractual" eyebrow | **16.58:1** | **15.05:1** |
+| "How far the charge" | **14.38:1** | **16.71:1** |
+| Primary panel border vs page | **3.65:1** | **4.05:1** |
+
+**The two horizons are now deliberately unequal, and that is the point.** They
+were rendered identically, which invited the reader to pick whichever number they
+preferred — the opposite of what separating them was for. The contractual panel
+is solid, bordered with `--color-line-strong` and carries its eyebrow at
+**16.58:1**; the assumed panel stays quiet at **5.28:1**, which still clears AA.
+The asymmetry encodes which figure is trustworthy, so hierarchy now carries what
+the prose was carrying alone.
+
+**The PDF request was a missing feature, not a new one.** All three earlier
+calculators ship a *Save as PDF or print* button and a `beforeprint` handler.
+The UK tool shipped with neither — D59's shape for the third time, a pattern
+present on the siblings and absent from the newest, and introduced by the same
+session that wrote D59's lesson into the file.
+
+No library was considered. D11 settled it: jsPDF is ~90KB gzipped against a
+19.5KB budget, and the browser's print pipeline is the better document anyway —
+selectable text, real typography, and the chart as vector rather than raster.
+Verified by dispatching `beforeprint` rather than opening a dialog: the masthead
+appears with the date and the scenario URL, and **the schedule expands from 12
+rows to all 224**, so a printed PDF carries the complete schedule rather than the
+preview. `ScheduleTable` was already doing that expansion itself; the island only
+had to stop being the one calculator that never asked.
+
+**Cost: 0.37KB** on this page (17.43 → 17.80, 1.70 spare). Recorded rather than
+waved through, because that is budget being spent on something.
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
