@@ -31,7 +31,7 @@ changes the answer to "what exists" or "what is next".
 | Pages built | 21 (20 substantive — `/404` is not) |
 | Working calculators | 4 |
 | Tests | 167 passing |
-| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · deploy config |
+| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.51 KB of 19.5 KB (0.99 KB spare) |
 | Content pages JS | 0.53 KB (inline theme script only); homepage 12.81 KB — it carries an island (D34) |
 
@@ -301,7 +301,7 @@ file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: four
 calculators, eight derivation pages, five trust pages, 20 substantive pages, 206
-tests, ten CI gates. **The site is live at `https://quickoper.com`** as of
+tests, eleven CI gates (one awaiting a workflow step, D69). **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.
 

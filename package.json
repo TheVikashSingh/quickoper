@@ -20,8 +20,9 @@
     "state": "node scripts/check-state.mjs",
     "slots": "node scripts/check-slots.mjs",
     "schema": "node scripts/check-schema.mjs",
+    "llms": "node scripts/check-llms.mjs",
     "deploy-config": "node scripts/check-deploy-config.mjs",
-    "verify": "npm run typecheck && npm run test && npm run build && npm run budget && npm run links && npm run spacing && npm run state && npm run slots && npm run schema && npm run deploy-config",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run budget && npm run links && npm run spacing && npm run state && npm run slots && npm run schema && npm run llms && npm run deploy-config",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
