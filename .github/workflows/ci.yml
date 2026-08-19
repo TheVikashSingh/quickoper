@@ -78,6 +78,14 @@ jobs:
       - name: Structured data
         run: npm run schema
 
+      # /biweekly-mortgage-payments shipped and was absent from llms.txt for two
+      # PRs, so the page most likely to be quoted for a fortnightly-payments
+      # question was invisible to the file that exists to serve exactly that.
+      # Fourth time a page has existed without appearing where something looks
+      # for it (D41, D50, D61).
+      - name: llms.txt catalogue
+        run: npm run llms
+
       # Configuration Cloudflare reads that no other gate sees. _headers is
       # parsed at DEPLOY time, after CI — the first deploy failed on an empty
       # header value for an /embed/* route that never existed. And html_handling
