@@ -301,7 +301,7 @@ file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: four
 calculators, eight derivation pages, five trust pages, 20 substantive pages, 206
-tests, eleven CI gates (one awaiting a workflow step, D69). **The site is live at `https://quickoper.com`** as of
+tests, eleven CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.
 

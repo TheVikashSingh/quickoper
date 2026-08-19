@@ -2290,15 +2290,35 @@ time; exit 0 restored.
 no entry is stale. That is a regression guard rather than a fix, and it is
 recorded as such — the defect class is proven real, this instance is not.
 
-**THE GATE DOES NOT RUN IN CI YET, AND THAT IS A REAL LIMITATION.** The workflow
+**The gate needed an operator action to become real, and got one.** The workflow
 runs each check as its own named step rather than invoking `npm run verify`, so
-adding the script and the npm script is not enough. `.github/workflows/` is
-denied to an agent by the permission rules, and CLAUDE.md forbids modifying
-workflow permissions — correctly, since a release path an agent can rewrite is
-not a release path. The step is therefore an operator action, written out in the
-pull request body. **Until it is added, this gate only runs when someone runs
-`npm run verify` locally**, which is exactly the "assumed rather than known"
-state D45 records `_headers` sitting in before the first deploy failed on it.
+adding the script and the npm script was not enough. `.github/workflows/` is
+denied to an agent by the permission rules — correctly, since a release path an
+agent can rewrite is not a release path, and that guardrail is deliberately
+stricter than CLAUDE.md's own wording, which forbids modifying workflow
+*permissions* rather than adding a step.
+
+The block was therefore written into the pull request body for the operator, who
+added it in **#58**. Confirmed live by reading the executed step list of the
+`verify` job on `main` rather than trusting a green tick: step 15,
+`llms.txt catalogue`, between `Structured data` and `Deploy config`, conclusion
+`success`. That merge also carried `deploy: success`, so the gate now guards the
+live release path.
+
+**Not proven by a deliberately red CI build**, and that is a considered omission
+rather than a gap. The script's three failure modes are proven locally (exit 1
+for a missing entry, a stale entry, and an uncatalogued new page), and that a
+non-zero exit turns this job red is already demonstrated by #49, where the
+`Formatting` step failed `verify`. Burning a red build on `main` to re-prove
+GitHub Actions' documented behaviour would cost a deploy cycle for no new
+information.
+
+**The general point worth keeping.** An agent can write a check and wire it into
+`package.json`, and that check will still not run where it matters. The gap
+between "the script exists" and "CI executes it" is invisible from inside the
+repository, and it is the same shape as D45: `_headers` was correct-looking,
+committed, and parsed by nothing until a deploy failed on it. When a gate is
+added, verify the pipeline *ran the step*, not that the pipeline was green.
 
 ### D26 — Indexability is an invariant, and it is checked
 
