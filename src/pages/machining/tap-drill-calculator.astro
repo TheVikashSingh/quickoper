@@ -26,20 +26,33 @@ import { PENDING_SERIES } from '../../lib/calc/drill-series';
 
 const LAST_VERIFIED = '2026-09-01';
 
+/**
+ * Sources link to a CATALOGUE, not to a deep per-standard page.
+ *
+ * The first version of this page deep-linked each standard to
+ * `iso.org/standard/<id>.html`. All three ids were wrong and every link 404'd,
+ * which is the same class of error the provenance gate exists to catch — a
+ * value asserted from recollection — applied to URLs instead of numbers.
+ *
+ * Deep catalogue links are also a poor citation even when correct: ISO renumbers
+ * them across revisions. The durable identifier is the DESIGNATION, which is in
+ * the label. The URL points at the classification the standard lives under, and
+ * scripts/check-sources.mjs now verifies every one of them actually resolves.
+ */
 const SOURCES = [
   {
-    label: 'ISO 68-1 — ISO general purpose screw threads, basic profile (metric)',
-    url: 'https://www.iso.org/standard/45272.html',
+    label: 'ISO 68-1 — screw threads, basic profile (metric). ICS 21.040, Screw threads',
+    url: 'https://www.iso.org/ics/21.040/x/',
     retrieved: LAST_VERIFIED,
   },
   {
-    label: 'ISO 965-1 — ISO general purpose metric screw threads, tolerances',
-    url: 'https://www.iso.org/standard/68811.html',
+    label: 'ISO 965-1 — metric screw threads, tolerances. ICS 21.040',
+    url: 'https://www.iso.org/ics/21.040/x/',
     retrieved: LAST_VERIFIED,
   },
   {
     label: 'ASME B1.1 — Unified inch screw threads (UN, UNR, UNJ thread form)',
-    url: 'https://www.asme.org/codes-standards/find-codes-standards/b1-1-unified-inch-screw-threads-un-unr-unj-thread-form',
+    url: 'https://www.asme.org/codes-standards',
     retrieved: LAST_VERIFIED,
   },
 ].map((s) => sourceRef.parse(s));
@@ -439,7 +452,9 @@ const label = 'block text-sm font-semibold text-ink-soft';
         Standards are cited for the thread geometry and the drill series definitions. The
         diameters this tool searches are generated from those definitions rather than
         transcribed from a table, which is why there is no list of individual values to
-        get wrong.
+        get wrong. Links point at the ISO classification and the ASME catalogue rather
+        than at per-standard pages, because those are renumbered across revisions — the
+        designation in each label is the durable reference.
       </p>
     </section>
 
