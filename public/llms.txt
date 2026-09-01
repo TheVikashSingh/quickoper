@@ -323,6 +323,32 @@ Jurisdiction: none. ISO metric and Unified inch.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/verify
 
+### Drill size chart (metric and fractional inch)
+URL: https://quickoper.com/machining/drill-size-chart
+Computes: nothing on demand. It PUBLISHES two generated drill catalogues as a
+printable table, each row carrying the diameter in millimetres and in inches.
+Inputs: none. Both units are printed on every row, so there is no toggle and the
+page ships no JavaScript at all.
+Key figures: 151 metric sizes, 0.5 mm to 13.0 mm, in 0.05 mm steps below 3 mm and
+0.1 mm steps above. 32 fractional inch sizes, 1/64 in to 1/2 in, each n x 25.4 /
+64 mm. 1 in = 25.4 mm exactly (1959 agreement), so 1/4 in is 6.350 mm exactly and
+1/2 in IS 12.7 mm — the same drill, listed in both series, and the only such
+coincidence in the range. Millimetres shown to 3 decimals and inches to 4, which
+is presentation only; no figure re-enters a calculation.
+NOT A COMPLETE CHART, and it says so above the tables rather than below them.
+It STOPS at 13 mm and 1/2 in — jobber-set ranges, not the whole of either
+series — so M16 (14.0 mm), M20 (17.5 mm) and M24 (21.0 mm) have no drill on it,
+and neither does the 17/32 in a 5/8-11 calls for. The tap drill calculator
+searches the same catalogue and stops at the same place.
+Number drills (#80-#1), letter drills (A-Z) and the DIN 338 R40 preferred series
+are absent because they are transcribed tables rather than generated series, and
+nothing ships until a person has checked them against a manufacturer catalogue.
+The metric column is a shop index and is NOT presented as DIN 338 R40.
+Download: https://quickoper.com/machining/drill-size-chart.csv
+Jurisdiction: none. ISO 235 / DIN 338 metric and ASME B94.11M fractional inch.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
 ## Verification
 
 - [Methodology](https://quickoper.com/methodology): formulas, assumptions and the
