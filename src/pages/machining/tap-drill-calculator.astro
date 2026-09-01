@@ -1,0 +1,649 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+import { PENDING_SERIES } from '../../lib/calc/drill-series';
+
+/**
+ * Tap drill calculator.
+ *
+ * ─── The one product decision worth reading ─────────────────────────────────
+ *
+ * There are no named thread presets. You cannot pick "M8" from a list; you
+ * enter a major diameter and a pitch.
+ *
+ * That is deliberate and it costs convenience. A preset list is a table of
+ * reference values, and this project does not ship reference values a human has
+ * not checked against a primary source. The ISO 261 coarse pitches are about as
+ * settled as machining data gets — and "about as settled as it gets" is exactly
+ * the state the provenance gate exists to refuse.
+ *
+ * Direct entry is also strictly more general: it handles fine pitches, non-
+ * standard threads and anything off the coarse series, which a preset list
+ * would not. Presets arrive with the verified data file, and until then the
+ * page says so rather than quietly shipping numbers from memory.
+ */
+
+const LAST_VERIFIED = '2026-09-01';
+
+const SOURCES = [
+  {
+    label: 'ISO 68-1 — ISO general purpose screw threads, basic profile (metric)',
+    url: 'https://www.iso.org/standard/45272.html',
+    retrieved: LAST_VERIFIED,
+  },
+  {
+    label: 'ISO 965-1 — ISO general purpose metric screw threads, tolerances',
+    url: 'https://www.iso.org/standard/68811.html',
+    retrieved: LAST_VERIFIED,
+  },
+  {
+    label: 'ASME B1.1 — Unified inch screw threads (UN, UNR, UNJ thread form)',
+    url: 'https://www.asme.org/codes-standards/find-codes-standards/b1-1-unified-inch-screw-threads-un-unr-unj-thread-form',
+    retrieved: LAST_VERIFIED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'Why does your answer differ from my tap drill chart?',
+    a: 'It probably does not — it reports something the chart does not. A chart gives you one drill per thread. This gives you that drill and the thread engagement it actually produces, which is rarely the round 75% people assume. M8 on the standard 6.8 mm drill is 73.9%. M12 on 10.2 mm is 79.2%. Both are correct and normal; the chart simply never told you.',
+  },
+  {
+    q: 'Why 75% engagement by default?',
+    a: 'Because it is the usual shop compromise. Higher engagement is a stronger thread and a harder, hotter, more breakage-prone tapping operation; the extra holding power above about 75% is small because the failure moves into the screw rather than the thread. 60% to 80% is the normal working band, and the field is yours to change.',
+  },
+  {
+    q: 'Why is the recommended drill never larger than the target?',
+    a: 'Going larger silently reduces engagement below what you asked for. That is the specific defect this tool exists to avoid: rounding M4 × 0.7 up from 3.30 mm to 3.50 mm drops engagement from 77% to 55%, which is a thread that strips. If you want the larger drill, it is in the table with its real engagement beside it, and you can choose it knowingly.',
+  },
+  {
+    q: 'Where are the number and letter drills?',
+    a: 'Not shipped yet, and the page says so rather than hiding it. Metric and fractional inch sizes are generated from their own definitions, so there is no transcription to get wrong. Number and letter drills are eighty-odd decimal values copied from a table, and they arrive once a person has checked them against a manufacturer catalogue.',
+  },
+  {
+    q: 'Is the minor diameter the same as the tap drill?',
+    a: 'No, and conflating them is a common and expensive mistake. The basic minor diameter is D − 1.0825P, a property of the thread form. The tap drill is chosen to leave you a target engagement and is always larger. Both are shown for that reason.',
+  },
+  {
+    q: 'Does this work offline?',
+    a: 'Yes. Every calculation runs in your browser and nothing you type is sent anywhere. Once the page has loaded it keeps working without a connection, which matters on a shop floor.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Tap drill calculator',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/machining/tap-drill-calculator`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'Metric-first tap drill sizing. Returns a drill from a real index and the thread engagement that drill actually produces, with the surrounding sizes shown.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Tap drill calculator',
+        item: `${SITE.url}/machining/tap-drill-calculator`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+
+const field =
+  'border-line-strong bg-surface text-ink focus-visible:outline-brand w-full rounded-control border px-3 py-2 font-numeric text-base focus-visible:outline-2 focus-visible:outline-offset-2';
+const label = 'block text-sm font-semibold text-ink-soft';
+---
+
+<BaseLayout
+  title="Tap drill calculator"
+  description="Metric-first tap drill sizing that reports the thread engagement your actual drill produces, not the one you asked for. Shows the surrounding sizes, the formula and the source standard."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Tap drill
+    </nav>
+
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      Tap drill calculator
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      Enter a thread. Get the drill you should actually reach for, and the thread
+      engagement that drill genuinely produces — which is almost never the round number
+      you asked for.
+    </p>
+
+    <!-- ── Calculator ──────────────────────────────────────────────────── -->
+    <section class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border">
+      <form id="td-form" class="grid gap-4 p-5 sm:grid-cols-3">
+        <div>
+          <label class={label} for="td-major">Major diameter</label>
+          <input
+            class={`${field} mt-1`}
+            id="td-major"
+            name="major"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            min="0.1"
+            value="8"
+            required
+          />
+          <p class="text-ink-mute mt-1 text-xs">The nominal size. M8 is 8.</p>
+        </div>
+        <div>
+          <label class={label} for="td-pitch">Pitch</label>
+          <input
+            class={`${field} mt-1`}
+            id="td-pitch"
+            name="pitch"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            min="0.01"
+            value="1.25"
+            required
+          />
+          <p class="text-ink-mute mt-1 text-xs">M8 coarse is 1.25.</p>
+        </div>
+        <div>
+          <label class={label} for="td-engagement">Target engagement</label>
+          <div class="mt-1 flex items-center gap-2">
+            <input
+              class={field}
+              id="td-engagement"
+              name="engagement"
+              type="number"
+              inputmode="decimal"
+              step="1"
+              min="1"
+              max="100"
+              value="75"
+              required
+            />
+            <span class="font-numeric text-ink-mute">%</span>
+          </div>
+          <p class="text-ink-mute mt-1 text-xs">60–80 is the usual band.</p>
+        </div>
+
+        <fieldset class="sm:col-span-3">
+          <legend class={label}>Units</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="mm" checked /> Millimetres</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="in" /> Inches (pitch as TPI)</label
+            >
+          </div>
+        </fieldset>
+
+        <fieldset class="sm:col-span-3">
+          <legend class={label}>Drill index to search</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="series" value="metric" checked /> Metric</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="series" value="both" /> Both</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="series" value="fractional" /> Fractional inch only</label
+            >
+          </div>
+        </fieldset>
+      </form>
+
+      <output
+        id="td-result"
+        class="border-line block border-t px-5 py-5"
+        for="td-form"
+        aria-live="polite"></output>
+    </section>
+
+    <p id="td-error" class="text-negative mt-3 hidden text-sm" role="alert"></p>
+
+    <!-- ── The neighbourhood ───────────────────────────────────────────── -->
+    <section class="mt-10">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="font-display text-ink text-2xl font-semibold">
+          The drills either side
+        </h2>
+        <button
+          id="td-csv"
+          type="button"
+          class="border-line-strong text-ink-soft hover:text-brand focus-visible:outline-brand rounded-control border px-3 py-1 font-mono text-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >Download CSV</button
+        >
+      </div>
+      <p class="text-ink-soft mt-2 max-w-prose">
+        One number is a chart. This is the rack: what the neighbouring drills would give
+        you, so a size you already own is a decision rather than a compromise you did not
+        know you were making.
+      </p>
+      <div class="border-line rounded-panel mt-4 overflow-x-auto border">
+        <table class="w-full text-sm">
+          <thead class="bg-sunken text-ink-mute">
+            <tr>
+              <th class="px-3 py-2 text-left font-mono text-xs tracking-wide uppercase"
+                >Drill</th
+              >
+              <th class="px-3 py-2 text-right font-mono text-xs tracking-wide uppercase"
+                >Diameter</th
+              >
+              <th class="px-3 py-2 text-right font-mono text-xs tracking-wide uppercase"
+                >Engagement</th
+              >
+              <th class="px-3 py-2 text-right font-mono text-xs tracking-wide uppercase"
+                >vs target</th
+              >
+            </tr>
+          </thead>
+          <tbody id="td-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── How this was calculated ─────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        How this was calculated
+      </h2>
+      <div
+        id="td-working"
+        class="border-line bg-sunken rounded-panel font-numeric mt-4 overflow-x-auto border p-4 text-sm leading-relaxed"
+      >
+      </div>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        Engagement is measured on the 5H/8 flank of the ISO 68-1 basic profile, where the
+        fundamental triangle height H = 0.866025 × P. The constant 1.299 follows from that
+        geometry, and 100 ÷ 1.299 = 76.98% is why the old shop rule “drill = major −
+        pitch” lands just under 77%.
+      </p>
+    </section>
+
+    <!-- ── Explanation ─────────────────────────────────────────────────── -->
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        What thread engagement actually buys you
+      </h2>
+      <p>
+        A tapped hole fails in one of two places: the internal thread strips, or the screw
+        itself breaks. Which one happens is decided largely by how much material the tap
+        left behind, and that is what thread engagement describes — the proportion of the
+        theoretical full thread depth that your drill leaves for the tap to cut.
+      </p>
+      <p>
+        The intuition that more is always better is wrong, and expensively so. Engagement
+        and strength are not proportional. Going from 60% to 75% adds meaningful holding
+        power. Going from 75% to 100% adds very little, because past roughly 75% the
+        failure mode has already moved into the fastener: the screw breaks before the
+        thread strips, and no amount of extra thread depth changes that. What the extra
+        engagement does add is torque on the tap — sharply. A tap cutting a 100% thread in
+        steel is doing about twice the work of one cutting 75%, in a hole that is already
+        the most breakage-prone operation on the machine.
+      </p>
+      <p>
+        This is why 75% is the shop default rather than a compromise. It sits at the point
+        where the strength curve has flattened but the tapping torque has not yet climbed,
+        and it is the assumption behind essentially every published tap drill chart. It is
+        also why the field on this page is editable: thin-wall aluminium, a blind hole in
+        stainless, or a thread that will be assembled once and never touched again are all
+        legitimate reasons to move it.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        The number your chart does not print
+      </h3>
+      <p>
+        Published tap drill charts give one drill per thread, and that drill is chosen
+        from sizes that exist. Because real drill indexes come in fixed steps, the
+        engagement those charts deliver is not a constant — it drifts thread by thread,
+        and nobody tells you where it landed.
+      </p>
+      <p>
+        M8 × 1.25 is the clearest example. The diameter that gives 76.98% engagement is
+        6.75 mm. No index contains a 6.75 mm drill, so the charts specify 6.8 mm, and 6.8
+        mm gives <strong>73.9%</strong>. M12 × 1.75 goes the other way: the standard 10.2
+        mm drill gives <strong>79.2%</strong>. In the Unified series the spread is wider
+        still — a #29 drill in a #8-32 hole is under 69%.
+      </p>
+      <p>
+        None of those numbers is wrong. They are the normal consequence of a continuous
+        formula meeting a discrete rack, and a machinist should be able to see where they
+        landed. This tool reports the engagement of the drill it recommends, not the
+        engagement that was requested, because those are different quantities and only one
+        of them describes the hole you are about to make.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Why the recommendation never rounds up
+      </h3>
+      <p>
+        Several shipping tools compute the target diameter and then round it to a
+        convenient half-millimetre step. For M4 × 0.7 that turns the correct 3.30 mm into
+        3.50 mm — and 3.50 mm gives <strong>55%</strong> engagement, not 77%. That is a materially
+        weaker thread than the user asked for, produced silently, and users have caught it in
+        the wild.
+      </p>
+      <p>
+        So the rule here is one-directional: the recommended drill is the largest one in
+        your index that does not exceed the target. Engagement can only come out at or
+        above what you asked for, never below. If the larger drill is the one you own, it
+        is in the table with its true engagement beside it, and choosing it is then an
+        informed decision rather than an invisible substitution.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Minor diameter is not the tap drill
+      </h3>
+      <p>
+        The basic minor diameter, D₁ = D − 1.0825 × P, is a property of the thread form:
+        the diameter at the root of a fully formed internal thread. The tap drill is
+        larger, because it is chosen to leave a target engagement rather than a complete
+        thread. For M4 the minor diameter is 3.2422 mm and the tap drill is 3.30 mm. Both
+        are shown above precisely because they get conflated, and drilling to the minor
+        diameter is how taps get broken.
+      </p>
+    </section>
+
+    <!-- ── Not here yet ────────────────────────────────────────────────── -->
+    <section class="border-caution bg-surface rounded-panel mt-12 border-l-4 p-5">
+      <h2 class="font-display text-ink text-xl font-semibold">
+        What this does not have yet
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        A calculator that silently omits half the rack will recommend a 13/64″ where a #7
+        was the right answer, and you would have no way to know. So:
+      </p>
+      <ul class="mt-3 space-y-2">
+        {
+          PENDING_SERIES.map((s) => (
+            <li class="text-sm">
+              <span class="text-ink font-semibold">{s.name}</span>
+              <span class="text-ink-mute"> — {s.reason}</span>
+            </li>
+          ))
+        }
+        <li class="text-sm">
+          <span class="text-ink font-semibold">Named thread presets</span>
+          <span class="text-ink-mute">
+            {' '}
+            — a preset list is a table of reference values, and this site does not ship reference
+            values nobody has checked. Enter the pitch directly until they are verified.
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ── FAQ ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        Standards are cited for the thread geometry and the drill series definitions. The
+        diameters this tool searches are generated from those definitions rather than
+        transcribed from a table, which is why there is no list of individual values to
+        get wrong.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated starting figures, not a substitute for your tap manufacturer's
+      recommendation. Tapping torque, material, hole depth and lubrication all move the
+      right answer. Verify against your tooling supplier's data before cutting anything
+      you cannot scrap.
+    </p>
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    drillDiameterFor,
+    engagementPercentExact,
+    inchToUm,
+    mmToUm,
+    roundHalfEven,
+    snapToSeries,
+    tpiToPitchUm,
+    umExactToMm,
+    umToInch,
+    umToMm,
+    type Drill,
+    type Micrometres,
+  } from '../../lib/calc/tap-drill';
+  import { drillsFor, type SeriesName } from '../../lib/calc/drill-series';
+
+  /**
+   * Resolve an element or fail loudly at load.
+   *
+   * A composite null-guard does not narrow across the closure boundary, so the
+   * render function would be full of non-null assertions. Failing here instead
+   * means the rest of the island is typed as present, which it is.
+   */
+  function must<T extends HTMLElement>(id: string): T {
+    const el = document.getElementById(id);
+    if (el === null) throw new Error(`tap drill: #${id} is missing from the page`);
+    return el as T;
+  }
+
+  const form = must<HTMLFormElement>('td-form');
+  const resultEl = must('td-result');
+  const tableEl = must('td-table');
+  const workingEl = must('td-working');
+  const errorEl = must('td-error');
+  const csvBtn = must('td-csv');
+
+  const DECIMALS = 4;
+  let csvRows: string[][] = [];
+
+  const num = (name: string): number =>
+    Number((form.elements.namedItem(name) as HTMLInputElement).value);
+  const pick = (name: string): string =>
+    (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
+
+  /** Display a length in the user's chosen unit, never fewer than 4 decimals. */
+  function len(valueUm: number, units: string): string {
+    return units === 'mm'
+      ? `${roundHalfEven(umExactToMm(valueUm), DECIMALS)} mm`
+      : `${roundHalfEven(valueUm / 25400, DECIMALS)} in`;
+  }
+
+  function drillLen(d: Drill, units: string): string {
+    return units === 'mm'
+      ? `${roundHalfEven(umToMm(d.um), DECIMALS)} mm`
+      : `${roundHalfEven(umToInch(d.um), DECIMALS)} in`;
+  }
+
+  function render(): void {
+    const units = pick('units');
+    const series = pick('series') as SeriesName;
+    const majorRaw = num('major');
+    const pitchRaw = num('pitch');
+    const target = num('engagement');
+
+    errorEl.classList.add('hidden');
+    try {
+      const majorUm: Micrometres = units === 'mm' ? mmToUm(majorRaw) : inchToUm(majorRaw);
+      const pitchUm: Micrometres =
+        units === 'mm' ? mmToUm(pitchRaw) : tpiToPitchUm(pitchRaw);
+      if (pitchUm >= majorUm)
+        throw new RangeError('Pitch must be smaller than the diameter.');
+
+      const targetUm = drillDiameterFor(majorUm, pitchUm, target);
+      if (targetUm <= 0)
+        throw new RangeError('That engagement leaves no drill diameter.');
+
+      const drills = drillsFor(series);
+      const choice = snapToSeries(majorUm, pitchUm, targetUm, drills);
+      if (!choice) throw new RangeError('No drill index selected.');
+
+      const minorUm = majorUm - 1.0825 * pitchUm;
+      const actual = roundHalfEven(choice.engagementPercent, 2);
+      const band =
+        actual >= target
+          ? 'text-positive'
+          : actual >= target - 5
+            ? 'text-caution'
+            : 'text-negative';
+
+      resultEl.innerHTML = `
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div>
+            <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Use this drill</p>
+            <p class="mt-1 font-numeric text-3xl font-semibold text-brand">${choice.drill.label}</p>
+            <p class="text-sm text-ink-mute">${drillLen(choice.drill, units)}</p>
+          </div>
+          <div>
+            <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">You will get</p>
+            <p class="mt-1 font-numeric text-3xl font-semibold ${band}">${actual}%</p>
+            <p class="text-sm text-ink-mute">you asked for ${target}%</p>
+          </div>
+          <div>
+            <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Exact target</p>
+            <p class="mt-1 font-numeric text-3xl font-semibold text-ink">${len(targetUm, units)}</p>
+            <p class="text-sm text-ink-mute">no drill is this size</p>
+          </div>
+        </div>
+        <p class="mt-4 text-sm text-ink-soft">
+          Basic minor diameter <span class="font-numeric">${len(minorUm, units)}</span> — the thread root, <strong>not</strong> the drill.
+        </p>`;
+
+      // The neighbourhood: nearest few either side of the target.
+      const ranked = drills
+        .map((d) => ({ d, delta: d.um - targetUm }))
+        .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))
+        .slice(0, 7)
+        .sort((a, b) => a.d.um - b.d.um);
+
+      csvRows = [['drill', 'diameter', 'engagement_percent', 'delta_from_target']];
+      tableEl.innerHTML = ranked
+        .map(({ d, delta }) => {
+          const e = roundHalfEven(engagementPercentExact(majorUm, pitchUm, d.um), 2);
+          const chosen = d.um === choice.drill.um;
+          csvRows.push([
+            d.label,
+            drillLen(d, units),
+            String(e),
+            `${delta > 0 ? '+' : ''}${roundHalfEven(units === 'mm' ? delta / 1000 : delta / 25400, DECIMALS)}`,
+          ]);
+          return `<tr class="${chosen ? 'bg-brand-soft font-semibold' : ''}">
+            <td class="border-line border-t px-3 py-2">${d.label}${chosen ? ' &larr; recommended' : ''}</td>
+            <td class="border-line border-t px-3 py-2 text-right font-numeric">${drillLen(d, units)}</td>
+            <td class="border-line border-t px-3 py-2 text-right font-numeric">${e}%</td>
+            <td class="border-line border-t px-3 py-2 text-right font-numeric text-ink-mute">${delta > 0 ? '+' : ''}${roundHalfEven(units === 'mm' ? delta / 1000 : delta / 25400, DECIMALS)}</td>
+          </tr>`;
+        })
+        .join('');
+
+      const u = units === 'mm' ? 'mm' : 'in';
+      workingEl.textContent =
+        `%engagement = 100 × (D − d) / (1.299 × P)\n\n` +
+        `D  major diameter  = ${roundHalfEven(units === 'mm' ? umToMm(majorUm) : umToInch(majorUm), DECIMALS)} ${u}\n` +
+        `P  pitch           = ${roundHalfEven(units === 'mm' ? umToMm(pitchUm) : umToInch(pitchUm), DECIMALS)} ${u}\n` +
+        `d  target diameter = ${roundHalfEven(units === 'mm' ? umExactToMm(targetUm) : targetUm / 25400, DECIMALS)} ${u}   (for ${target}%)\n` +
+        `d  chosen drill    = ${drillLen(choice.drill, units)}   ${choice.drill.label}\n\n` +
+        `100 × (${roundHalfEven(units === 'mm' ? umToMm(majorUm) : umToInch(majorUm), DECIMALS)} − ${roundHalfEven(units === 'mm' ? umToMm(choice.drill.um) : umToInch(choice.drill.um), DECIMALS)}) / (1.299 × ${roundHalfEven(units === 'mm' ? umToMm(pitchUm) : umToInch(pitchUm), DECIMALS)}) = ${actual}%`;
+    } catch (err) {
+      errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
+      errorEl.classList.remove('hidden');
+      resultEl.innerHTML = '';
+      tableEl.innerHTML = '';
+      workingEl.textContent = '';
+    }
+  }
+
+  /**
+   * The drill index follows the units, until the user says otherwise.
+   *
+   * Searching both catalogues by default sends a metric machinist to a 17/64"
+   * drill for an M8 hole, because 6.747 mm happens to sit nearer the target
+   * than 6.8 mm does. Arithmetically right, practically useless, and the exact
+   * complaint this tool exists to answer. Once the user picks an index by hand
+   * we stop overriding it.
+   */
+  let seriesTouched = false;
+  form.querySelectorAll('input[name="series"]').forEach((el) =>
+    el.addEventListener('change', () => {
+      seriesTouched = true;
+    }),
+  );
+  form.querySelectorAll('input[name="units"]').forEach((el) =>
+    el.addEventListener('change', () => {
+      if (seriesTouched) return;
+      const want = pick('units') === 'mm' ? 'metric' : 'fractional';
+      const target = form.querySelector<HTMLInputElement>(
+        `input[name="series"][value="${want}"]`,
+      );
+      if (target) target.checked = true;
+    }),
+  );
+
+  form.addEventListener('input', render);
+  csvBtn.addEventListener('click', () => {
+    const blob = new Blob([csvRows.map((r) => r.join(',')).join('\n')], {
+      type: 'text/csv',
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'tap-drill.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  render();
+</script>

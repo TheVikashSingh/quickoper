@@ -165,13 +165,25 @@ describe('snapToSeries', () => {
     { um: um(7000), label: '7.0 mm', series: 'metric' },
   ];
 
-  it('never returns a drill larger than the target', () => {
-    // Going larger silently reduces engagement below what was asked for. That
-    // is the competitor bug: M4 rounded up to 3.5 mm yields 55 %, not 77 %.
+  it('agrees with the published chart for M8', () => {
+    // The published tap drill for M8 x 1.25 is 6.8 mm, in every catalogue.
+    // An earlier rule chose the largest drill NOT EXCEEDING the target, which
+    // returned 6.7 mm and made the tool the outlier against every chart in the
+    // world. Nearest-with-tie-to-larger is what charts actually do.
     const target = drillDiameterFor(mmToUm(8), mmToUm(1.25), 76.98);
     const choice = snapToSeries(mmToUm(8), mmToUm(1.25), target, metricSeries);
-    expect(choice?.drill.um).toBeLessThanOrEqual(target);
-    expect(choice?.drill.label).toBe('6.7 mm');
+    expect(choice?.drill.label).toBe('6.8 mm');
+    expect(roundHalfEven(choice!.engagementPercent, 2)).toBeCloseTo(73.9, 2);
+  });
+
+  it('picks the nearest drill in either direction', () => {
+    // 6.71 is nearest 6.7; 6.79 is nearest 6.8. Direction is not the rule.
+    expect(snapToSeries(mmToUm(8), mmToUm(1.25), 6710, metricSeries)?.drill.label).toBe(
+      '6.7 mm',
+    );
+    expect(snapToSeries(mmToUm(8), mmToUm(1.25), 6790, metricSeries)?.drill.label).toBe(
+      '6.8 mm',
+    );
   });
 
   it('reports the engagement the chosen drill actually gives', () => {
@@ -180,7 +192,7 @@ describe('snapToSeries', () => {
     expect(roundHalfEven(choice!.engagementPercent, 2)).toBeCloseTo(73.9, 2);
   });
 
-  it('falls back to the smallest drill when the target is below the series', () => {
+  it('returns the smallest drill when the target is below the series', () => {
     const choice = snapToSeries(mmToUm(8), mmToUm(1.25), 1000, metricSeries);
     expect(choice?.drill.um).toBe(6500);
     expect(choice!.deltaUm).toBeGreaterThan(0); // caller can see it is out of range

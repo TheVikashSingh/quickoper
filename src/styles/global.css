@@ -521,3 +521,141 @@
     background: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Machining vertical — "layout dye".
+
+   The finance side draws on banknote engraving: guilloche, warm paper, deep
+   green. Machining must not borrow that. It has its own visual tradition and
+   it is a better fit for what this tool does.
+
+   A machinist coats steel in layout dye — Dykem blue — and scribes lines into
+   it before cutting. Marking out a precise measurement before committing metal
+   is, exactly, what a tap drill calculator is for. So:
+
+   1. GROUND STEEL, NOT PAPER. The canvas is a cool grey with a faint blue
+      cast, the colour of a surface plate, not a document. Nothing warm.
+
+   2. DYKEM BLUE. One accent, deep and saturated, in place of banknote green.
+
+   3. SCRIBE LINES. Rules and dividers read as scribed marks: the same
+      --color-engrave hooks the ornament components already use, re-pointed
+      from engraved green to scribed blue, so those components work unchanged.
+
+   WHAT IS SHARED AND WHY. The token NAMES, the three-state dark handling and
+   the measured contrast floors carry over untouched; only the values change.
+   Lightness values are reused deliberately — OKLCH L is perceptual lightness,
+   so holding L constant while moving hue preserves the contrast ratios that
+   were measured against the 4.5:1 text floor and the 3:1 UI-boundary floor.
+   Re-deriving them for a new hue would mean re-measuring; reusing them means
+   the accessibility work still holds.
+
+   Scoped on :root[data-vertical='machining'], which BaseLayout sets from a
+   page prop. No component knows which vertical it is rendering in.
+   --------------------------------------------------------------------------- */
+
+:root[data-vertical='machining'] {
+  /* Surfaces — ground steel, faint blue cast. */
+  --color-canvas: oklch(96.8% 0.004 245);
+  --color-surface: oklch(99.2% 0.002 245);
+  --color-sunken: oklch(93.8% 0.007 245);
+
+  /* Ink — blue-black. */
+  --color-ink: oklch(23% 0.022 255);
+  --color-ink-soft: oklch(43% 0.024 255);
+  --color-ink-mute: oklch(52% 0.022 255);
+
+  --color-line: oklch(88.5% 0.009 245);
+  --color-line-strong: oklch(60% 0.035 250);
+
+  /* Dykem layout blue. One accent. */
+  --color-brand: oklch(45% 0.145 255);
+  --color-brand-hover: oklch(37% 0.155 255);
+  --color-brand-soft: oklch(93.5% 0.035 255);
+
+  /* Semantic. In-tolerance reads teal rather than green so it is not mistaken
+     for the finance brand; caution and out-of-tolerance keep their meaning. */
+  --color-positive: oklch(45% 0.1 195);
+  --color-caution: oklch(56% 0.13 75);
+  --color-negative: oklch(50% 0.17 25);
+
+  /* Scribe marks, where finance has engraving. */
+  --color-engrave: oklch(45% 0.145 255 / 0.05);
+  --color-engrave-strong: oklch(45% 0.145 255 / 0.22);
+
+  --color-masthead: oklch(24% 0.04 255);
+  --color-masthead-ink: oklch(95% 0.008 245);
+  --color-masthead-mute: oklch(80% 0.018 245);
+  --color-masthead-line: oklch(38% 0.05 255);
+  --color-masthead-accent: oklch(80% 0.13 255);
+
+  /* Type: no serif. A drawing is annotated in a technical sans, and figures
+     belong in mono. Condensed faces are tried first because that is what
+     engineering annotation looks like; the chain falls back to system sans
+     where they are absent, so this still costs zero bytes. */
+  --font-display:
+    'Arial Narrow', 'Helvetica Neue Condensed', 'Liberation Sans Narrow', ui-sans-serif,
+    system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-vertical='machining'] {
+    --color-canvas: oklch(17% 0.02 255);
+    --color-surface: oklch(20.5% 0.022 255);
+    --color-sunken: oklch(14% 0.018 255);
+
+    --color-ink: oklch(94% 0.008 245);
+    --color-ink-soft: oklch(78% 0.016 250);
+    --color-ink-mute: oklch(62% 0.016 250);
+
+    --color-line: oklch(28.5% 0.024 255);
+    --color-line-strong: oklch(55% 0.04 255);
+
+    --color-brand: oklch(72% 0.13 255);
+    --color-brand-hover: oklch(80% 0.12 255);
+    --color-brand-soft: oklch(27% 0.06 255);
+
+    --color-positive: oklch(74% 0.11 195);
+    --color-caution: oklch(78% 0.13 75);
+    --color-negative: oklch(70% 0.16 25);
+
+    --color-engrave: oklch(72% 0.13 255 / 0.06);
+    --color-engrave-strong: oklch(72% 0.13 255 / 0.24);
+
+    --color-masthead: oklch(11.5% 0.022 255);
+    --color-masthead-ink: oklch(93% 0.008 245);
+    --color-masthead-mute: oklch(74% 0.016 250);
+    --color-masthead-line: oklch(26% 0.032 255);
+    --color-masthead-accent: oklch(78% 0.13 255);
+  }
+}
+
+:root[data-theme='dark'][data-vertical='machining'] {
+  --color-canvas: oklch(17% 0.02 255);
+  --color-surface: oklch(20.5% 0.022 255);
+  --color-sunken: oklch(14% 0.018 255);
+
+  --color-ink: oklch(94% 0.008 245);
+  --color-ink-soft: oklch(78% 0.016 250);
+  --color-ink-mute: oklch(62% 0.016 250);
+
+  --color-line: oklch(28.5% 0.024 255);
+  --color-line-strong: oklch(55% 0.04 255);
+
+  --color-brand: oklch(72% 0.13 255);
+  --color-brand-hover: oklch(80% 0.12 255);
+  --color-brand-soft: oklch(27% 0.06 255);
+
+  --color-positive: oklch(74% 0.11 195);
+  --color-caution: oklch(78% 0.13 75);
+  --color-negative: oklch(70% 0.16 25);
+
+  --color-engrave: oklch(72% 0.13 255 / 0.06);
+  --color-engrave-strong: oklch(72% 0.13 255 / 0.24);
+
+  --color-masthead: oklch(11.5% 0.022 255);
+  --color-masthead-ink: oklch(93% 0.008 245);
+  --color-masthead-mute: oklch(74% 0.016 250);
+  --color-masthead-line: oklch(26% 0.032 255);
+  --color-masthead-accent: oklch(78% 0.13 255);
+}

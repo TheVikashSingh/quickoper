@@ -132,16 +132,17 @@ describe('series selection never violates its contract', () => {
     series: 'metric' as const,
   })) as unknown as [Drill, ...Drill[]];
 
-  it('never returns a drill larger than the target when one at or below exists', () => {
+  it('always returns the nearest drill in the series', () => {
     fc.assert(
       fc.property(thread, engagement, ({ major, pitch }, pct) => {
         const target = drillDiameterFor(major, pitch, pct);
-        fc.pre(target >= series[0].um);
         const choice = snapToSeries(major, pitch, target, series);
         expect(choice).toBeDefined();
-        // Going larger silently reduces engagement below what was asked for.
-        // This is the competitor defect, asserted against for every input.
-        expect(choice!.drill.um).toBeLessThanOrEqual(target);
+        // No drill in the whole catalogue may sit closer to the target than the
+        // one recommended. Direction is not the rule - proximity is, which is
+        // what published charts do.
+        const best = Math.min(...series.map((d) => Math.abs(d.um - target)));
+        expect(Math.abs(choice!.drill.um - target)).toBeCloseTo(best, 9);
       }),
       { numRuns: 400 },
     );

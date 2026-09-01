@@ -272,12 +272,44 @@ export function rankBySuitability(
 }
 
 /**
- * The drill a shop would actually reach for.
+ * The drill a shop would actually reach for: the NEAREST in the series, with a
+ * tie going to the larger.
  *
- * Chooses the closest drill that does NOT exceed the target, so engagement is
- * never accidentally reduced below what was asked for. Where no such drill
- * exists (target below the smallest in the series) it returns the smallest and
- * the caller can see from `deltaUm` that the request was out of range.
+ * ─── This rule was wrong once, and the correction matters ───────────────────
+ *
+ * The first version chose the largest drill NOT EXCEEDING the target, reasoning
+ * that engagement should never come out below what was asked for. That is
+ * defensible in isolation and it is wrong in practice, because it makes the
+ * tool disagree with every published tap drill chart on common threads.
+ *
+ * M8 × 1.25 at 75 % wants 6.782 mm. Never-exceed picks 6.7 mm and reports
+ * 80.06 %. Every catalogue in the world says 6.8 mm, which gives 73.90 %. A
+ * machinist checking a thread they already know would conclude the tool is
+ * broken — and they would be right to, because the tool was the outlier.
+ *
+ * Charts pick the nearest, and break ties upward: a marginally larger hole taps
+ * more easily and breaks fewer taps, and the strength given up above ~75 % is
+ * small because the failure has already moved into the fastener.
+ *
+ * WHAT ACTUALLY GUARDS AGAINST THE COMPETITOR DEFECT is not the direction of
+ * the rounding. It is (a) snapping to a series of drills that EXIST rather than
+ * to an arithmetic 0.5 mm grid, and (b) always reporting the engagement the
+ * chosen drill truly produces. Those two together are what stop M4 × 0.7 from
+ * silently becoming a 3.5 mm hole at 55 %.
+ *
+ * ─── The published table is not derivable, and that is a finding ────────────
+ *
+ * Nearest-with-tie-to-larger reproduces the published tap drill for M6, M8,
+ * M10, M16 and M20, and misses M12 by one step (it gives 10.3 mm where charts
+ * say 10.2 mm). No other rule does better, because the chart is not the output
+ * of a rule: the engagements across it are not constant, running from 73.90 %
+ * at M8 to 79.18 % at M12.
+ *
+ * So this function computes from the standard and does not claim to reproduce
+ * the chart. Where they differ it is by one drill size, both answers are
+ * defensible, and the page says so. Matching the chart exactly requires the
+ * chart — transcribed and verified — which is the whole argument for the
+ * provenance gate.
  *
  * Returns `undefined` only for an empty series, which is a programming error
  * rather than a user one.
@@ -289,11 +321,14 @@ export function snapToSeries(
   series: readonly Drill[],
 ): DrillChoice | undefined {
   if (series.length === 0) return undefined;
-  const atOrBelow = series.filter((d) => d.um <= targetUm);
-  const chosen =
-    atOrBelow.length > 0
-      ? atOrBelow.reduce((best, d) => (d.um > best.um ? d : best))
-      : series.reduce((best, d) => (d.um < best.um ? d : best));
+  const chosen = series.reduce((best, d) => {
+    const dDist = Math.abs(d.um - targetUm);
+    const bestDist = Math.abs(best.um - targetUm);
+    if (dDist < bestDist) return d;
+    // Tie: prefer the larger drill, matching published chart convention.
+    if (dDist === bestDist && d.um > best.um) return d;
+    return best;
+  });
   return {
     drill: chosen,
     engagementPercent: engagementPercent(majorUm, pitchUm, chosen.um),

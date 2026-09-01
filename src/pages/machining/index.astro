@@ -1,0 +1,106 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolCard from '../../components/ToolCard.astro';
+import { SITE } from '../../lib/site';
+
+/**
+ * The machining hub.
+ *
+ * A second vertical, deliberately not a copy of the first. Finance draws on
+ * banknote engraving; machining draws on layout dye and scribed lines, and the
+ * palette switches with `vertical="machining"` on the layout. Nothing else in
+ * the codebase knows the difference — the token names are identical.
+ *
+ * Hub-and-spoke internal linking is how a new folder concentrates topical
+ * relevance: every tool links up to here, and this links back down.
+ */
+
+const TOOLS = [
+  {
+    href: '/machining/tap-drill-calculator',
+    title: 'Tap drill — the drill you actually own',
+    summary:
+      'Enter a thread, get the drill from a real index and the thread engagement that drill genuinely produces. Metric-first, with the whole neighbourhood shown rather than one rounded number.',
+    detail: 'Metric and fractional inch. Works offline once loaded.',
+  },
+];
+
+const COMING = [
+  'Feeds and speeds — milling, turning, drilling and boring, metric-first, in mm/min and mm/rev',
+  'Thread engagement and tolerance classes — 6H/6g and the Unified equivalents',
+  'Drill size chart — the full index, printable',
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Machining calculators',
+    url: `${SITE.url}/machining`,
+    description:
+      'Metric-first machining calculators that show their working: the formula, the source standard, and the figure a real tool produces.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Machining calculators"
+  description="Metric-first machining calculators that show their working. Tap drill sizing that reports the engagement your actual drill produces, not the one you asked for."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <p class="text-brand font-mono text-xs tracking-widest uppercase">Machining</p>
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      Calculators for people who measure before they cut
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      Metric-first, offline, and honest about the difference between the number you asked
+      for and the number your tooling will give you. Every result shows its formula and
+      the standard it came from.
+    </p>
+
+    <section class="mt-10 space-y-4">
+      {TOOLS.map((tool) => <ToolCard {...tool} />)}
+    </section>
+
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-xl font-semibold">In progress</h2>
+      <ul class="text-ink-soft mt-3 space-y-2">
+        {
+          COMING.map((item) => (
+            <li class="border-line border-l-2 pl-3 text-sm">{item}</li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="border-line mt-12 border-t pt-6">
+      <h2 class="font-display text-ink text-xl font-semibold">Why metric-first</h2>
+      <p class="text-ink-soft mt-3 max-w-prose">
+        Most machining apps are imperial-first with metric bolted on, and it shows:
+        milling in inches while turning is in millimetres, feed in mm/min with no mm/rev
+        anywhere, drill sizes rounded to the nearest half millimetre. If you work in
+        metric you have probably paid for one of them and regretted it.
+      </p>
+      <p class="text-ink-soft mt-3 max-w-prose">
+        These tools are built the other way round. Every field switches independently,
+        both feed conventions are always shown, and drill diameters come from an index of
+        sizes that exist rather than from arithmetic rounding.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
