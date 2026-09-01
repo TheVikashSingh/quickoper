@@ -28,7 +28,7 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 23 (22 substantive — `/404` is not) |
+| Pages built | 24 (23 substantive — `/404` is not) |
 | Working calculators | 4 |
 | Tests | 206 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
@@ -189,6 +189,25 @@ ships **2.74 KB** against the 19.5 KB budget, where the Preact finance
 calculators sit at 17–18.7 KB. A form and a table do not need a framework, and
 the headroom is for the chart and the drill chart that follow.
 
+### The conversion surface
+
+`/machining/app` is the app page, and it is deliberately per-vertical rather
+than a site-wide `/apps`. Conversion needs context: a machinist arriving from
+the tap drill calculator should land on a Dykem-themed page entirely about their
+app, not a directory where a mortgage app sits beside it. A site-level `/apps`
+earns its place when a SECOND vertical ships an app; until then it is a
+directory of one, which is the thin content AdSense rejects for.
+
+Two constraints shaped that page. The app does not exist, so nothing reads as
+buyable and the structured data carries NO `offers` node — a price in a rich
+result for an unreleased app is a lie told by markup. And `/api/subscribe` is
+permitted by the backend policy but unbuilt, so the CTAs are `mailto:` links
+rather than a form posting nowhere. That still runs the two-signal demand test:
+two subject lines, weak ("tell me when it is out") against strong ("I would pay
+$19.99"), countable by filtering one mailbox, with no payment processor and no
+money taken for a product that does not exist. When `/api/subscribe` lands the
+pair becomes a form and the subject lines become a hidden field.
+
 ### What ships and what deliberately does not
 
 The drill catalogues are GENERATED from their series definitions — metric at
@@ -213,7 +232,7 @@ hour available to this vertical.
 
 ## Next
 
-**The content threshold is met.** The build produces 23 pages, of which 22 are
+**The content threshold is met.** The build produces 24 pages, of which 23 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -265,7 +284,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **22** — none to go |
+| 15+ substantive pages | **23** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |
@@ -345,7 +364,7 @@ Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
 file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: four
-calculators, eight derivation pages, five trust pages, 22 substantive pages, 206
+calculators, eight derivation pages, five trust pages, 23 substantive pages, 206
 tests, eleven CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.

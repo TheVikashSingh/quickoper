@@ -1,0 +1,365 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../lib/site';
+
+/**
+ * The Android app page — the conversion surface for the machining vertical.
+ *
+ * ─── Three constraints shaped this ──────────────────────────────────────────
+ *
+ * 1. THE APP DOES NOT EXIST YET. Nothing here may read as if it is buyable.
+ *    Every claim about it is written in the future tense, the status is stated
+ *    twice, and the structured data carries NO `offers` node — a price in a
+ *    rich result for an unreleased app is a lie told by markup.
+ *
+ * 2. THERE IS NO EMAIL BACKEND. `/api/subscribe` is permitted by the backend
+ *    policy and has not been built, and a form posting nowhere is worse than no
+ *    form. The CTAs are `mailto:` links, which work today with zero
+ *    infrastructure.
+ *
+ *    That is not a downgrade. Someone who opens their mail client and sends a
+ *    message has shown far more intent than someone who drops an address into a
+ *    box, and for a first demand test a small number of high-quality signals is
+ *    worth more than a large number of weak ones.
+ *
+ * 3. THE TWO-CTA TEST STILL RUNS. The willingness-to-pay method wants a weak
+ *    signal ("tell me when it's out") tested against a strong one ("I would pay
+ *    for this"). Two mailto links with different subject lines give exactly that
+ *    split, countable by filtering a mailbox, with no payment processor and no
+ *    money taken for a product that does not exist.
+ *
+ * When `/api/subscribe` lands, the mailto pair becomes a form pair and the
+ * subject lines become a hidden field. Nothing else on the page changes.
+ */
+
+/**
+ * Verbatim, from Play Store reviews of competing apps.
+ *
+ * Collected 2026-08-30/09-01: 1,908 reviews across 41 machinist-calculator apps
+ * in the US, GB, AU and DE, of which 511 were negative. Attributed by rating and
+ * app, never by username.
+ *
+ * These are the reason the app is being built, and they are the one thing on
+ * this page that could not have been written without doing the work.
+ */
+const COMPLAINTS = [
+  {
+    quote:
+      'cant see where there is speeds and feeds for hss drills in metric. Yes, the majority of the planet in the 21st century uses Metric.',
+    source: '1★ · FSWizard Machinist Calculator',
+  },
+  {
+    quote: 'Useless for lathes or metric users. Needs lots more data for metric taps',
+    source: '2★ · FSWizard Machinist Calculator',
+  },
+  {
+    quote:
+      'I actually regret spending £12, milling calculations are all in imperial measurements. I use the metric system, and not being able to choose which on milling and turning…',
+    source: '2★ · CNC Machinist Calculator Pro',
+  },
+  {
+    quote:
+      'I don’t know of any machinist on Earth who checks true position and rounds their deviations and end result. This calculator is worthless without at least 4 places behind the zero.',
+    source: '1★ · FSWizard Pro Machinist Calc',
+  },
+  {
+    quote:
+      '…the fundamental failure of the developer to not make [tools] in feed per revolution…',
+    source: '1★ · FSWizard Machinist Calculator',
+  },
+  {
+    quote: 'The metric drill sizes are incorrect… almost always rounded to 0.5mm',
+    source: '1★ · Tap And Drill Chart Calculator',
+  },
+];
+
+const PRICING_QUOTES = [
+  {
+    quote:
+      'A monthly subscription is not an option when I have a machinist hand book that has the same information in it. $14.99 for CNC Machinist calculator Pro is one thing. I would be willing to pay $20…',
+    source: '1★ · CNC Machinist Calculator Ultra',
+  },
+  {
+    quote:
+      'I’m sure the information provided by this application is worthwhile for a one time purchase, but not for a recurring subscription.',
+    source: '2★ · CNC Machinist Calculator Ultra',
+  },
+  {
+    quote:
+      'you made me buy it again just because I got a new phone. Pretty disappointed.',
+    source: '2★ · CNC Machinist Calculator Pro',
+  },
+];
+
+const DOING = [
+  {
+    title: 'Metric first, and metric everywhere',
+    body: 'Every field switches independently. Milling, turning, drilling and boring all behave the same way — no module that is imperial-only while its neighbour is metric.',
+  },
+  {
+    title: 'Feed in mm/min and mm/rev, always both',
+    body: 'Not one convention with the other buried in a setting. Both figures, on screen, at the same time.',
+  },
+  {
+    title: 'Drills that exist',
+    body: 'Recommendations come from a real index, and the app reports the thread engagement that drill actually produces — which is rarely the round number you asked for.',
+  },
+  {
+    title: 'Four decimal places, minimum',
+    body: 'Configurable to six. Rounding happens once, on the way to the screen, never inside a calculation.',
+  },
+  {
+    title: 'Every result shows its working',
+    body: 'Tap a number to see the formula, the values substituted into it, and the standard it comes from.',
+  },
+  {
+    title: 'Offline, always',
+    body: 'No network call on any calculation path. Shop floors do not have signal.',
+  },
+];
+
+const NOT_DOING = [
+  [
+    'Per-brand M-code lists',
+    'The most-requested missing feature in the reviews, and a content treadmill: it would need updating forever and would be wrong the moment a control is revised. Refused deliberately.',
+  ],
+  ['A subscription', 'One purchase. See below.'],
+  ['Ads', 'None, anywhere, at any tier.'],
+  ['An account', 'Nothing to sign up for. Nothing to sign in to.'],
+];
+
+const SUBJECT_WEAK = encodeURIComponent('Machinist app — tell me when it is out');
+const SUBJECT_STRONG = encodeURIComponent('Machinist app — I would pay for this');
+const BODY_STRONG = encodeURIComponent(
+  'What I would use it for:\n\nThe machine(s) I run:\n\nThe thing every other app gets wrong for me:\n',
+);
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'QuickOper Machinist Calculator',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Android',
+    // NO `offers` node. The app is unreleased; a price here would put a
+    // purchasable claim into search results for something nobody can buy.
+    description:
+      'A metric-first machinist calculator for Android: feeds and speeds, thread and tap drill sizing, drill charts. In development, not yet released.',
+    url: `${SITE.url}/machining/app`,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Android app',
+        item: `${SITE.url}/machining/app`,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="The machinist app"
+  description="A metric-first machinist calculator for Android — feeds and speeds, thread and tap drill, offline, one payment. In development. Here is what it will do and why it is being built."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Android app
+    </nav>
+
+    <p
+      class="border-caution text-ink-soft mt-4 inline-block border-l-4 py-1 pl-3 font-mono text-xs tracking-widest uppercase"
+    >
+      In development · not yet released
+    </p>
+
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      A machinist calculator that works in millimetres
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      Every machining calculator on the Play Store is imperial-first with metric bolted
+      on. This one is built the other way round. It is not finished, and this page exists
+      so you can tell me whether it is worth finishing.
+    </p>
+
+    <!-- ── Why ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        Why — in the words of people who already paid
+      </h2>
+      <p class="text-ink-soft mt-3 max-w-prose">
+        These are verbatim from Play Store reviews of competing apps. I read{' '}
+        <strong class="text-ink">1,908 reviews across 41 machinist calculators</strong> in the
+        US, UK, Australia and Germany. 511 were negative, and the single most common complaint
+        — across nine independent apps — was metric handling.
+      </p>
+      <div class="mt-5 space-y-4">
+        {
+          COMPLAINTS.map((c) => (
+            <blockquote class="border-line text-ink-soft border-l-2 pl-4">
+              <p class="max-w-prose italic">“{c.quote}”</p>
+              <cite class="text-ink-mute mt-1 block font-mono text-xs not-italic">
+                {c.source}
+              </cite>
+            </blockquote>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── What it does ────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">What it will do</h2>
+      <div class="mt-5 grid gap-4 sm:grid-cols-2">
+        {
+          DOING.map((d) => (
+            <div class="border-line bg-surface rounded-panel border p-4">
+              <h3 class="font-display text-ink font-semibold">{d.title}</h3>
+              <p class="text-ink-soft mt-1 text-sm">{d.body}</p>
+            </div>
+          ))
+        }
+      </div>
+      <p class="text-ink-mute mt-4 max-w-prose text-sm">
+        You can judge the arithmetic before the app exists. The{' '}
+        <a
+          class="text-brand underline underline-offset-2"
+          href="/machining/tap-drill-calculator">tap drill calculator</a
+        > on this site runs the same formulas, cites the same standards and shows the same working.
+        If it gets a number wrong, tell me and I will fix it there first.
+      </p>
+    </section>
+
+    <!-- ── What it won't do ────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">What it will not do</h2>
+      <dl class="mt-4 space-y-3">
+        {
+          NOT_DOING.map(([title, body]) => (
+            <div class="border-line border-t pt-3">
+              <dt class="text-ink font-semibold">{title}</dt>
+              <dd class="text-ink-soft mt-1 max-w-prose text-sm">{body}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <!-- ── Price ───────────────────────────────────────────────────────── -->
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-12 border p-6"
+    >
+      <h2 class="font-display text-ink text-2xl font-semibold">What it will cost</h2>
+      <p class="text-brand font-numeric mt-3 text-4xl font-semibold">
+        $19.99 <span class="text-ink-mute text-lg font-normal">once</span>
+      </p>
+      <p class="text-ink-soft mt-3 max-w-prose">
+        One payment. No subscription, no ads, no account. Buy it once and it follows your
+        Google account onto your next phone — which is not a feature so much as using the
+        platform correctly, and two reviewers of a competing app had to buy it twice.
+      </p>
+      <div class="mt-5 space-y-4">
+        {
+          PRICING_QUOTES.map((c) => (
+            <blockquote class="border-line text-ink-soft border-l-2 pl-4">
+              <p class="max-w-prose text-sm italic">“{c.quote}”</p>
+              <cite class="text-ink-mute mt-1 block font-mono text-xs not-italic">
+                {c.source}
+              </cite>
+            </blockquote>
+          ))
+        }
+      </div>
+      <p class="text-ink-mute mt-4 max-w-prose text-sm">
+        The price is not a guess. It is what machinists said they would pay, in reviews of
+        an app that asked them for a subscription instead.
+      </p>
+    </section>
+
+    <!-- ── CTA ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Should I finish it?</h2>
+      <p class="text-ink-soft mt-3 max-w-prose">
+        There is no signup form, because there is no mailing list yet and a box that
+        pretends to store your address would be the first dishonest thing on this site.
+        Both of these open your mail app. I read every one.
+      </p>
+
+      <div class="mt-5 grid gap-4 sm:grid-cols-2">
+        <a
+          class="border-line-strong bg-surface hover:border-brand focus-visible:outline-brand rounded-panel block border p-5 focus-visible:outline-2 focus-visible:outline-offset-2"
+          href={`mailto:${SITE.email}?subject=${SUBJECT_WEAK}`}
+        >
+          <span class="text-ink font-display block font-semibold"
+            >Tell me when it is out</span
+          >
+          <span class="text-ink-mute mt-1 block text-sm">
+            One line is enough. I will email you once, when it ships.
+          </span>
+        </a>
+
+        <a
+          class="border-brand bg-brand-soft hover:border-brand-hover focus-visible:outline-brand rounded-panel block border-2 p-5 focus-visible:outline-2 focus-visible:outline-offset-2"
+          href={`mailto:${SITE.email}?subject=${SUBJECT_STRONG}&body=${BODY_STRONG}`}
+        >
+          <span class="text-ink font-display block font-semibold"
+            >I would pay $19.99 for this</span
+          >
+          <span class="text-ink-mute mt-1 block text-sm">
+            Tell me what you run and what every other app gets wrong for you. This is the
+            one that decides whether it gets built.
+          </span>
+        </a>
+      </div>
+
+      <p class="text-ink-mute mt-4 max-w-prose text-sm">
+        Nobody is charged anything. There is nothing to pre-order — the app does not
+        exist, and taking money for it would be absurd. The second link is a stronger
+        signal than the first, which is the entire reason both are here.
+      </p>
+    </section>
+
+    <!-- ── Status ──────────────────────────────────────────────────────── -->
+    <section class="border-line mt-12 border-t pt-6">
+      <h2 class="font-display text-ink text-xl font-semibold">Where it actually is</h2>
+      <ul class="text-ink-soft mt-3 space-y-2 text-sm">
+        <li class="border-positive border-l-2 pl-3">
+          <strong class="text-ink">Live now:</strong>
+          <a
+            class="text-brand underline underline-offset-2"
+            href="/machining/tap-drill-calculator">the tap drill calculator</a
+          > on this site. Same formulas, same standards, free, no signup.
+        </li>
+        <li class="border-caution border-l-2 pl-3">
+          <strong class="text-ink">Next:</strong> feeds and speeds — milling, turning, drilling
+          and boring, in mm/min and mm/rev.
+        </li>
+        <li class="border-line-strong border-l-2 pl-3">
+          <strong class="text-ink">Then:</strong> the Android app, if enough machinists say
+          it is worth having. That is what the links above decide.
+        </li>
+      </ul>
+      <p class="text-ink-mute mt-4 max-w-prose text-sm">
+        No release date, because I would be making it up. It is built in evenings by one
+        person, and the arithmetic is checked against published standards before anything
+        ships — which is slower than guessing and the only way a tool like this is worth
+        installing.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
