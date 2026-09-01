@@ -1,0 +1,685 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+/**
+ * Feeds and speeds.
+ *
+ * ─── What this page refuses to do ───────────────────────────────────────────
+ *
+ * It does not tell you what cutting speed to use. There is no material
+ * dropdown, and there will not be one until somebody has verified a table
+ * against a manufacturer's published data.
+ *
+ * Vc and fz are not properties of a material — they are properties of a
+ * material, a substrate, a coating, a geometry, a coolant strategy and a
+ * machine. Sandvik, Kennametal and Seco publish different figures for the same
+ * steel, per insert grade. A calculator that answers "what Vc for stainless?"
+ * from a table it invented looks authoritative, is specific, and breaks tools.
+ *
+ * So the data sheet supplies Vc and fz; this page does the arithmetic, which is
+ * the tedious and error-prone half. That is also the division of labour a
+ * machinist should be using anyway.
+ *
+ * ─── Turning is a first-class operation, not a tab ──────────────────────────
+ *
+ * Seven separate apps in the review corpus drew turning complaints — "Useless
+ * for lathes", "Lacks Boring Operation", "cut time calculation in turning
+ * section doesn't work". Milling and turning here share the unit handling and
+ * the display, and turning uses its OWN MRR formula rather than the milling one
+ * relabelled.
+ */
+
+const LAST_VERIFIED = '2026-09-01';
+
+const SOURCES = [
+  {
+    label: 'ISO 3002-1 — basic quantities in cutting and grinding. ICS 25.100',
+    url: 'https://www.iso.org/ics/25.100/x/',
+    retrieved: LAST_VERIFIED,
+  },
+  {
+    label: 'Sandvik Coromant — metalworking formulas and definitions (technical guide)',
+    url: 'https://www.sandvik.coromant.com/en-gb/knowledge',
+    retrieved: LAST_VERIFIED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'Why does it not tell me the cutting speed?',
+    a: 'Because it would have to make it up. Cutting speed is a property of the material AND the insert grade, coating, geometry, coolant and machine — which is why Sandvik, Kennametal and Seco publish different numbers for the same steel. The figure on your tooling data sheet is the right one; this page turns it into rpm and feed without arithmetic errors.',
+  },
+  {
+    q: 'Why show both mm/rev and mm/min?',
+    a: 'Because a lathe operator works in feed per revolution and a mill operator in feed per minute, and they are the same cut described two ways. Showing only one picks a side. A reviewer of a competing app called the missing mm/rev "the fundamental failure of the developer", and he had a point.',
+  },
+  {
+    q: 'Is the chip thickness figure exact?',
+    a: 'No, and it is labelled approximate. It uses the standard radial-chip-thinning approximation, fz × √(ae/Dc), which is what the tooling guides themselves publish for sizing a cut. Exact chip thickness depends on cutter geometry your vendor knows and this page does not.',
+  },
+  {
+    q: 'The power figure looks low compared to my machine rating.',
+    a: 'It is net power at the cut, before drive losses beyond the efficiency you entered, and it is the power the cut itself demands. Compare it against the spindle rating with a margin; a cut that computes at 90% of rated power is not a cut you want to take. Note also that kc1.1 and mc are yours to supply — a wrong kc1.1 gives a confidently wrong wattage.',
+  },
+  {
+    q: 'Why is there no drilling mode?',
+    a: 'Because drilling reduces to the turning arithmetic with the drill diameter as Dc and feed in mm/rev, and adding a third mode that reuses the same two formulas would be interface for its own sake. Use turning and read fn.',
+  },
+  {
+    q: 'Does this work offline?',
+    a: 'Yes. Everything runs in your browser and nothing you enter is transmitted. Once loaded it keeps working without a connection.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Feeds and speeds calculator',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/machining/feeds-and-speeds-calculator`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'Metric-first feeds and speeds for milling and turning. Spindle speed, feed in both mm/rev and mm/min, material removal rate, chip thickness and cutting power, with the formula and the substituted values shown.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Feeds and speeds calculator',
+        item: `${SITE.url}/machining/feeds-and-speeds-calculator`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+
+const field =
+  'border-line-strong bg-surface text-ink focus-visible:outline-brand rounded-control font-numeric w-full border px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-offset-2';
+const label = 'text-ink-soft block text-sm font-semibold';
+const hint = 'text-ink-mute mt-1 text-xs';
+---
+
+<BaseLayout
+  title="Feeds and speeds calculator"
+  description="Metric-first feeds and speeds for milling and turning. Spindle speed, feed in both mm/rev and mm/min, removal rate and cutting power — with the formula and every substituted value shown."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Feeds and speeds
+    </nav>
+
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      Feeds and speeds
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      Milling and turning, treated the same. Feed in millimetres per revolution{' '}
+      <em>and</em> per minute, always both. Your cutting data comes from your tooling data sheet
+      — this does the arithmetic.
+    </p>
+
+    <!-- ── Calculator ──────────────────────────────────────────────────── -->
+    <section class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border">
+      <form id="fs-form" class="grid gap-4 p-5 sm:grid-cols-3">
+        <fieldset class="sm:col-span-3">
+          <legend class={label}>Operation</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="op" value="milling" checked /> Milling</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="op" value="turning" /> Turning &amp; boring</label
+            >
+          </div>
+        </fieldset>
+
+        <fieldset class="sm:col-span-3">
+          <legend class={label}>Units</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="metric" checked /> Metric (m/min, mm)</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="inch" /> Inch (sfm, in)</label
+            >
+          </div>
+        </fieldset>
+
+        <div>
+          <label class={label} for="fs-vc"
+            >Cutting speed <span id="fs-vc-u">Vc</span></label
+          >
+          <input
+            class={`${field} mt-1`}
+            id="fs-vc"
+            name="vc"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0.1"
+            value="100"
+            required
+          />
+          <p class={hint}>From your tooling data sheet.</p>
+        </div>
+        <div>
+          <label class={label} for="fs-dc"
+            ><span id="fs-dc-label">Cutter diameter</span></label
+          >
+          <input
+            class={`${field} mt-1`}
+            id="fs-dc"
+            name="dc"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0.01"
+            value="10"
+            required
+          />
+          <p class={hint} id="fs-dc-hint">Tool diameter at the cut.</p>
+        </div>
+        <div>
+          <label class={label} for="fs-fz"
+            ><span id="fs-fz-label">Feed per tooth</span></label
+          >
+          <input
+            class={`${field} mt-1`}
+            id="fs-fz"
+            name="fz"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0.0001"
+            value="0.1"
+            required
+          />
+          <p class={hint} id="fs-fz-hint">Also from the data sheet.</p>
+        </div>
+
+        <div id="fs-teeth-wrap">
+          <label class={label} for="fs-teeth">Teeth</label>
+          <input
+            class={`${field} mt-1`}
+            id="fs-teeth"
+            name="teeth"
+            type="number"
+            inputmode="numeric"
+            step="1"
+            min="1"
+            value="4"
+            required
+          />
+          <p class={hint}>Flutes or inserts.</p>
+        </div>
+        <div id="fs-ae-wrap">
+          <label class={label} for="fs-ae">Radial depth aₑ</label>
+          <input
+            class={`${field} mt-1`}
+            id="fs-ae"
+            name="ae"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0.001"
+            value="5"
+            required
+          />
+          <p class={hint}>Width of cut. Equals diameter when slotting.</p>
+        </div>
+        <div>
+          <label class={label} for="fs-ap">Axial depth aₚ</label>
+          <input
+            class={`${field} mt-1`}
+            id="fs-ap"
+            name="ap"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0.001"
+            value="2"
+            required
+          />
+          <p class={hint}>Depth of cut.</p>
+        </div>
+      </form>
+
+      <output
+        id="fs-result"
+        class="border-line block border-t px-5 py-5"
+        for="fs-form"
+        aria-live="polite"></output>
+    </section>
+
+    <p id="fs-error" class="text-negative mt-3 hidden text-sm" role="alert"></p>
+
+    <!-- ── Power ───────────────────────────────────────────────────────── -->
+    <section class="mt-10">
+      <h2 class="font-display text-ink text-2xl font-semibold">Cutting power</h2>
+      <p class="text-ink-soft mt-2 max-w-prose">
+        Needs two more numbers from your data sheet: the specific cutting force{' '}
+        <span class="font-numeric">k<sub>c1.1</sub></span> and the Kienzle exponent{' '}
+        <span class="font-numeric">m<sub>c</sub></span> for the material and grade. Without
+        them any wattage would be invented, so this stays blank until you supply them.
+      </p>
+      <form
+        id="fs-power-form"
+        class="border-line bg-surface rounded-panel mt-4 grid gap-4 border p-5 sm:grid-cols-3"
+      >
+        <div>
+          <label class={label} for="fs-kc11">k<sub>c1.1</sub> (N/mm²)</label>
+          <input
+            class={`${field} mt-1`}
+            id="fs-kc11"
+            name="kc11"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="1"
+            placeholder="e.g. 1500"
+          />
+        </div>
+        <div>
+          <label class={label} for="fs-mc">m<sub>c</sub></label>
+          <input
+            class={`${field} mt-1`}
+            id="fs-mc"
+            name="mc"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0"
+            max="0.99"
+            placeholder="e.g. 0.25"
+          />
+        </div>
+        <div>
+          <label class={label} for="fs-eta">Spindle efficiency η</label>
+          <input
+            class={`${field} mt-1`}
+            id="fs-eta"
+            name="eta"
+            type="number"
+            inputmode="decimal"
+            step="0.05"
+            min="0.1"
+            max="1"
+            value="0.8"
+          />
+          <p class={hint}>0.75–0.9 is usual.</p>
+        </div>
+        <div class="sm:col-span-3">
+          <label class={label} for="fs-machine">Your spindle rating (kW, optional)</label>
+          <input
+            class={`${field} mt-1`}
+            id="fs-machine"
+            name="machine"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0.1"
+            placeholder="e.g. 7.5"
+          />
+          <p class={hint}>
+            If given, the result is compared against it. It warns; it never blocks.
+          </p>
+        </div>
+      </form>
+      <output id="fs-power" class="mt-4 block" for="fs-power-form" aria-live="polite"
+      ></output>
+    </section>
+
+    <!-- ── Working ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        How this was calculated
+      </h2>
+      <div
+        id="fs-working"
+        class="border-line bg-sunken rounded-panel font-numeric mt-4 overflow-x-auto border p-4 text-sm leading-relaxed"
+      >
+      </div>
+    </section>
+
+    <!-- ── No material database ────────────────────────────────────────── -->
+    <section class="border-caution bg-surface rounded-panel mt-12 border-l-4 p-5">
+      <h2 class="font-display text-ink text-xl font-semibold">
+        Why there is no material dropdown
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        Because cutting speed is not a property of a material. It is a property of a
+        material <em>and</em> an insert substrate, a coating, an edge geometry, a coolant strategy
+        and how rigid your machine is — which is why Sandvik, Kennametal and Seco publish different
+        figures for the same steel, per grade.
+      </p>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        A dropdown reading “Stainless 304 → 120 m/min” would be specific, authoritative
+        and wrong for most of the people who used it. The figure on the box your inserts
+        came in is the right one. This page exists to do the arithmetic around it without
+        errors.
+      </p>
+    </section>
+
+    <!-- ── Explanation ─────────────────────────────────────────────────── -->
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        The four numbers, and why they are separate
+      </h2>
+      <p>
+        Every feeds and speeds calculation is the same short chain, and almost every
+        mistake happens at one of the joins rather than in the arithmetic itself.
+      </p>
+      <p>
+        <strong class="text-ink">Spindle speed</strong> converts a surface speed into a rotation
+        rate: how fast the edge should travel through the material, divided by how far it travels
+        per revolution. That is why the diameter in the formula is the <em>cutting</em> diameter
+        — the tool diameter when milling, the workpiece diameter when turning. Using the wrong
+        one is the single most common input error here and no formula can catch it, because
+        both numbers are perfectly valid diameters.
+      </p>
+      <p>
+        <strong class="text-ink">Feed</strong> exists in two conventions that describe the same
+        motion. Feed per revolution is how far the tool advances in one turn; table feed is
+        how far it advances in a minute. A lathe operator thinks in the first, a mill operator
+        in the second, and converting between them requires the spindle speed you just calculated
+        — which is exactly why an app showing only one of them is more annoying than it looks.
+      </p>
+      <p>
+        <strong class="text-ink">Material removal rate</strong> is where milling and turning
+        genuinely diverge. Milling sweeps a slot: radial depth times axial depth times how fast
+        the table moves. Turning peels a ring: cutting speed times depth times feed per revolution.
+        They are different geometries, not one formula with different labels, and apps that
+        reuse the milling expression for turning produce numbers that are wrong by whatever
+        the tooth count happened to be.
+      </p>
+      <p>
+        <strong class="text-ink">Cutting power</strong> is the one that can stall a spindle,
+        and the one most dependent on data this page will not invent. It scales with removal
+        rate and with the specific cutting force of the material — and that force is not constant.
+        Thin chips are proportionally harder to cut than thick ones, which is what the Kienzle
+        exponent captures: halve the chip thickness and the force per square millimetre rises.
+        A light finishing pass is not as cheap in power as its removal rate suggests.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">Chip thinning</h3>
+      <p>
+        When radial engagement is less than half the cutter diameter, the chip a tooth
+        actually cuts is thinner than the feed per tooth you programmed. The tooth enters
+        and leaves the material over a shorter arc, so the maximum thickness it reaches is
+        reduced by roughly √(aₑ/Dc). Machinists exploit this deliberately — a light radial
+        cut lets you raise feed per tooth substantially without overloading the edge,
+        which is the whole basis of high-efficiency milling.
+      </p>
+      <p>
+        It matters here because chip thickness feeds the power calculation. Use the
+        programmed feed per tooth instead of the thinned value and the specific cutting
+        force comes out too low, which understates power exactly when a light radial cut
+        is tempting you to push feed.
+      </p>
+    </section>
+
+    <!-- ── App ─────────────────────────────────────────────────────────── -->
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-12 border p-5"
+    >
+      <h2 class="font-display text-ink text-xl font-semibold">
+        This, on a phone that works without signal
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        The same arithmetic is going into a metric-first Android app, with your machines
+        and materials saved so you are not re-entering them thirty times a shift. This
+        page stays free either way.
+      </p>
+      <a
+        class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+        href="/machining/app">What the app will do &rarr;</a
+      >
+    </section>
+
+    <!-- ── FAQ ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated starting figures, not a substitute for your tool manufacturer's
+      recommendation. Rigidity, coolant, workholding and tool wear all move the right
+      answer. Verify against your tooling supplier's data, and take a test cut.
+    </p>
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    DEFAULT_EFFICIENCY,
+    feedPerRev,
+    meanChipThickness,
+    millingMrr,
+    millingPower,
+    specificCuttingForce,
+    spindleSpeed,
+    tableFeed,
+    turningMrr,
+    type UnitSystem,
+  } from '../../lib/calc/feeds-speeds';
+  import {
+    inchToUm,
+    mmToUm,
+    roundHalfEven,
+    umExactToMm,
+    type Micrometres,
+  } from '../../lib/calc/tap-drill';
+
+  function must<T extends HTMLElement>(id: string): T {
+    const el = document.getElementById(id);
+    if (el === null) throw new Error(`feeds-speeds: #${id} is missing`);
+    return el as T;
+  }
+
+  const form = must<HTMLFormElement>('fs-form');
+  const powerForm = must<HTMLFormElement>('fs-power-form');
+  const resultEl = must('fs-result');
+  const powerEl = must('fs-power');
+  const workingEl = must('fs-working');
+  const errorEl = must('fs-error');
+  const D = 4;
+
+  const num = (f: HTMLFormElement, name: string): number =>
+    Number((f.elements.namedItem(name) as HTMLInputElement).value);
+  const raw = (f: HTMLFormElement, name: string): string =>
+    (f.elements.namedItem(name) as HTMLInputElement).value.trim();
+  const pick = (name: string): string =>
+    (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
+
+  const toUm = (v: number, u: UnitSystem) => (u === 'metric' ? mmToUm(v) : inchToUm(v));
+  const fromUm = (v: number, u: UnitSystem) => (u === 'metric' ? v / 1000 : v / 25400);
+  const lenUnit = (u: UnitSystem) => (u === 'metric' ? 'mm' : 'in');
+
+  /** Labels change with the operation. A lathe has no teeth and no radial depth. */
+  function relabel(): void {
+    const turning = pick('op') === 'turning';
+    const u = pick('units') as UnitSystem;
+    must('fs-vc-u').textContent = u === 'metric' ? 'Vc (m/min)' : 'Vc (sfm)';
+    must('fs-dc-label').textContent = turning ? 'Workpiece diameter' : 'Cutter diameter';
+    must('fs-dc-hint').textContent = turning
+      ? 'Diameter at the cut, not the stock size.'
+      : 'Tool diameter at the cut.';
+    must('fs-fz-label').innerHTML = turning
+      ? 'Feed per revolution f<sub>n</sub>'
+      : 'Feed per tooth f<sub>z</sub>';
+    must('fs-teeth-wrap').hidden = turning;
+    must('fs-ae-wrap').hidden = turning;
+  }
+
+  function render(): void {
+    relabel();
+    errorEl.classList.add('hidden');
+    try {
+      const u = pick('units') as UnitSystem;
+      const turning = pick('op') === 'turning';
+      const vc = num(form, 'vc');
+      const dcUm = toUm(num(form, 'dc'), u);
+      const apUm = toUm(num(form, 'ap'), u);
+      const rpm = spindleSpeed(vc, dcUm, u);
+
+      // Turning takes feed per revolution directly; milling derives it.
+      const fzUm = toUm(num(form, 'fz'), u);
+      const fnUm = turning ? fzUm : feedPerRev(fzUm, num(form, 'teeth'));
+      const vfUm = tableFeed(fnUm, rpm);
+      const aeUm = turning ? dcUm : toUm(num(form, 'ae'), u);
+      const mrr = turning ? turningMrr(vc, apUm, fnUm) : millingMrr(aeUm, apUm, vfUm);
+      const hmUm = turning ? fnUm : meanChipThickness(fzUm, aeUm, dcUm);
+
+      const L = lenUnit(u);
+      const feedMin = u === 'metric' ? 'mm/min' : 'in/min';
+      const feedRev = u === 'metric' ? 'mm/rev' : 'in/rev';
+      const mrrUnit = u === 'metric' ? 'cm³/min' : 'in³/min';
+      // Turning MRR is derived in cm³/min from metric inputs; for inch inputs the
+      // same expression yields in³/min because every term is already in inches.
+      const stat = (k: string, v: string, s: string) =>
+        `<div><p class="font-mono text-xs uppercase tracking-widest text-ink-mute">${k}</p>
+         <p class="mt-1 font-numeric text-2xl font-semibold text-ink">${v}</p>
+         <p class="text-sm text-ink-mute">${s}</p></div>`;
+
+      resultEl.innerHTML = `<div class="grid gap-4 sm:grid-cols-3">
+        ${stat('Spindle speed', `${roundHalfEven(rpm, 0)}`, 'rev/min')}
+        ${stat('Feed', `${roundHalfEven(fromUm(vfUm, u), D)}`, feedMin)}
+        ${stat('Feed per rev', `${roundHalfEven(fromUm(fnUm, u), D)}`, feedRev)}
+        ${stat('Removal rate', `${roundHalfEven(mrr, D)}`, mrrUnit)}
+        ${stat(turning ? 'Chip thickness' : 'Mean chip (approx)', `${roundHalfEven(fromUm(hmUm, u), D)}`, L)}
+      </div>`;
+
+      const show = (v: number) => roundHalfEven(fromUm(v, u), D);
+      workingEl.textContent =
+        `n  = ${u === 'metric' ? 'Vc × 1000' : 'Vc × 12'} / (π × Dc)\n` +
+        `   = ${u === 'metric' ? `${vc} × 1000` : `${vc} × 12`} / (π × ${show(dcUm)} ${L})\n` +
+        `   = ${roundHalfEven(rpm, 4)} rev/min\n\n` +
+        (turning
+          ? `fn = ${show(fnUm)} ${feedRev}   (entered)\n`
+          : `fn = fz × z = ${show(fzUm)} × ${num(form, 'teeth')} = ${show(fnUm)} ${feedRev}\n`) +
+        `vf = fn × n = ${show(fnUm)} × ${roundHalfEven(rpm, 2)} = ${show(vfUm)} ${feedMin}\n\n` +
+        (turning
+          ? `Q  = Vc × ap × fn = ${vc} × ${show(apUm)} × ${show(fnUm)} = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`
+          : `Q  = ae × ap × vf / 1000 = ${show(aeUm)} × ${show(apUm)} × ${show(vfUm)} / 1000 = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`) +
+        (turning
+          ? ''
+          : `\nhm ≈ fz × √(ae/Dc) = ${show(fzUm)} × √(${show(aeUm)}/${show(dcUm)}) = ${show(hmUm)} ${L}   (approximate)\n`);
+
+      renderPower(aeUm, apUm, vfUm, hmUm, u, turning);
+    } catch (err) {
+      errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
+      errorEl.classList.remove('hidden');
+      resultEl.innerHTML = '';
+      workingEl.textContent = '';
+      powerEl.innerHTML = '';
+    }
+  }
+
+  function renderPower(
+    aeUm: Micrometres,
+    apUm: Micrometres,
+    vfUm: number,
+    hmUm: number,
+    u: UnitSystem,
+    turning: boolean,
+  ): void {
+    const kc11 = raw(powerForm, 'kc11');
+    const mc = raw(powerForm, 'mc');
+    if (kc11 === '' || mc === '') {
+      powerEl.innerHTML = `<p class="text-ink-mute text-sm">Enter k<sub>c1.1</sub> and m<sub>c</sub> from your tooling data to see cutting power. Nothing is assumed for you.</p>`;
+      return;
+    }
+    if (u === 'inch') {
+      powerEl.innerHTML = `<p class="text-caution text-sm">Kienzle constants are published in metric (N/mm²). Switch the units above to metric for the power figure.</p>`;
+      return;
+    }
+    try {
+      const eta = num(powerForm, 'eta') || DEFAULT_EFFICIENCY;
+      const kc = specificCuttingForce(Number(kc11), Number(mc), hmUm);
+      const pc = millingPower(aeUm, apUm, vfUm, kc, eta);
+      const machine = raw(powerForm, 'machine');
+      let verdict = '';
+      if (machine !== '') {
+        const rated = Number(machine);
+        const pct = (pc / rated) * 100;
+        const tone =
+          pct > 90 ? 'text-negative' : pct > 70 ? 'text-caution' : 'text-positive';
+        verdict = `<p class="mt-2 text-sm ${tone}">${roundHalfEven(pct, 1)}% of your ${rated} kW spindle.${
+          pct > 90 ? ' That is not a cut to take without reducing something.' : ''
+        }</p>`;
+      }
+      powerEl.innerHTML = `<div class="border-line bg-surface rounded-panel border p-4">
+        <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Net cutting power</p>
+        <p class="mt-1 font-numeric text-3xl font-semibold text-brand">${roundHalfEven(pc, 3)} kW</p>
+        <p class="text-ink-mute mt-1 text-sm">kc = ${roundHalfEven(kc, 1)} N/mm² at ${roundHalfEven(umExactToMm(hmUm), 4)} mm chip${
+          turning ? '' : ' (thinned)'
+        }</p>${verdict}
+      </div>`;
+    } catch (err) {
+      powerEl.innerHTML = `<p class="text-negative text-sm">${
+        err instanceof Error ? err.message : 'Check the power inputs.'
+      }</p>`;
+    }
+  }
+
+  form.addEventListener('input', render);
+  form.addEventListener('change', render);
+  powerForm.addEventListener('input', render);
+  render();
+</script>

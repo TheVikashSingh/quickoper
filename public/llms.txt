@@ -285,6 +285,27 @@ Jurisdiction: none.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/verify
 
+### Feeds and speeds calculator
+URL: https://quickoper.com/machining/feeds-and-speeds-calculator
+Computes: spindle speed, feed per revolution AND table feed, material removal
+rate, mean chip thickness, and net cutting power for milling and for turning.
+Inputs: cutting speed Vc, cutting diameter Dc, feed per tooth (milling) or feed
+per revolution (turning), tooth count, radial depth ae, axial depth ap, unit
+system; optionally kc1.1, mc, spindle efficiency and machine rating for power.
+Key figures: n = Vc x 1000 / (pi x Dc) metric, Vc x 12 / (pi x Dc) inch.
+fn = fz x z. vf = fn x n. Milling removal rate Q = ae x ap x vf / 1000; turning
+Q = Vc x ap x fn, a DIFFERENT formula, not the milling one relabelled. Kienzle
+kc = kc1.1 x h^-mc. Pc = ae x ap x vf x kc / (60e6 x efficiency). Mean chip
+thickness approximated as fz x sqrt(ae/Dc).
+NO MATERIAL DATABASE. This tool never supplies a cutting speed or a feed per
+tooth. Those are properties of a material AND an insert grade, coating,
+geometry, coolant and machine, published differently by every tooling maker, so
+they are inputs taken from the user's data sheet. The power section stays blank
+until kc1.1 and mc are supplied rather than defaulting them.
+Jurisdiction: none. ISO 3002-1 definitions.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
 ### Tap drill calculator
 URL: https://quickoper.com/machining/tap-drill-calculator
 Computes: the largest drill in a real index that does not exceed the diameter

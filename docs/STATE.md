@@ -28,7 +28,7 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 25 (24 substantive — `/404` is not) |
+| Pages built | 26 (25 substantive — `/404` is not) |
 | Working calculators | 4 |
 | Tests | 206 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
@@ -189,6 +189,25 @@ ships **2.74 KB** against the 19.5 KB budget, where the Preact finance
 calculators sit at 17–18.7 KB. A form and a table do not need a framework, and
 the headroom is for the chart and the drill chart that follow.
 
+### Feeds and speeds
+
+`/machining/feeds-and-speeds-calculator` covers milling AND turning, sharing unit
+handling and display, with turning using its OWN removal-rate formula rather
+than the milling one relabelled — seven separate apps in the review corpus drew
+turning complaints.
+
+IT HAS NO MATERIAL DROPDOWN, and that is the point. Cutting speed is not a
+property of a material: it is a property of a material AND an insert substrate,
+coating, geometry, coolant strategy and machine rigidity, which is why Sandvik,
+Kennametal and Seco publish different figures for the same steel per grade. A
+dropdown reading "Stainless 304 -> 120 m/min" would be specific, authoritative
+and wrong for most people who used it. Vc, fz, kc1.1 and mc are all INPUTS taken
+from the user's tooling data sheet; the page does the arithmetic, which is the
+error-prone half.
+
+The power section stays blank until kc1.1 and mc are supplied rather than
+defaulting them, for the same reason.
+
 ### The conversion surface
 
 `/machining/app` describes the app; `/apps` is the site-level index linked from
@@ -243,7 +262,7 @@ hour available to this vertical.
 
 ## Next
 
-**The content threshold is met.** The build produces 25 pages, of which 24 are
+**The content threshold is met.** The build produces 26 pages, of which 25 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -295,7 +314,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **24** — none to go |
+| 15+ substantive pages | **25** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |
@@ -375,7 +394,7 @@ Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
 file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: four
-calculators, eight derivation pages, five trust pages, 24 substantive pages, 206
+calculators, eight derivation pages, five trust pages, 25 substantive pages, 206
 tests, eleven CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.
