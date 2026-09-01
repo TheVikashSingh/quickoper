@@ -90,6 +90,18 @@ const CALCULATORS = [
     summary:
       'How much you need invested today for it to reach your retirement target on its own. Year-by-year projection, chart and export.',
   },
+  {
+    href: '/machining/tap-drill-calculator',
+    title: 'Tap drill — the drill you actually own',
+    summary:
+      'Enter a thread, get a drill from a real index and the thread engagement that drill genuinely produces. Metric-first, with the surrounding sizes shown.',
+  },
+  {
+    href: '/machining/feeds-and-speeds-calculator',
+    title: 'Feeds and speeds — milling and turning, treated the same',
+    summary:
+      'Spindle speed, feed in mm/rev and mm/min, removal rate, chip thinning and cutting power. Your cutting data comes from your tooling sheet; this does the arithmetic.',
+  },
 ];
 
 const CURRENCY = 'USD';
@@ -182,6 +194,18 @@ const slowMonths = demo.minimumsOnly.months;
             Coast FIRE
           </a>
           <a
+            href="/machining/tap-drill-calculator"
+            class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
+          >
+            Tap drill
+          </a>
+          <a
+            href="/machining/feeds-and-speeds-calculator"
+            class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
+          >
+            Feeds and speeds
+          </a>
+          <a
             href="/verify"
             class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
           >
@@ -189,8 +213,8 @@ const slowMonths = demo.minimumsOnly.months;
           </a>
         </div>
         <p class="text-ink-mute mt-2 text-xs">
-          Four calculators today. More are added one at a time, each tested against a
-          published figure before it ships.
+          Six calculators today across two subjects — money, and the shop floor. More are
+          added one at a time, each tested against a published figure before it ships.
         </p>
       </nav>
     </div>

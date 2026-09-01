@@ -14,6 +14,15 @@ interface Props {
   noindex?: boolean | undefined;
   /** Extra JSON-LD nodes for the page (WebApplication, BreadcrumbList, ...). */
   structuredData?: Record<string, unknown>[] | undefined;
+  /**
+   * Which vertical this page belongs to.
+   *
+   * Sets `data-vertical` on the root element, which re-points the design
+   * tokens in global.css. Omit for the finance side and the shared trust pages,
+   * which keep the default palette. No component reads this — they all go on
+   * consuming the same token names.
+   */
+  vertical?: 'machining' | undefined;
 }
 
 const {
@@ -22,9 +31,29 @@ const {
   canonical,
   noindex = false,
   structuredData = [],
+  vertical,
 } = Astro.props;
 
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, Astro.site).href;
+
+/**
+ * Navigation belongs to the vertical, not to the site.
+ *
+ * This nav used to hardcode "Calculators -> /finance" on every page, which put
+ * finance links across the top of a machining page. Verticals are meant to read
+ * as separate entities connected only through the landing page, and a shared
+ * nav pointing into one of them breaks that more visibly than anything else on
+ * the page.
+ *
+ * Apps sits on the LEFT, beside the wordmark, rather than in the right-hand
+ * group: it is the destination the whole site exists to feed, not a utility
+ * link like Methodology.
+ */
+const VERTICAL_NAV = {
+  machining: { label: 'Machining', href: '/machining' },
+  finance: { label: 'Calculators', href: '/finance' },
+} as const;
+const sectionNav = vertical ? VERTICAL_NAV[vertical] : VERTICAL_NAV.finance;
 
 /**
  * The entity graph — Organization, Person and WebSite, on every page.
@@ -118,7 +147,7 @@ const graph = [organization, person, website, ...structuredData];
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-vertical={vertical}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -245,9 +274,16 @@ const graph = [organization, person, website, ...structuredData];
           </span>
         </a>
 
+        <a
+          class="border-masthead-line text-masthead-accent hover:border-masthead-accent hover:text-masthead-ink rounded-control ml-1 border px-2.5 py-1 text-sm font-semibold sm:ml-3"
+          href="/apps">Apps</a
+        >
+
         <ul class="text-masthead-mute ml-auto flex items-center gap-5 text-sm">
           <li>
-            <a class="hover:text-masthead-ink" href="/finance">Calculators</a>
+            <a class="hover:text-masthead-ink" href={sectionNav.href}
+              >{sectionNav.label}</a
+            >
           </li>
           <li>
             <a class="hover:text-masthead-ink hidden sm:inline" href="/methodology">

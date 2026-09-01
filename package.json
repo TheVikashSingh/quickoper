@@ -22,9 +22,10 @@
     "schema": "node scripts/check-schema.mjs",
     "llms": "node scripts/check-llms.mjs",
     "deploy-config": "node scripts/check-deploy-config.mjs",
-    "verify": "npm run typecheck && npm run test && npm run build && npm run budget && npm run links && npm run spacing && npm run state && npm run slots && npm run schema && npm run llms && npm run deploy-config",
+    "verify": "npm run typecheck && npm run test && npm run build && npm run budget && npm run links && npm run sources && npm run spacing && npm run state && npm run slots && npm run schema && npm run llms && npm run deploy-config",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "sources": "node scripts/check-sources.mjs"
   },
   "dependencies": {
     "astro": "7.2.0",
@@ -37,6 +38,7 @@
     "@astrojs/sitemap": "3.7.3",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "26.1.2",
+    "fast-check": "^4.9.0",
     "prettier": "3.9.6",
     "prettier-plugin-astro": "0.14.1",
     "prettier-plugin-tailwindcss": "0.8.1",

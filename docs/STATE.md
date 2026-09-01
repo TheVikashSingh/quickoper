@@ -28,7 +28,7 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 21 (20 substantive — `/404` is not) |
+| Pages built | 26 (25 substantive — `/404` is not) |
 | Working calculators | 4 |
 | Tests | 206 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
@@ -166,9 +166,103 @@ Nothing in code depends on these, but launch does.
 
 ---
 
+## The machining vertical
+
+A second vertical opened 2026-09-01, at `/machining/`. It is not a variation on
+the finance side and should not be maintained as one.
+
+**Why a subfolder and not a subdomain.** Authority consolidates on one host, and
+the "calculators that show their working" promise — with `/methodology` and
+`/verify` behind it — is exactly the argument a machinist needs. A subdomain
+would restart both. Adding folders cannot disturb existing indexing; only
+changing or removing URLs does.
+
+**Its own identity, sharing the plumbing.** Finance draws on banknote engraving:
+warm paper, banknote green, Georgia. Machining draws on layout dye and scribed
+lines: ground-steel greys, Dykem blue, no serif. The token NAMES, the
+three-state dark handling and the measured contrast floors are identical — only
+the values change, scoped on `:root[data-vertical='machining']` and set by a
+`vertical` prop on BaseLayout. No component knows which vertical it renders in.
+
+**The calculator island is vanilla TypeScript, not Preact.** `/machining/tap-drill-calculator/`
+ships **2.74 KB** against the 19.5 KB budget, where the Preact finance
+calculators sit at 17–18.7 KB. A form and a table do not need a framework, and
+the headroom is for the chart and the drill chart that follow.
+
+### Feeds and speeds
+
+`/machining/feeds-and-speeds-calculator` covers milling AND turning, sharing unit
+handling and display, with turning using its OWN removal-rate formula rather
+than the milling one relabelled — seven separate apps in the review corpus drew
+turning complaints.
+
+IT HAS NO MATERIAL DROPDOWN, and that is the point. Cutting speed is not a
+property of a material: it is a property of a material AND an insert substrate,
+coating, geometry, coolant strategy and machine rigidity, which is why Sandvik,
+Kennametal and Seco publish different figures for the same steel per grade. A
+dropdown reading "Stainless 304 -> 120 m/min" would be specific, authoritative
+and wrong for most people who used it. Vc, fz, kc1.1 and mc are all INPUTS taken
+from the user's tooling data sheet; the page does the arithmetic, which is the
+error-prone half.
+
+The power section stays blank until kc1.1 and mc are supplied rather than
+defaulting them, for the same reason.
+
+### The conversion surface
+
+`/machining/app` describes the app; `/apps` is the site-level index linked from
+the masthead and routes to it. The split is deliberate — conversion happens in
+context, so a machinist reads about their app on a machining-coloured page
+rather than in a directory beside a mortgage tool.
+
+The app does not exist yet, so nothing on either page reads as buyable and the
+SoftwareApplication node carries NO `offers`: a price in a rich result for an
+unreleased app is a lie told by markup. The Play Store link takes the marked
+slot under "Getting it" on release, and nothing else on the page changes.
+
+There is no signup form and no demand-test CTA. An earlier draft had a two-CTA
+willingness-to-pay test; the decision to build has since been taken, which makes
+asking visitors to vote on it theatre.
+
+### NAVIGATION BELONGS TO THE VERTICAL
+
+The masthead used to hardcode "Calculators -> /finance" on every page, which put
+finance links across the top of a machining page. `BaseLayout` now takes the
+`vertical` prop it already had and picks the section link from it. Apps sits on
+the LEFT beside the wordmark rather than in the right-hand group, because it is
+the destination the site exists to feed, not a utility link.
+
+More generally: this repo's CI-enforced rules (byte budget, spacing, STATE,
+llms, source checks) are repo-wide plumbing and apply everywhere. The finance
+vertical's CONTENT rules, voice, claims and navigation are ITS OWN and must not
+be inherited by `/machining` — that inheritance is a recurring mistake worth
+naming here.
+
+### What ships and what deliberately does not
+
+The drill catalogues are GENERATED from their series definitions — metric at
+0.05 mm steps to 3 mm then 0.1 mm, fractional inch at n/64 — so there is no
+transcribed table to get wrong.
+
+Three things are therefore absent, and the page says so rather than hiding it:
+
+- **Number (#80–#1) and letter (A–Z) drills** — eighty-odd transcribed decimals.
+- **The DIN 338 R40 preferred series** — the exact standard, as distinct from the
+  shop index generated here.
+- **Named thread presets** (M4, M6, M8…) — a preset list is a table of reference
+  values. Users enter a pitch directly until those values are verified.
+
+All three are gated behind the same rule: this site does not ship a reference
+figure a human has not checked against a primary source. `tests/fixtures/golden-tap-drill.csv`
+carries `verified_against` / `verified_on` columns, and `MAX_PENDING` in
+`tests/calc/tap-drill-verification.test.ts` is a ratchet that may only be
+lowered. **All 18 rows currently read PENDING.** Checking them against two free
+manufacturer catalogue PDFs is under an hour, once, and it is the highest-value
+hour available to this vertical.
+
 ## Next
 
-**The content threshold is met.** The build produces 21 pages, of which 20 are
+**The content threshold is met.** The build produces 26 pages, of which 25 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -220,7 +314,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **20** — none to go |
+| 15+ substantive pages | **25** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |
@@ -300,7 +394,7 @@ Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
 file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: four
-calculators, eight derivation pages, five trust pages, 20 substantive pages, 206
+calculators, eight derivation pages, five trust pages, 25 substantive pages, 206
 tests, eleven CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.

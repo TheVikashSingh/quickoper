@@ -1,7 +1,10 @@
 # QuickOper
 
-> Verified-calculation tools for personal money decisions. Every calculation runs
-> entirely in the visitor's browser; no input is transmitted, logged or stored.
+> Verified-calculation tools. Every calculation runs entirely in the visitor's
+> browser; no input is transmitted, logged or stored.
+>
+> Two verticals: /finance (personal money decisions) and /machining (metric-first
+> shop-floor calculations). They share a verification method and nothing else.
 
 QuickOper computes, it does not advise. Each tool performs deterministic
 arithmetic and publishes its formula, its intermediate values, a full
@@ -11,7 +14,18 @@ real published third-party figure.
 Nothing on this site is financial, tax or investment advice. The expertise
 claimed is computational, not advisory.
 
-## Tools
+## Apps
+
+### Apps index
+URL: https://quickoper.com/apps
+Computes: nothing; routes to the per-vertical app pages.
+Inputs: none.
+Status: one app listed, in development. No app is downloadable yet.
+Jurisdiction: none.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
+## Tools — finance
 
 ### Debt payoff calculator — avalanche vs snowball
 URL: https://quickoper.com/finance/debt-payoff-calculator
@@ -239,6 +253,75 @@ Key figures, computed on $320,000 at 6.706%, the same rate applied to both terms
   - The rate is deliberately held constant across both terms. Lenders normally
     price 15-year products lower, which would widen every gap above; no 15-year
     quote is invented here.
+
+## Tools — machining
+
+Metric-first calculations for machining. The drill catalogues are GENERATED from
+their series definitions rather than transcribed from a table, so no individual
+diameter is a value someone copied. Series that WOULD require transcription —
+number drills, letter drills, the DIN 338 R40 preferred series, and named thread
+presets — are deliberately absent until a person has verified them against a
+manufacturer catalogue, and each page names what is missing.
+
+### Machining calculators (hub)
+URL: https://quickoper.com/machining
+Computes: nothing directly; indexes the machining tools.
+Inputs: none.
+Jurisdiction: none. ISO metric and Unified inch thread forms are international.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
+### The machinist Android app (in development)
+URL: https://quickoper.com/machining/app
+Computes: nothing. It describes an unreleased Android app and asks machinists
+whether it is worth building.
+Inputs: none.
+Status: IN DEVELOPMENT, NOT RELEASED. There is no price to pay, no pre-order and
+no download. The page carries no purchasable offer for that reason.
+Key figures: one-time purchase, no subscription, no ads, no account. The Play
+Store link appears on this page on release; there is no download, pre-order or
+price to pay before then.
+Jurisdiction: none.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
+### Feeds and speeds calculator
+URL: https://quickoper.com/machining/feeds-and-speeds-calculator
+Computes: spindle speed, feed per revolution AND table feed, material removal
+rate, mean chip thickness, and net cutting power for milling and for turning.
+Inputs: cutting speed Vc, cutting diameter Dc, feed per tooth (milling) or feed
+per revolution (turning), tooth count, radial depth ae, axial depth ap, unit
+system; optionally kc1.1, mc, spindle efficiency and machine rating for power.
+Key figures: n = Vc x 1000 / (pi x Dc) metric, Vc x 12 / (pi x Dc) inch.
+fn = fz x z. vf = fn x n. Milling removal rate Q = ae x ap x vf / 1000; turning
+Q = Vc x ap x fn, a DIFFERENT formula, not the milling one relabelled. Kienzle
+kc = kc1.1 x h^-mc. Pc = ae x ap x vf x kc / (60e6 x efficiency). Mean chip
+thickness approximated as fz x sqrt(ae/Dc).
+NO MATERIAL DATABASE. This tool never supplies a cutting speed or a feed per
+tooth. Those are properties of a material AND an insert grade, coating,
+geometry, coolant and machine, published differently by every tooling maker, so
+they are inputs taken from the user's data sheet. The power section stays blank
+until kc1.1 and mc are supplied rather than defaulting them.
+Jurisdiction: none. ISO 3002-1 definitions.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
+### Tap drill calculator
+URL: https://quickoper.com/machining/tap-drill-calculator
+Computes: the largest drill in a real index that does not exceed the diameter
+for a target thread engagement, the engagement that drill ACTUALLY produces, the
+basic minor diameter, and the surrounding drill sizes with their engagements.
+Inputs: thread major diameter, pitch (or threads per inch), target engagement
+percentage, unit system, drill index to search.
+Key figures: engagement = 100 x (D - d) / (1.299 x P), from the ISO 68-1 basic
+profile where H = 0.866025 x P. 100 / 1.299 = 76.98%, which is why the shop rule
+"drill = major - pitch" lands just under 77%. Basic minor diameter is
+D1 = D - 1.0825 x P and is NOT the tap drill. Standard tap drills do not give a
+uniform engagement: M8 on the published 6.8 mm drill gives 73.90%, M12 on 10.2 mm
+gives 79.18%, #8-32 on a #29 gives 68.98%.
+Jurisdiction: none. ISO metric and Unified inch.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
 
 ## Verification
 
