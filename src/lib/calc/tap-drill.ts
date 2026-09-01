@@ -157,10 +157,7 @@ export function drillDiameterFor(
 }
 
 /** Basic minor diameter D₁ = D − 1.0825 P. Not the tap drill. */
-export function basicMinorDiameterUm(
-  majorUm: Micrometres,
-  pitchUm: Micrometres,
-): number {
+export function basicMinorDiameterUm(majorUm: Micrometres, pitchUm: Micrometres): number {
   assertPositive('majorUm', majorUm);
   assertPositive('pitchUm', pitchUm);
   return majorUm - MINOR_DIA_K * pitchUm;
