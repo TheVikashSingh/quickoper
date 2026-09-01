@@ -62,8 +62,41 @@
  * which is why the shop rule "drill = major − pitch" lands just under 77 %.
  */
 
-/** A length in whole micrometres. Never a fractional millimetre. */
-export type Micrometres = number;
+declare const MICROMETRE_BRAND: unique symbol;
+
+/**
+ * A length in whole micrometres.
+ *
+ * BRANDED ON PURPOSE. A plain `number` cannot be passed where this is expected,
+ * so `engagementPercent(4, 0.7, 3.3)` — millimetres, the single most likely
+ * mistake anyone will make against this API — is a compile error rather than a
+ * result that is wrong by a factor of a thousand.
+ *
+ * Construct one with `um()`, `mmToUm()` or `inchToUm()`. Arithmetic on two
+ * Micrometres yields a plain number, which is correct: a difference of two
+ * lengths is a length only by convention, and re-branding it should be a
+ * deliberate act.
+ */
+export type Micrometres = number & { readonly [MICROMETRE_BRAND]: true };
+
+/**
+ * Assert that a raw number is a whole, positive count of micrometres.
+ *
+ * Fractional µm is rejected rather than rounded. A caller holding 3.3 has
+ * millimetres and should say so; silently accepting it is how a unit bug
+ * survives to production.
+ */
+export function um(value: number): Micrometres {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new RangeError(`micrometres must be positive and finite, got ${value}`);
+  }
+  if (!Number.isInteger(value)) {
+    throw new RangeError(
+      `micrometres must be a whole number, got ${value} — did you pass millimetres?`,
+    );
+  }
+  return value as Micrometres;
+}
 
 /** Exactly 25 400 µm, by definition. Not a measured constant. */
 export const UM_PER_INCH = 25_400;
@@ -89,25 +122,25 @@ export const DEFAULT_ENGAGEMENT_PERCENT = 75;
 // ─── Unit conversion ────────────────────────────────────────────────────────
 
 export function mmToUm(mm: number): Micrometres {
-  return Math.round(mm * 1000);
+  return um(Math.round(mm * 1000));
 }
 
-export function umToMm(um: Micrometres): number {
-  return um / 1000;
+export function umToMm(value: Micrometres): number {
+  return value / 1000;
 }
 
 export function inchToUm(inch: number): Micrometres {
-  return Math.round(inch * UM_PER_INCH);
+  return um(Math.round(inch * UM_PER_INCH));
 }
 
-export function umToInch(um: Micrometres): number {
-  return um / UM_PER_INCH;
+export function umToInch(value: Micrometres): number {
+  return value / UM_PER_INCH;
 }
 
 /** Pitch from threads-per-inch, for Unified series. P = 1/n. */
 export function tpiToPitchUm(tpi: number): Micrometres {
   if (tpi <= 0) throw new RangeError(`tpi must be positive, got ${tpi}`);
-  return Math.round(UM_PER_INCH / tpi);
+  return um(Math.round(UM_PER_INCH / tpi));
 }
 
 // ─── Core arithmetic ────────────────────────────────────────────────────────
@@ -130,10 +163,40 @@ export function engagementPercent(
   pitchUm: Micrometres,
   drillUm: Micrometres,
 ): number {
+  return engagementPercentExact(majorUm, pitchUm, drillUm);
+}
+
+/**
+ * Engagement for a drill diameter that is not a whole micrometre.
+ *
+ * The branded `engagementPercent` above is what callers should reach for: it
+ * refuses anything but a real, whole-µm drill. This variant exists because
+ * `drillDiameterFor` returns a fractional TARGET — a diameter no drill in any
+ * rack actually has — and proving the two functions are exact inverses requires
+ * feeding that target back in.
+ *
+ * Units are the caller's responsibility here. That is the price of the escape
+ * hatch, and it is why the safe version is the one named without a suffix.
+ */
+export function engagementPercentExact(
+  majorUm: number,
+  pitchUm: number,
+  drillUm: number,
+): number {
   assertPositive('majorUm', majorUm);
   assertPositive('pitchUm', pitchUm);
   assertPositive('drillUm', drillUm);
   return (100 * (majorUm - drillUm)) / (ENGAGEMENT_K * pitchUm);
+}
+
+/**
+ * Millimetres from a fractional µm value.
+ *
+ * `umToMm` takes a branded whole-µm length. This takes a computed target,
+ * which by construction is not one.
+ */
+export function umExactToMm(value: number): number {
+  return value / 1000;
 }
 
 /**

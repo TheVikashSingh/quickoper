@@ -5,12 +5,15 @@ import {
   basicMinorDiameterUm,
   drillDiameterFor,
   engagementPercent,
+  engagementPercentExact,
   inchToUm,
   mmToUm,
   rankBySuitability,
   roundHalfEven,
   snapToSeries,
   tpiToPitchUm,
+  um,
+  umExactToMm,
   umToInch,
   umToMm,
   type Drill,
@@ -126,13 +129,13 @@ describe('drillDiameterFor', () => {
   it('reproduces the shop rule drill = major − pitch at 76.98 %', () => {
     // 100 / 1.299 = 76.98, so the classic rule and the formula must agree.
     const target = drillDiameterFor(mmToUm(4), mmToUm(0.7), 76.98);
-    expect(roundHalfEven(umToMm(target), 3)).toBeCloseTo(3.3, 3);
+    expect(roundHalfEven(umExactToMm(target), 3)).toBeCloseTo(3.3, 3);
   });
 
   it('is the exact inverse of engagementPercent', () => {
     for (const pct of [50, 65, 75, 76.98, 80, 100]) {
       const target = drillDiameterFor(mmToUm(8), mmToUm(1.25), pct);
-      const back = engagementPercent(mmToUm(8), mmToUm(1.25), target);
+      const back = engagementPercentExact(mmToUm(8), mmToUm(1.25), target);
       expect(back).toBeCloseTo(pct, 9);
     }
   });
@@ -147,7 +150,7 @@ describe('basicMinorDiameterUm', () => {
   it('is not the tap drill, and the difference is material', () => {
     // ISO 68-1: D₁ = D − 1.0825 P. For M4 that is 3.2422 mm against a 3.3 mm
     // tap drill. Users conflate the two, so the tool reports both.
-    const minor = umToMm(basicMinorDiameterUm(mmToUm(4), mmToUm(0.7)));
+    const minor = umExactToMm(basicMinorDiameterUm(mmToUm(4), mmToUm(0.7)));
     expect(roundHalfEven(minor, 4)).toBeCloseTo(3.2422, 4);
     expect(minor).toBeLessThan(3.3);
   });
@@ -155,11 +158,11 @@ describe('basicMinorDiameterUm', () => {
 
 describe('snapToSeries', () => {
   const metricSeries: Drill[] = [
-    { um: 6500, label: '6.5 mm', series: 'metric' },
-    { um: 6700, label: '6.7 mm', series: 'metric' },
-    { um: 6800, label: '6.8 mm', series: 'metric' },
-    { um: 6900, label: '6.9 mm', series: 'metric' },
-    { um: 7000, label: '7.0 mm', series: 'metric' },
+    { um: um(6500), label: '6.5 mm', series: 'metric' },
+    { um: um(6700), label: '6.7 mm', series: 'metric' },
+    { um: um(6800), label: '6.8 mm', series: 'metric' },
+    { um: um(6900), label: '6.9 mm', series: 'metric' },
+    { um: um(7000), label: '7.0 mm', series: 'metric' },
   ];
 
   it('never returns a drill larger than the target', () => {
@@ -190,9 +193,9 @@ describe('snapToSeries', () => {
 
 describe('rankBySuitability', () => {
   const series: Drill[] = [
-    { um: 3200, label: '3.2 mm', series: 'metric' },
-    { um: 3300, label: '3.3 mm', series: 'metric' },
-    { um: 3500, label: '3.5 mm', series: 'metric' },
+    { um: um(3200), label: '3.2 mm', series: 'metric' },
+    { um: um(3300), label: '3.3 mm', series: 'metric' },
+    { um: um(3500), label: '3.5 mm', series: 'metric' },
   ];
 
   it('orders by absolute distance from the target', () => {
@@ -220,9 +223,12 @@ describe('invariants', () => {
   });
 
   it('rejects zero and negative dimensions rather than returning NaN', () => {
-    expect(() => engagementPercent(0, 1250, 6800)).toThrow(RangeError);
-    expect(() => engagementPercent(8000, 0, 6800)).toThrow(RangeError);
-    expect(() => engagementPercent(8000, 1250, -1)).toThrow(RangeError);
+    // The brand makes these unconstructable through um(), which is the point.
+    // Cast past it deliberately to prove the runtime guard still holds for any
+    // caller that reaches the function through untyped JS.
+    expect(() => engagementPercentExact(0, 1250, 6800)).toThrow(RangeError);
+    expect(() => engagementPercentExact(8000, 0, 6800)).toThrow(RangeError);
+    expect(() => engagementPercentExact(8000, 1250, -1)).toThrow(RangeError);
   });
 
   it('never produces NaN or Infinity for valid input', () => {
