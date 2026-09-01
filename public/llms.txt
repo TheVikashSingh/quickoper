@@ -14,6 +14,17 @@ real published third-party figure.
 Nothing on this site is financial, tax or investment advice. The expertise
 claimed is computational, not advisory.
 
+## Apps
+
+### Apps index
+URL: https://quickoper.com/apps
+Computes: nothing; routes to the per-vertical app pages.
+Inputs: none.
+Status: one app listed, in development. No app is downloadable yet.
+Jurisdiction: none.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/verify
+
 ## Tools — finance
 
 ### Debt payoff calculator — avalanche vs snowball
@@ -267,9 +278,9 @@ whether it is worth building.
 Inputs: none.
 Status: IN DEVELOPMENT, NOT RELEASED. There is no price to pay, no pre-order and
 no download. The page carries no purchasable offer for that reason.
-Key figures: intended price $19.99 one-time, no subscription, no ads, no
-account. That figure comes from Play Store reviews of competing apps in which
-machinists stated what they would pay and refused a subscription.
+Key figures: one-time purchase, no subscription, no ads, no account. The Play
+Store link appears on this page on release; there is no download, pre-order or
+price to pay before then.
 Jurisdiction: none.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/verify

@@ -1,0 +1,120 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../lib/site';
+
+/**
+ * The site-level app index, linked from the masthead.
+ *
+ * It routes to the per-vertical app pages rather than describing the apps
+ * itself. That split matters: conversion happens in context — a machinist
+ * should read about the machining app on a machining-coloured page, not in a
+ * directory beside a mortgage tool — so this page's only job is to get people
+ * to the right one and to say honestly what is and is not out yet.
+ */
+
+type AppStatus = 'in-development' | 'live';
+
+interface AppEntry {
+  readonly href: string;
+  readonly vertical: string;
+  readonly name: string;
+  readonly platform: string;
+  readonly status: AppStatus;
+  readonly summary: string;
+}
+
+const APPS: readonly AppEntry[] = [
+  {
+    href: '/machining/app',
+    vertical: 'Machining',
+    name: 'Machinist Calculator',
+    platform: 'Android',
+    status: 'in-development',
+    summary:
+      'Metric-first feeds and speeds, thread and tap drill sizing, drill charts. Offline, one payment, no subscription.',
+  },
+];
+
+const STATUS_COPY = {
+  'in-development': 'In development — not yet released',
+  live: 'On Google Play',
+} as const;
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Apps',
+    url: `${SITE.url}/apps`,
+    description:
+      'Mobile apps from QuickOper. Each is built on the same verified arithmetic as the calculators on this site.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      { '@type': 'ListItem', position: 2, name: 'Apps', item: `${SITE.url}/apps` },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Apps"
+  description="Mobile apps from QuickOper, built on the same verified arithmetic as the calculators on this site."
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <p class="text-brand font-mono text-xs tracking-widest uppercase">Apps</p>
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      The calculators, in your pocket
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      The web tools run in a browser and stop when you close the tab. The apps carry the
+      same arithmetic onto a phone that works without signal, remembers your machines, and
+      is paid for once.
+    </p>
+
+    <ul class="mt-10 space-y-4">
+      {
+        APPS.map((app) => (
+          <li class="border-line-strong bg-surface shadow-panel rounded-panel border p-5">
+            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span class="text-ink-mute font-mono text-xs tracking-widest uppercase">
+                {app.vertical} · {app.platform}
+              </span>
+              <span
+                class={
+                  app.status === 'live'
+                    ? 'text-positive font-mono text-xs'
+                    : 'text-caution font-mono text-xs'
+                }
+              >
+                {STATUS_COPY[app.status]}
+              </span>
+            </div>
+            <h2 class="font-display text-ink mt-2 text-xl font-semibold">{app.name}</h2>
+            <p class="text-ink-soft mt-1 max-w-prose text-sm">{app.summary}</p>
+            <a
+              class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+              href={app.href}
+            >
+              Read more &rarr;
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <section class="border-line mt-12 border-t pt-6">
+      <h2 class="font-display text-ink text-xl font-semibold">Why an app at all</h2>
+      <p class="text-ink-soft mt-3 max-w-prose">
+        A browser tab is the wrong shape for a shop floor. There is often no signal, the
+        same figures get recalculated thirty times a day, and the machine and material you
+        are working with do not change between them. That is what the apps are for — the
+        web tools stay free and complete for the one-off question.
+      </p>
+    </section>
+  </div>
+</BaseLayout>

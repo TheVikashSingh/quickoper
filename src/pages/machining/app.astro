@@ -5,31 +5,19 @@ import { SITE } from '../../lib/site';
 /**
  * The Android app page — the conversion surface for the machining vertical.
  *
- * ─── Three constraints shaped this ──────────────────────────────────────────
+ * Per-vertical rather than a site-wide /apps entry, because conversion needs
+ * context: a machinist arriving from the tap drill calculator should read about
+ * their app on a machining-coloured page, not in a directory beside a mortgage
+ * tool. /apps exists as the masthead entry point and routes here.
  *
- * 1. THE APP DOES NOT EXIST YET. Nothing here may read as if it is buyable.
- *    Every claim about it is written in the future tense, the status is stated
- *    twice, and the structured data carries NO `offers` node — a price in a
- *    rich result for an unreleased app is a lie told by markup.
+ * THE APP DOES NOT EXIST YET, so nothing on this page may read as buyable.
+ * Status is stated in the eyebrow and again at the foot, and the
+ * SoftwareApplication node carries NO `offers` — a price in a rich result for
+ * an unreleased app is a lie told by markup. The Play Store link takes the
+ * marked slot in "Getting it" on release; nothing else needs to change.
  *
- * 2. THERE IS NO EMAIL BACKEND. `/api/subscribe` is permitted by the backend
- *    policy and has not been built, and a form posting nowhere is worse than no
- *    form. The CTAs are `mailto:` links, which work today with zero
- *    infrastructure.
- *
- *    That is not a downgrade. Someone who opens their mail client and sends a
- *    message has shown far more intent than someone who drops an address into a
- *    box, and for a first demand test a small number of high-quality signals is
- *    worth more than a large number of weak ones.
- *
- * 3. THE TWO-CTA TEST STILL RUNS. The willingness-to-pay method wants a weak
- *    signal ("tell me when it's out") tested against a strong one ("I would pay
- *    for this"). Two mailto links with different subject lines give exactly that
- *    split, countable by filtering a mailbox, with no payment processor and no
- *    money taken for a product that does not exist.
- *
- * When `/api/subscribe` lands, the mailto pair becomes a form pair and the
- * subject lines become a hidden field. Nothing else on the page changes.
+ * There is deliberately no signup form and no demand-test CTA. The decision to
+ * build has been taken, so asking visitors to vote on it would be theatre.
  */
 
 /**
@@ -73,24 +61,6 @@ const COMPLAINTS = [
   },
 ];
 
-const PRICING_QUOTES = [
-  {
-    quote:
-      'A monthly subscription is not an option when I have a machinist hand book that has the same information in it. $14.99 for CNC Machinist calculator Pro is one thing. I would be willing to pay $20…',
-    source: '1★ · CNC Machinist Calculator Ultra',
-  },
-  {
-    quote:
-      'I’m sure the information provided by this application is worthwhile for a one time purchase, but not for a recurring subscription.',
-    source: '2★ · CNC Machinist Calculator Ultra',
-  },
-  {
-    quote:
-      'you made me buy it again just because I got a new phone. Pretty disappointed.',
-    source: '2★ · CNC Machinist Calculator Pro',
-  },
-];
-
 const DOING = [
   {
     title: 'Metric first, and metric everywhere',
@@ -123,16 +93,13 @@ const NOT_DOING = [
     'Per-brand M-code lists',
     'The most-requested missing feature in the reviews, and a content treadmill: it would need updating forever and would be wrong the moment a control is revised. Refused deliberately.',
   ],
-  ['A subscription', 'One purchase. See below.'],
+  [
+    'A subscription',
+    'One purchase, and it follows your Google account onto your next phone. Machinists in the reviews were explicit that they would pay for a tool and would not rent one.',
+  ],
   ['Ads', 'None, anywhere, at any tier.'],
   ['An account', 'Nothing to sign up for. Nothing to sign in to.'],
 ];
-
-const SUBJECT_WEAK = encodeURIComponent('Machinist app — tell me when it is out');
-const SUBJECT_STRONG = encodeURIComponent('Machinist app — I would pay for this');
-const BODY_STRONG = encodeURIComponent(
-  'What I would use it for:\n\nThe machine(s) I run:\n\nThe thing every other app gets wrong for me:\n',
-);
 
 const structuredData = [
   {
@@ -193,8 +160,8 @@ const structuredData = [
     </h1>
     <p class="text-ink-soft mt-4 max-w-prose text-lg">
       Every machining calculator on the Play Store is imperial-first with metric bolted
-      on. This one is built the other way round. It is not finished, and this page exists
-      so you can tell me whether it is worth finishing.
+      on. This one is built the other way round. It is not finished yet — this page is
+      what it will be, and why.
     </p>
 
     <!-- ── Why ─────────────────────────────────────────────────────────── -->
@@ -260,77 +227,29 @@ const structuredData = [
       </dl>
     </section>
 
-    <!-- ── Price ───────────────────────────────────────────────────────── -->
+    <!-- ── Get it ──────────────────────────────────────────────────────── -->
     <section
       class="border-line-strong bg-surface shadow-panel rounded-panel mt-12 border p-6"
     >
-      <h2 class="font-display text-ink text-2xl font-semibold">What it will cost</h2>
-      <p class="text-brand font-numeric mt-3 text-4xl font-semibold">
-        $19.99 <span class="text-ink-mute text-lg font-normal">once</span>
-      </p>
+      <h2 class="font-display text-ink text-2xl font-semibold">Getting it</h2>
       <p class="text-ink-soft mt-3 max-w-prose">
-        One payment. No subscription, no ads, no account. Buy it once and it follows your
-        Google account onto your next phone — which is not a feature so much as using the
-        platform correctly, and two reviewers of a competing app had to buy it twice.
+        It will be on Google Play. One payment, no subscription, no ads, no account — and
+        it follows your Google account onto your next phone, which is not a feature so
+        much as using the platform correctly.
       </p>
-      <div class="mt-5 space-y-4">
-        {
-          PRICING_QUOTES.map((c) => (
-            <blockquote class="border-line text-ink-soft border-l-2 pl-4">
-              <p class="max-w-prose text-sm italic">“{c.quote}”</p>
-              <cite class="text-ink-mute mt-1 block font-mono text-xs not-italic">
-                {c.source}
-              </cite>
-            </blockquote>
-          ))
-        }
-      </div>
+      <p
+        class="border-caution text-ink-soft mt-4 inline-block border-l-4 py-1 pl-3 font-mono text-xs tracking-widest uppercase"
+      >
+        Play Store link appears here on release
+      </p>
       <p class="text-ink-mute mt-4 max-w-prose text-sm">
-        The price is not a guess. It is what machinists said they would pay, in reviews of
-        an app that asked them for a subscription instead.
-      </p>
-    </section>
-
-    <!-- ── CTA ─────────────────────────────────────────────────────────── -->
-    <section class="mt-12">
-      <h2 class="font-display text-ink text-2xl font-semibold">Should I finish it?</h2>
-      <p class="text-ink-soft mt-3 max-w-prose">
-        There is no signup form, because there is no mailing list yet and a box that
-        pretends to store your address would be the first dishonest thing on this site.
-        Both of these open your mail app. I read every one.
-      </p>
-
-      <div class="mt-5 grid gap-4 sm:grid-cols-2">
+        Until then the{' '}
         <a
-          class="border-line-strong bg-surface hover:border-brand focus-visible:outline-brand rounded-panel block border p-5 focus-visible:outline-2 focus-visible:outline-offset-2"
-          href={`mailto:${SITE.email}?subject=${SUBJECT_WEAK}`}
-        >
-          <span class="text-ink font-display block font-semibold"
-            >Tell me when it is out</span
-          >
-          <span class="text-ink-mute mt-1 block text-sm">
-            One line is enough. I will email you once, when it ships.
-          </span>
-        </a>
-
-        <a
-          class="border-brand bg-brand-soft hover:border-brand-hover focus-visible:outline-brand rounded-panel block border-2 p-5 focus-visible:outline-2 focus-visible:outline-offset-2"
-          href={`mailto:${SITE.email}?subject=${SUBJECT_STRONG}&body=${BODY_STRONG}`}
-        >
-          <span class="text-ink font-display block font-semibold"
-            >I would pay $19.99 for this</span
-          >
-          <span class="text-ink-mute mt-1 block text-sm">
-            Tell me what you run and what every other app gets wrong for you. This is the
-            one that decides whether it gets built.
-          </span>
-        </a>
-      </div>
-
-      <p class="text-ink-mute mt-4 max-w-prose text-sm">
-        Nobody is charged anything. There is nothing to pre-order — the app does not
-        exist, and taking money for it would be absurd. The second link is a stronger
-        signal than the first, which is the entire reason both are here.
+          class="text-brand underline underline-offset-2"
+          href="/machining/tap-drill-calculator">tap drill calculator</a
+        >{' '}
+        on this site runs the same arithmetic, cites the same standards and shows the same working.
+        It is free and stays free.
       </p>
     </section>
 

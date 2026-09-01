@@ -63,10 +63,6 @@ const KNOWN_BROKEN = new Map([
     'Bengen (1994). FPA reorganised its journal archive; needs the current URL or a DOI.',
   ],
   [
-    'https://www.aaii.com/journal/198802/feature.pdf',
-    'Trinity Study (Cooley, Hubbard & Walz, 1998). AAII moved the PDF.',
-  ],
-  [
     'https://www.consumerfinance.gov/ask-cfpb/what-is-a-minimum-payment-en-431/',
     'CFPB Ask-CFPB entry appears retired; needs the replacement page.',
   ],
