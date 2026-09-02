@@ -2367,6 +2367,94 @@ that was wrong and the one input the page loads with.
 
 ---
 
+### D71 — The thread constants are derived from √3, and the tie is half-even
+
+`tap-drill.ts` shipped with `ENGAGEMENT_K = 1.299` and `MINOR_DIA_K = 1.0825`,
+the decimals machining practice quotes. Both are roundings of an identity:
+ISO 68-1's basic profile has `H = (√3/2) × P` exactly, so the constants are
+`3√3/4 = 1.2990381…` and `(5/8)√3 = 1.0825317…`. The truncation is 2.9 parts in
+100 000.
+
+**That is invisible in the shop and visible on the page.** A twist drill's own
+diameter tolerance is hundreds of times larger, so no hole changes. But against
+the canonical 25-row fixture the rounding moved the fourth decimal of the basic
+minor diameter on 8 rows — under a four-decimal display floor — and the
+*published second decimal* of engagement on three: #8-32 68.98 → 68.97, #10-24
+74.83 → 74.82, 5/16-18 76.91 → 76.90. The argument this site makes is that its
+numbers are checkable against a catalogue. A machinist doing that check reads
+the second decimal.
+
+**The rounding also cost us a published table row, which is how it was found.**
+At full precision the shop-rule target is exactly `major − pitch`, so M8 × 1.25
+lands on 6.750 mm and M12 × 1.75 on 10.250 mm — each *exactly* midway between
+two catalogue drills. The published chart resolves those two ties in opposite
+directions: M8 up to 6.8 mm, M12 down to 10.2 mm. Computed as `1.299 × 76.98`
+they land 0.04 and 0.05 µm above midway, the ties vanish, and no rule can
+reproduce the chart. That is precisely why an earlier revision of this file's
+sibling in `machinist-calc-research` concluded the table was underivable and
+that "nothing does better" than tie-to-larger.
+
+Something does. **Half-even is not monotone**, and no monotone rule can satisfy
+two ties broken in opposite directions. Breaking an exact tie to the even
+multiple of the local step reproduces the published chart on every metric row in
+range: 11 of 11, against 10 of 11 for tie-to-larger, which missed M12. It is
+also not a rule invented to win that row — half-even is already the module's
+declared display rounding, applied to a grid of real drills instead of to a
+decimal place.
+
+**Rejected: keeping 1.299 because the pair is self-consistent.** `1.0825 =
+(5/6) × 1.299` exactly, so drilling to D₁ came out at exactly 83⅓ % engagement,
+and that was the stated reason to keep both. The premise is true; the conclusion
+does not follow. The 5/6 is `(5/8)/(3/4)` with H cancelling — pure geometry, so
+it holds for *any* common H. It breaks only when the two constants come from
+*different* roundings of H. Both now derive from one `H_PER_PITCH`, so it is
+preserved, and a test asserts it rather than a comment claiming it.
+
+Source of truth changed first, as the fixture checksum gate requires:
+`machinist-calc-research` 7f38eaa, then `machinist-calc-app` c49ec5c, then here.
+
+### D72 — Inch threads do not fit in whole micrometres, and the page still rounds them
+
+Found while landing D71, and larger than D71.
+
+`Micrometres` is deliberately integral — it is the guard that catches a
+millimetre passed where a micrometre was meant, and it is a good guard. Metric
+threads survive it exactly: 0.1 mm is 100 µm on the nose. **Unified inch threads
+do not.** 0.164 in is 4165.6 µm; 1/32 in is 793.75 µm; 1/64 in is 396.875 µm.
+Rounding each to a whole micrometre *before* the division moves the answer by
+more than the second decimal:
+
+| Thread | Exact | Via whole µm |
+|---|---|---|
+| #8-32 on a #29 | 68.97 % | 69.03 % |
+| #10-24 on a #25 | 74.82 % | 74.87 % |
+
+That is ~0.06 points — physically nothing, and a published digit. It is on the
+Unified series, which is the one used across four of the five target markets.
+
+**It was invisible because the fixture was wrong in the same direction.** The
+old golden values were computed with the truncated constant, which happened to
+push the inch rows the same way the µm rounding does. Correcting the constant
+made the two disagree and the assertion failed — the fixture and the pipeline
+had been wrong together, and only became legible when one of them got right.
+
+**Not fixed in this PR, and not hidden either.** `inchToUmExact` and
+`tpiToPitchUmExact` return raw micrometres so the formula can be fed exact
+values, and the golden assertions now use them at two decimals rather than one —
+so the *formula* is pinned exactly. The *page* still converts user inch input
+through the rounding pair, so it still prints 69.03 %. Fixing that properly
+means representing lengths in nanometres, where 1/64 in is exactly 396 875 nm,
+which is what the Kotlin core already does and what this module should follow.
+That is a representation change across a branded type and its call sites, and it
+belongs in its own pull request rather than smuggled in behind a constant.
+
+**Rejected: loosening the assertion to make it pass.** It was one line and the
+tolerance was already `toBeCloseTo(…, 1)`. Widening it would have retired the
+only check that can detect this, to hide a defect the check had just correctly
+found.
+
+---
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when

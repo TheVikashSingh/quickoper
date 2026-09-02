@@ -76,7 +76,7 @@ const FAQ = [
   },
   {
     q: 'Is the minor diameter the same as the tap drill?',
-    a: 'No, and conflating them is a common and expensive mistake. The basic minor diameter is D − 1.0825P, a property of the thread form. The tap drill is chosen to leave you a target engagement and is always larger. Both are shown for that reason.',
+    a: 'No, and conflating them is a common and expensive mistake. The basic minor diameter is D − 1.25H, a property of the thread form. The tap drill is chosen to leave you a target engagement and is always larger. Both are shown for that reason.',
   },
   {
     q: 'Does this work offline?',
@@ -296,9 +296,11 @@ const label = 'block text-sm font-semibold text-ink-soft';
       </div>
       <p class="text-ink-mute mt-3 max-w-prose text-sm">
         Engagement is measured on the 5H/8 flank of the ISO 68-1 basic profile, where the
-        fundamental triangle height H = 0.866025 × P. The constant 1.299 follows from that
-        geometry, and 100 ÷ 1.299 = 76.98% is why the old shop rule “drill = major −
-        pitch” lands just under 77%.
+        fundamental triangle height H = (√3 ⁄ 2) × P. The constant K = 3√3⁄4 = 1.2990381…
+        follows from that geometry, and 100 ÷ K = 76.98% is why the old shop rule “drill =
+        major − pitch” lands just under 77%. K is carried at full precision rather than as
+        the trade's rounded 1.299, which shifts the second decimal of the engagement this
+        page prints on some threads.
       </p>
     </section>
 
@@ -372,11 +374,21 @@ const label = 'block text-sm font-semibold text-ink-soft';
         conclude the tool was broken, and they would be right: the tool was the outlier.
       </p>
       <p>
-        So the rule is the one the charts use — the <strong>nearest</strong> drill in your index,
-        with a tie going to the larger. A marginally larger hole taps more easily and breaks
+        So the rule is the one the charts use — the <strong>nearest</strong> drill in your index.
+        The recommendation can therefore land above the target: M8 × 1.25 at 75% wants 6.7822
+        mm and gets 6.8 mm, which is 73.9%. A marginally larger hole taps more easily and breaks
         fewer taps, and the strength given up above roughly 75% is small because the failure
-        has already moved into the fastener. The recommendation can therefore land above the
-        target: M8 × 1.25 at 75% wants 6.7822 mm and gets 6.8 mm, which is 73.9%.
+        has already moved into the fastener.
+      </p>
+      <p>
+        Where a target lands <em>exactly</em> midway between two drills the tie is broken <strong
+          >half-even</strong
+        > — to the even multiple of the step. This is not a tie-breaker invented to match a
+        chart: it is the same rounding mode every figure on this page is displayed with, applied
+        to a grid of real drills instead of to a decimal place. It matters because the published
+        table breaks its two exact ties in opposite directions — M8 × 1.25 upward to 6.8 mm,
+        M12 × 1.75 downward to 10.2 mm — so no rule that always rounds the same way can reproduce
+        both.
       </p>
       <p>
         What stops the 3.50 mm failure is not the rounding direction. It is two other
@@ -389,11 +401,11 @@ const label = 'block text-sm font-semibold text-ink-soft';
         Minor diameter is not the tap drill
       </h3>
       <p>
-        The basic minor diameter, D₁ = D − 1.0825 × P, is a property of the thread form:
-        the diameter at the root of a fully formed internal thread. The tap drill is
-        larger, because it is chosen to leave a target engagement rather than a complete
-        thread. For M4 the minor diameter is 3.2422 mm and the tap drill is 3.30 mm. Both
-        are shown above precisely because they get conflated, and drilling to the minor
+        The basic minor diameter, D₁ = D − 1.25 × H, is a property of the thread form: the
+        diameter at the root of a fully formed internal thread. The tap drill is larger,
+        because it is chosen to leave a target engagement rather than a complete thread.
+        For M4 the minor diameter is 3.2422 mm and the tap drill is 3.30 mm. Both are
+        shown above precisely because they get conflated, and drilling to the minor
         diameter is how taps get broken.
       </p>
     </section>
@@ -501,7 +513,9 @@ const label = 'block text-sm font-semibold text-ink-soft';
 
 <script>
   import {
+    basicMinorDiameterUm,
     drillDiameterFor,
+    ENGAGEMENT_K,
     engagementPercentExact,
     inchToUm,
     mmToUm,
@@ -537,6 +551,11 @@ const label = 'block text-sm font-semibold text-ink-soft';
   const csvBtn = must('td-csv');
 
   const DECIMALS = 4;
+
+  // The engagement constant as the working box shows it. Six decimals, taken
+  // from the exported constant rather than typed, so the number the page
+  // displays cannot drift from the number it computes with.
+  const K_SHOWN = roundHalfEven(ENGAGEMENT_K, 6);
   let csvRows: string[][] = [];
 
   const num = (name: string): number =>
@@ -580,7 +599,7 @@ const label = 'block text-sm font-semibold text-ink-soft';
       const choice = snapToSeries(majorUm, pitchUm, targetUm, drills);
       if (!choice) throw new RangeError('No drill index selected.');
 
-      const minorUm = majorUm - 1.0825 * pitchUm;
+      const minorUm = basicMinorDiameterUm(majorUm, pitchUm);
       const actual = roundHalfEven(choice.engagementPercent, 2);
       const band =
         actual >= target
@@ -640,12 +659,12 @@ const label = 'block text-sm font-semibold text-ink-soft';
 
       const u = units === 'mm' ? 'mm' : 'in';
       workingEl.textContent =
-        `%engagement = 100 × (D − d) / (1.299 × P)\n\n` +
+        `%engagement = 100 × (D − d) / (K × P)   K = 3√3⁄4 = ${K_SHOWN}\n\n` +
         `D  major diameter  = ${roundHalfEven(units === 'mm' ? umToMm(majorUm) : umToInch(majorUm), DECIMALS)} ${u}\n` +
         `P  pitch           = ${roundHalfEven(units === 'mm' ? umToMm(pitchUm) : umToInch(pitchUm), DECIMALS)} ${u}\n` +
         `d  target diameter = ${roundHalfEven(units === 'mm' ? umExactToMm(targetUm) : targetUm / 25400, DECIMALS)} ${u}   (for ${target}%)\n` +
         `d  chosen drill    = ${drillLen(choice.drill, units)}   ${choice.drill.label}\n\n` +
-        `100 × (${roundHalfEven(units === 'mm' ? umToMm(majorUm) : umToInch(majorUm), DECIMALS)} − ${roundHalfEven(units === 'mm' ? umToMm(choice.drill.um) : umToInch(choice.drill.um), DECIMALS)}) / (1.299 × ${roundHalfEven(units === 'mm' ? umToMm(pitchUm) : umToInch(pitchUm), DECIMALS)}) = ${actual}%`;
+        `100 × (${roundHalfEven(units === 'mm' ? umToMm(majorUm) : umToInch(majorUm), DECIMALS)} − ${roundHalfEven(units === 'mm' ? umToMm(choice.drill.um) : umToInch(choice.drill.um), DECIMALS)}) / (${K_SHOWN} × ${roundHalfEven(units === 'mm' ? umToMm(pitchUm) : umToInch(pitchUm), DECIMALS)}) = ${actual}%`;
     } catch (err) {
       errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
       errorEl.classList.remove('hidden');
