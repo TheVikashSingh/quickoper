@@ -2438,20 +2438,46 @@ push the inch rows the same way the µm rounding does. Correcting the constant
 made the two disagree and the assertion failed — the fixture and the pipeline
 had been wrong together, and only became legible when one of them got right.
 
-**Not fixed in this PR, and not hidden either.** `inchToUmExact` and
-`tpiToPitchUmExact` return raw micrometres so the formula can be fed exact
-values, and the golden assertions now use them at two decimals rather than one —
-so the *formula* is pinned exactly. The *page* still converts user inch input
-through the rounding pair, so it still prints 69.03 %. Fixing that properly
-means representing lengths in nanometres, where 1/64 in is exactly 396 875 nm,
-which is what the Kotlin core already does and what this module should follow.
-That is a representation change across a branded type and its call sites, and it
-belongs in its own pull request rather than smuggled in behind a constant.
-
 **Rejected: loosening the assertion to make it pass.** It was one line and the
 tolerance was already `toBeCloseTo(…, 1)`. Widening it would have retired the
 only check that can detect this, to hide a defect the check had just correctly
 found.
+
+**Resolved by moving the whole machining domain to nanometres.** `Micrometres`
+became `Nanometres` across `tap-drill.ts`, `drill-series.ts`, `drill-chart.ts`
+and `feeds-speeds.ts`, with their pages and tests. The brand stays integral —
+that guard was never the problem, the scale was.
+
+`NM_PER_INCH` is 25 400 000 = 2⁸ × 5⁵ × 127, so any inch figure quoted to five
+decimals or fewer is a whole number of nanometres, and 64 divides it: **1/64 in
+is exactly 396 875 nm, remainder zero.** The fractional drill catalogue is now
+its exact nominal size rather than a rounded near-miss, and `Math.round` came
+out of its generator because it had become a no-op that implied a precision loss
+that was gone. It is also the representation the Kotlin core already uses, which
+makes the two directly comparable for the Gate 7 cross-check.
+
+The golden inch rows were then **rewired onto the rounding conversions the page
+actually calls**, not a private exact variant, and they pass at two decimals. So
+the claim "the shipped path is correct" is tested rather than asserted, and
+`inchToUmExact`/`tpiToPitchUmExact` were deleted as the dead workarounds they
+had become.
+
+**What still rounds, stated.** `tpiToPitchNm` divides 25 400 000 by the thread
+count and only some counts divide exactly — 32 tpi gives 793 750 on the nose,
+24 tpi gives 1 058 333.33 and is rounded. The residue is under half a nanometre
+in a million, four orders of magnitude below the micrometre error it replaces
+and far below the second decimal the fixture asserts.
+
+**The part worth keeping: 334 tests and eleven gates passed while the page
+displayed a number a thousand times wrong.** Both calculator pages rendered inch
+lengths by dividing nanometres by `25400` — the *micrometre*-per-inch constant,
+a bare numeric literal that no rename could see and no type could catch, because
+both sides are `number`. 1/4-20 showed a target of **201.2861 in**. Nothing in
+the suite covers presentation-layer unit conversion: the calc tests stop at the
+module boundary, and the byte-budget, link, spacing and schema gates have no
+opinion about arithmetic. It was found by opening the page and reading it, which
+is the same way D70 was found and the same lesson — the tests prove the code
+does what it was told, and say nothing about the layer that formats the answer.
 
 ---
 

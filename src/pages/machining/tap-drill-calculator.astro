@@ -513,20 +513,21 @@ const label = 'block text-sm font-semibold text-ink-soft';
 
 <script>
   import {
-    basicMinorDiameterUm,
+    basicMinorDiameterNm,
+    NM_PER_INCH,
     drillDiameterFor,
     ENGAGEMENT_K,
     engagementPercentExact,
-    inchToUm,
-    mmToUm,
+    inchToNm,
+    mmToNm,
     roundHalfEven,
     snapToSeries,
-    tpiToPitchUm,
-    umExactToMm,
-    umToInch,
-    umToMm,
+    tpiToPitchNm,
+    nmExactToMm,
+    nmToInch,
+    nmToMm,
     type Drill,
-    type Micrometres,
+    type Nanometres,
   } from '../../lib/calc/tap-drill';
   import { drillsFor, type SeriesName } from '../../lib/calc/drill-series';
 
@@ -564,16 +565,16 @@ const label = 'block text-sm font-semibold text-ink-soft';
     (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
 
   /** Display a length in the user's chosen unit, never fewer than 4 decimals. */
-  function len(valueUm: number, units: string): string {
+  function len(valueNm: number, units: string): string {
     return units === 'mm'
-      ? `${roundHalfEven(umExactToMm(valueUm), DECIMALS)} mm`
-      : `${roundHalfEven(valueUm / 25400, DECIMALS)} in`;
+      ? `${roundHalfEven(nmExactToMm(valueNm), DECIMALS)} mm`
+      : `${roundHalfEven(valueNm / NM_PER_INCH, DECIMALS)} in`;
   }
 
   function drillLen(d: Drill, units: string): string {
     return units === 'mm'
-      ? `${roundHalfEven(umToMm(d.um), DECIMALS)} mm`
-      : `${roundHalfEven(umToInch(d.um), DECIMALS)} in`;
+      ? `${roundHalfEven(nmToMm(d.nm), DECIMALS)} mm`
+      : `${roundHalfEven(nmToInch(d.nm), DECIMALS)} in`;
   }
 
   function render(): void {
@@ -585,21 +586,21 @@ const label = 'block text-sm font-semibold text-ink-soft';
 
     errorEl.classList.add('hidden');
     try {
-      const majorUm: Micrometres = units === 'mm' ? mmToUm(majorRaw) : inchToUm(majorRaw);
-      const pitchUm: Micrometres =
-        units === 'mm' ? mmToUm(pitchRaw) : tpiToPitchUm(pitchRaw);
-      if (pitchUm >= majorUm)
+      const majorNm: Nanometres = units === 'mm' ? mmToNm(majorRaw) : inchToNm(majorRaw);
+      const pitchNm: Nanometres =
+        units === 'mm' ? mmToNm(pitchRaw) : tpiToPitchNm(pitchRaw);
+      if (pitchNm >= majorNm)
         throw new RangeError('Pitch must be smaller than the diameter.');
 
-      const targetUm = drillDiameterFor(majorUm, pitchUm, target);
-      if (targetUm <= 0)
+      const targetNm = drillDiameterFor(majorNm, pitchNm, target);
+      if (targetNm <= 0)
         throw new RangeError('That engagement leaves no drill diameter.');
 
       const drills = drillsFor(series);
-      const choice = snapToSeries(majorUm, pitchUm, targetUm, drills);
+      const choice = snapToSeries(majorNm, pitchNm, targetNm, drills);
       if (!choice) throw new RangeError('No drill index selected.');
 
-      const minorUm = basicMinorDiameterUm(majorUm, pitchUm);
+      const minorNm = basicMinorDiameterNm(majorNm, pitchNm);
       const actual = roundHalfEven(choice.engagementPercent, 2);
       const band =
         actual >= target
@@ -622,37 +623,37 @@ const label = 'block text-sm font-semibold text-ink-soft';
           </div>
           <div>
             <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Exact target</p>
-            <p class="mt-1 font-numeric text-3xl font-semibold text-ink">${len(targetUm, units)}</p>
+            <p class="mt-1 font-numeric text-3xl font-semibold text-ink">${len(targetNm, units)}</p>
             <p class="text-sm text-ink-mute">no drill is this size</p>
           </div>
         </div>
         <p class="mt-4 text-sm text-ink-soft">
-          Basic minor diameter <span class="font-numeric">${len(minorUm, units)}</span> — the thread root, <strong>not</strong> the drill.
+          Basic minor diameter <span class="font-numeric">${len(minorNm, units)}</span> — the thread root, <strong>not</strong> the drill.
         </p>`;
 
       // The neighbourhood: nearest few either side of the target.
       const ranked = drills
-        .map((d) => ({ d, delta: d.um - targetUm }))
+        .map((d) => ({ d, delta: d.nm - targetNm }))
         .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))
         .slice(0, 7)
-        .sort((a, b) => a.d.um - b.d.um);
+        .sort((a, b) => a.d.nm - b.d.nm);
 
       csvRows = [['drill', 'diameter', 'engagement_percent', 'delta_from_target']];
       tableEl.innerHTML = ranked
         .map(({ d, delta }) => {
-          const e = roundHalfEven(engagementPercentExact(majorUm, pitchUm, d.um), 2);
-          const chosen = d.um === choice.drill.um;
+          const e = roundHalfEven(engagementPercentExact(majorNm, pitchNm, d.nm), 2);
+          const chosen = d.nm === choice.drill.nm;
           csvRows.push([
             d.label,
             drillLen(d, units),
             String(e),
-            `${delta > 0 ? '+' : ''}${roundHalfEven(units === 'mm' ? delta / 1000 : delta / 25400, DECIMALS)}`,
+            `${delta > 0 ? '+' : ''}${roundHalfEven(units === 'mm' ? delta / 1_000_000 : delta / NM_PER_INCH, DECIMALS)}`,
           ]);
           return `<tr class="${chosen ? 'bg-brand-soft font-semibold' : ''}">
             <td class="border-line border-t px-3 py-2">${d.label}${chosen ? ' &larr; recommended' : ''}</td>
             <td class="border-line border-t px-3 py-2 text-right font-numeric">${drillLen(d, units)}</td>
             <td class="border-line border-t px-3 py-2 text-right font-numeric">${e}%</td>
-            <td class="border-line border-t px-3 py-2 text-right font-numeric text-ink-mute">${delta > 0 ? '+' : ''}${roundHalfEven(units === 'mm' ? delta / 1000 : delta / 25400, DECIMALS)}</td>
+            <td class="border-line border-t px-3 py-2 text-right font-numeric text-ink-mute">${delta > 0 ? '+' : ''}${roundHalfEven(units === 'mm' ? delta / 1_000_000 : delta / NM_PER_INCH, DECIMALS)}</td>
           </tr>`;
         })
         .join('');
@@ -660,11 +661,11 @@ const label = 'block text-sm font-semibold text-ink-soft';
       const u = units === 'mm' ? 'mm' : 'in';
       workingEl.textContent =
         `%engagement = 100 × (D − d) / (K × P)   K = 3√3⁄4 = ${K_SHOWN}\n\n` +
-        `D  major diameter  = ${roundHalfEven(units === 'mm' ? umToMm(majorUm) : umToInch(majorUm), DECIMALS)} ${u}\n` +
-        `P  pitch           = ${roundHalfEven(units === 'mm' ? umToMm(pitchUm) : umToInch(pitchUm), DECIMALS)} ${u}\n` +
-        `d  target diameter = ${roundHalfEven(units === 'mm' ? umExactToMm(targetUm) : targetUm / 25400, DECIMALS)} ${u}   (for ${target}%)\n` +
+        `D  major diameter  = ${roundHalfEven(units === 'mm' ? nmToMm(majorNm) : nmToInch(majorNm), DECIMALS)} ${u}\n` +
+        `P  pitch           = ${roundHalfEven(units === 'mm' ? nmToMm(pitchNm) : nmToInch(pitchNm), DECIMALS)} ${u}\n` +
+        `d  target diameter = ${roundHalfEven(units === 'mm' ? nmExactToMm(targetNm) : targetNm / NM_PER_INCH, DECIMALS)} ${u}   (for ${target}%)\n` +
         `d  chosen drill    = ${drillLen(choice.drill, units)}   ${choice.drill.label}\n\n` +
-        `100 × (${roundHalfEven(units === 'mm' ? umToMm(majorUm) : umToInch(majorUm), DECIMALS)} − ${roundHalfEven(units === 'mm' ? umToMm(choice.drill.um) : umToInch(choice.drill.um), DECIMALS)}) / (${K_SHOWN} × ${roundHalfEven(units === 'mm' ? umToMm(pitchUm) : umToInch(pitchUm), DECIMALS)}) = ${actual}%`;
+        `100 × (${roundHalfEven(units === 'mm' ? nmToMm(majorNm) : nmToInch(majorNm), DECIMALS)} − ${roundHalfEven(units === 'mm' ? nmToMm(choice.drill.nm) : nmToInch(choice.drill.nm), DECIMALS)}) / (${K_SHOWN} × ${roundHalfEven(units === 'mm' ? nmToMm(pitchNm) : nmToInch(pitchNm), DECIMALS)}) = ${actual}%`;
     } catch (err) {
       errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
       errorEl.classList.remove('hidden');

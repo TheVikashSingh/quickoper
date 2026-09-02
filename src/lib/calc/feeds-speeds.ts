@@ -23,7 +23,7 @@
  *
  * ─── Units ──────────────────────────────────────────────────────────────────
  *
- * Lengths are `Micrometres`, matching tap-drill.ts, so diameters and feeds per
+ * Lengths are `Nanometres`, matching tap-drill.ts, so diameters and feeds per
  * tooth cannot be confused with millimetres at a call site. Rates come out in
  * the units a machinist reads: rpm, mm/min, mm/rev, cm³/min, kW.
  *
@@ -49,7 +49,7 @@
  *     major tooling manufacturer's technical guide.
  */
 
-import type { Micrometres } from './tap-drill';
+import { NM_PER_INCH, type Nanometres } from './tap-drill';
 
 /** Spindle efficiency is never 1. 0.75–0.9 is the usual band for a mill. */
 export const DEFAULT_EFFICIENCY = 0.8;
@@ -74,20 +74,20 @@ function assertPositive(name: string, value: number): void {
  */
 export function spindleSpeed(
   cuttingSpeed: number,
-  dcUm: Micrometres,
+  dcNm: Nanometres,
   units: UnitSystem,
 ): number {
   assertPositive('cuttingSpeed', cuttingSpeed);
-  assertPositive('dcUm', dcUm);
-  // Both conventions reduce to the same thing once the diameter is in µm:
-  // metric Vc m/min → µm/min is ×1e6; inch Vc ft/min → µm/min is ×12×25400.
-  const speedUmPerMin =
-    units === 'metric' ? cuttingSpeed * 1_000_000 : cuttingSpeed * 12 * 25_400;
-  return speedUmPerMin / (Math.PI * dcUm);
+  assertPositive('dcNm', dcNm);
+  // Both conventions reduce to the same thing once the diameter is in nm:
+  // metric Vc m/min → nm/min is ×1e9; inch Vc ft/min → nm/min is ×12×25 400 000.
+  const speedNmPerMin =
+    units === 'metric' ? cuttingSpeed * 1e9 : cuttingSpeed * 12 * NM_PER_INCH;
+  return speedNmPerMin / (Math.PI * dcNm);
 }
 
 /**
- * Feed per revolution, in µm/rev.
+ * Feed per revolution, in nm/rev.
  *
  * fn = fz × z
  *
@@ -96,19 +96,19 @@ export function spindleSpeed(
  * and he was right: a lathe operator works in mm/rev and a mill operator in
  * mm/min, and an app that offers only one has chosen a side.
  */
-export function feedPerRev(fzUm: Micrometres, teeth: number): number {
-  assertPositive('fzUm', fzUm);
+export function feedPerRev(fzNm: Nanometres, teeth: number): number {
+  assertPositive('fzNm', fzNm);
   if (!Number.isInteger(teeth) || teeth < 1) {
     throw new RangeError(`teeth must be a positive whole number, got ${teeth}`);
   }
-  return fzUm * teeth;
+  return fzNm * teeth;
 }
 
-/** Table feed in µm/min. vf = fn × n */
-export function tableFeed(fnUmPerRev: number, rpm: number): number {
-  assertPositive('fnUmPerRev', fnUmPerRev);
+/** Table feed in nm/min. vf = fn × n */
+export function tableFeed(fnNmPerRev: number, rpm: number): number {
+  assertPositive('fnNmPerRev', fnNmPerRev);
   assertPositive('rpm', rpm);
-  return fnUmPerRev * rpm;
+  return fnNmPerRev * rpm;
 }
 
 /**
@@ -117,16 +117,16 @@ export function tableFeed(fnUmPerRev: number, rpm: number): number {
  * Q = ae × ap × vf / 1000, with ae and ap in mm and vf in mm/min.
  */
 export function millingMrr(
-  aeUm: Micrometres,
-  apUm: Micrometres,
-  vfUmPerMin: number,
+  aeNm: Nanometres,
+  apNm: Nanometres,
+  vfNmPerMin: number,
 ): number {
-  assertPositive('aeUm', aeUm);
-  assertPositive('apUm', apUm);
-  assertPositive('vfUmPerMin', vfUmPerMin);
-  const aeMm = aeUm / 1000;
-  const apMm = apUm / 1000;
-  const vfMmPerMin = vfUmPerMin / 1000;
+  assertPositive('aeNm', aeNm);
+  assertPositive('apNm', apNm);
+  assertPositive('vfNmPerMin', vfNmPerMin);
+  const aeMm = aeNm / 1_000_000;
+  const apMm = apNm / 1_000_000;
+  const vfMmPerMin = vfNmPerMin / 1_000_000;
   return (aeMm * apMm * vfMmPerMin) / 1000;
 }
 
@@ -141,13 +141,13 @@ export function millingMrr(
  */
 export function turningMrr(
   cuttingSpeed: number,
-  apUm: Micrometres,
-  fnUmPerRev: number,
+  apNm: Nanometres,
+  fnNmPerRev: number,
 ): number {
   assertPositive('cuttingSpeed', cuttingSpeed);
-  assertPositive('apUm', apUm);
-  assertPositive('fnUmPerRev', fnUmPerRev);
-  return cuttingSpeed * (apUm / 1000) * (fnUmPerRev / 1000);
+  assertPositive('apNm', apNm);
+  assertPositive('fnNmPerRev', fnNmPerRev);
+  return cuttingSpeed * (apNm / 1_000_000) * (fnNmPerRev / 1_000_000);
 }
 
 /**
@@ -163,14 +163,14 @@ export function turningMrr(
 export function specificCuttingForce(
   kc11: number,
   mc: number,
-  chipThicknessUm: number,
+  chipThicknessNm: number,
 ): number {
   assertPositive('kc11', kc11);
-  assertPositive('chipThicknessUm', chipThicknessUm);
+  assertPositive('chipThicknessNm', chipThicknessNm);
   if (!Number.isFinite(mc) || mc < 0 || mc >= 1) {
     throw new RangeError(`mc must be in [0, 1), got ${mc}`);
   }
-  const hMm = chipThicknessUm / 1000;
+  const hMm = chipThicknessNm / 1_000_000;
   return kc11 * hMm ** -mc;
 }
 
@@ -184,9 +184,9 @@ export function specificCuttingForce(
  * deliberately for a short cut and resent being stopped.
  */
 export function millingPower(
-  aeUm: Micrometres,
-  apUm: Micrometres,
-  vfUmPerMin: number,
+  aeNm: Nanometres,
+  apNm: Nanometres,
+  vfNmPerMin: number,
   kc: number,
   efficiency: number = DEFAULT_EFFICIENCY,
 ): number {
@@ -194,14 +194,14 @@ export function millingPower(
   if (!(efficiency > 0 && efficiency <= 1)) {
     throw new RangeError(`efficiency must be in (0, 1], got ${efficiency}`);
   }
-  const aeMm = aeUm / 1000;
-  const apMm = apUm / 1000;
-  const vfMmPerMin = vfUmPerMin / 1000;
+  const aeMm = aeNm / 1_000_000;
+  const apMm = apNm / 1_000_000;
+  const vfMmPerMin = vfNmPerMin / 1_000_000;
   return (aeMm * apMm * vfMmPerMin * kc) / (60e6 * efficiency);
 }
 
 /**
- * Average chip thickness for a side-milling cut, in µm.
+ * Average chip thickness for a side-milling cut, in nm.
  *
  * hm ≈ fz × sin(κ) × √(ae/Dc) for ae < Dc/2, which is the common radial-chip-
  * thinning approximation with the lead angle κ taken as 90° (a square-shoulder
@@ -213,13 +213,13 @@ export function millingPower(
  * sizing a cut.
  */
 export function meanChipThickness(
-  fzUm: Micrometres,
-  aeUm: Micrometres,
-  dcUm: Micrometres,
+  fzNm: Nanometres,
+  aeNm: Nanometres,
+  dcNm: Nanometres,
 ): number {
-  assertPositive('fzUm', fzUm);
-  assertPositive('aeUm', aeUm);
-  assertPositive('dcUm', dcUm);
-  const ratio = Math.min(aeUm / dcUm, 1);
-  return fzUm * Math.sqrt(ratio);
+  assertPositive('fzNm', fzNm);
+  assertPositive('aeNm', aeNm);
+  assertPositive('dcNm', dcNm);
+  const ratio = Math.min(aeNm / dcNm, 1);
+  return fzNm * Math.sqrt(ratio);
 }

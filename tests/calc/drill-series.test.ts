@@ -7,10 +7,10 @@ import {
   drillsFor,
 } from '../../src/lib/calc/drill-series';
 import {
-  UM_PER_INCH,
+  NM_PER_INCH,
   snapToSeries,
   drillDiameterFor,
-  mmToUm,
+  mmToNm,
 } from '../../src/lib/calc/tap-drill';
 
 /**
@@ -22,8 +22,8 @@ import {
 
 describe('metric series', () => {
   it('runs 0.5 mm to 13.0 mm', () => {
-    expect(METRIC_DRILLS[0]?.um).toBe(500);
-    expect(METRIC_DRILLS.at(-1)?.um).toBe(13_000);
+    expect(METRIC_DRILLS[0]?.nm).toBe(500_000);
+    expect(METRIC_DRILLS.at(-1)?.nm).toBe(13_000_000);
     expect(METRIC_DRILLS.length).toBe(151);
   });
 
@@ -32,25 +32,25 @@ describe('metric series', () => {
     // (M1.6's tap drill) and 2.05 mm (M2.5's). An earlier draft did exactly
     // that, and the fixture-coverage test below is what caught it.
     for (let i = 1; i < METRIC_DRILLS.length; i++) {
-      const step = METRIC_DRILLS[i]!.um - METRIC_DRILLS[i - 1]!.um;
-      expect(step).toBe(METRIC_DRILLS[i]!.um <= 3_000 ? 50 : 100);
-      expect(METRIC_DRILLS[i]!.um % 50).toBe(0);
+      const step = METRIC_DRILLS[i]!.nm - METRIC_DRILLS[i - 1]!.nm;
+      expect(step).toBe(METRIC_DRILLS[i]!.nm <= 3_000_000 ? 50_000 : 100_000);
+      expect(METRIC_DRILLS[i]!.nm % 50_000).toBe(0);
     }
   });
 
   it('contains every standard tap drill the fixtures rely on', () => {
     // If the range or step ever changes, the tap drill page silently starts
     // recommending a neighbour instead of the right drill.
-    const byUm = new Set(METRIC_DRILLS.map((d) => d.um));
+    const byNm = new Set(METRIC_DRILLS.map((d) => d.nm));
     for (const mm of [1.25, 1.6, 2.05, 2.5, 3.3, 4.2, 5.0, 6.8, 8.5, 10.2]) {
-      expect(byUm.has(mmToUm(mm)), `${mm} mm missing from the metric series`).toBe(true);
+      expect(byNm.has(mmToNm(mm)), `${mm} mm missing from the metric series`).toBe(true);
     }
   });
 
   it('labels without trailing-zero noise', () => {
-    expect(METRIC_DRILLS.find((d) => d.um === 3300)?.label).toBe('3.3 mm');
-    expect(METRIC_DRILLS.find((d) => d.um === 5000)?.label).toBe('5 mm');
-    expect(METRIC_DRILLS.find((d) => d.um === 1250)?.label).toBe('1.25 mm');
+    expect(METRIC_DRILLS.find((d) => d.nm === 3_300_000)?.label).toBe('3.3 mm');
+    expect(METRIC_DRILLS.find((d) => d.nm === 5_000_000)?.label).toBe('5 mm');
+    expect(METRIC_DRILLS.find((d) => d.nm === 1_250_000)?.label).toBe('1.25 mm');
   });
 });
 
@@ -69,16 +69,20 @@ describe('fractional series', () => {
     expect(labels).not.toContain('4/64"');
   });
 
-  it('sits within half a micrometre of the true fraction', () => {
+  it('sits within half a nanometre of the true fraction', () => {
     FRACTIONAL_DRILLS.forEach((d, i) => {
-      const exact = ((i + 1) * UM_PER_INCH) / 64;
-      expect(Math.abs(d.um - exact)).toBeLessThanOrEqual(0.5);
+      const exact = ((i + 1) * NM_PER_INCH) / 64;
+      expect(Math.abs(d.nm - exact)).toBeLessThanOrEqual(0.5);
     });
   });
 
-  it('puts 1/4" at exactly 6350 µm', () => {
+  it('puts 1/4" at exactly 6 350 000 nm, with no rounding at all', () => {
     // 25400 / 4 is a whole number, so this one must be exact, not rounded.
-    expect(FRACTIONAL_DRILLS.find((d) => d.label === '1/4"')?.um).toBe(6350);
+    expect(FRACTIONAL_DRILLS.find((d) => d.label === '1/4"')?.nm).toBe(6_350_000);
+    // 1/64" is the case that forced nanometres: 396.875 µm had to be rounded,
+    // 396 875 nm does not. Every fractional drill is its exact nominal size.
+    expect(FRACTIONAL_DRILLS[0]?.nm).toBe(396_875);
+    expect(FRACTIONAL_DRILLS.every((d) => Number.isInteger(d.nm))).toBe(true);
   });
 });
 
@@ -87,7 +91,7 @@ describe('drillsFor', () => {
     for (const series of ['metric', 'fractional', 'both'] as const) {
       const drills = drillsFor(series);
       for (let i = 1; i < drills.length; i++) {
-        expect(drills[i]!.um).toBeGreaterThanOrEqual(drills[i - 1]!.um);
+        expect(drills[i]!.nm).toBeGreaterThanOrEqual(drills[i - 1]!.nm);
       }
     }
   });
@@ -116,8 +120,8 @@ describe('the catalogue serves real threads', () => {
       [10, 1.5, 8.5],
       [12, 1.75, 10.2],
     ] as const) {
-      const target = drillDiameterFor(mmToUm(major), mmToUm(pitch), 76.98);
-      const choice = snapToSeries(mmToUm(major), mmToUm(pitch), target, series);
+      const target = drillDiameterFor(mmToNm(major), mmToNm(pitch), 76.98);
+      const choice = snapToSeries(mmToNm(major), mmToNm(pitch), target, series);
       expect(choice, `M${major} found no drill`).toBeDefined();
       // WITHIN ONE DRILL SIZE, not exact. The published table is a curated
       // list, not the output of a rule: engagements across it range from
@@ -126,28 +130,28 @@ describe('the catalogue serves real threads', () => {
       // be correct from first principles and still differ from the chart by one
       // step, and pretending otherwise would mean reverse-engineering a rule
       // that does not exist.
-      const gap = Math.abs(choice!.drill.um - mmToUm(expected));
+      const gap = Math.abs(choice!.drill.nm - mmToNm(expected));
       expect(
         gap,
         `M${major} is more than one drill size from the chart`,
-      ).toBeLessThanOrEqual(100);
+      ).toBeLessThanOrEqual(100_000);
     }
   });
 
   it('never recommends a drill outside the catalogue', () => {
     const series = drillsFor('both');
-    const known = new Set(series.map((d) => d.um));
+    const known = new Set(series.map((d) => d.nm));
     fc.assert(
       fc.property(
         fc.integer({ min: 2_000, max: 20_000 }),
         fc.integer({ min: 200, max: 2_500 }),
         (majorRaw, pitchRaw) => {
           fc.pre(pitchRaw * 3 < majorRaw);
-          const major = mmToUm(majorRaw / 1000);
-          const pitch = mmToUm(pitchRaw / 1000);
+          const major = mmToNm(majorRaw / 1000);
+          const pitch = mmToNm(pitchRaw / 1000);
           const target = drillDiameterFor(major, pitch, 75);
           const choice = snapToSeries(major, pitch, target, series)!;
-          expect(known.has(choice.drill.um)).toBe(true);
+          expect(known.has(choice.drill.nm)).toBe(true);
         },
       ),
       { numRuns: 300 },

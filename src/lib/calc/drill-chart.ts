@@ -33,7 +33,7 @@
  */
 
 import { FRACTIONAL_DRILLS, METRIC_DRILLS, type SeriesName } from './drill-series';
-import { roundHalfEven, umToInch, umToMm, type Drill } from './tap-drill';
+import { roundHalfEven, nmToInch, nmToMm, type Drill } from './tap-drill';
 
 /** Decimals shown per unit. See the rounding note above. */
 export const MM_DECIMALS = 3;
@@ -48,16 +48,16 @@ export interface ChartRow {
   /** The same diameter in inches, fixed to INCH_DECIMALS. */
   readonly inch: string;
   /** Sort key, and the value the two strings are rendered from. */
-  readonly um: number;
+  readonly nm: number;
 }
 
 function toRow(drill: Drill): ChartRow {
   return {
     label: drill.label,
     series: drill.series,
-    mm: roundHalfEven(umToMm(drill.um), MM_DECIMALS).toFixed(MM_DECIMALS),
-    inch: roundHalfEven(umToInch(drill.um), INCH_DECIMALS).toFixed(INCH_DECIMALS),
-    um: drill.um,
+    mm: roundHalfEven(nmToMm(drill.nm), MM_DECIMALS).toFixed(MM_DECIMALS),
+    inch: roundHalfEven(nmToInch(drill.nm), INCH_DECIMALS).toFixed(INCH_DECIMALS),
+    nm: drill.nm,
   };
 }
 
@@ -75,7 +75,7 @@ export function chartRows(series: SeriesName): readonly ChartRow[] {
       : series === 'fractional'
         ? FRACTIONAL_DRILLS
         : [...METRIC_DRILLS, ...FRACTIONAL_DRILLS];
-  return chosen.map(toRow).sort((a, b) => a.um - b.um);
+  return chosen.map(toRow).sort((a, b) => a.nm - b.nm);
 }
 
 /** CSV header, kept next to the writer so the two cannot drift apart. */

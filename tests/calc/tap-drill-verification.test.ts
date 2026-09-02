@@ -5,10 +5,10 @@ import {
   ENGAGEMENT_K,
   engagementPercentExact,
   MINOR_DIA_K,
-  inchToUmExact,
-  mmToUm,
+  inchToNm,
+  mmToNm,
   roundHalfEven,
-  tpiToPitchUmExact,
+  tpiToPitchNm,
 } from '../../src/lib/calc/tap-drill';
 
 /**
@@ -161,18 +161,16 @@ describe('the arithmetic agrees with the fixture', () => {
   // the recorded engagement column — it does NOT check that the drill sizes
   // themselves are right. Only a human with a catalogue does that.
   it.each(GOLDEN)('$thread on $drillLabel gives $engagementPct %', (row) => {
-    // Inch rows use the exact conversions: an inch is not a whole number of
-    // micrometres and pre-rounding the geometry moves the published second
-    // decimal. See D72.
-    const majorUm =
-      row.system === 'metric' ? mmToUm(row.major) : inchToUmExact(row.major);
-    const pitchUm =
-      row.system === 'metric'
-        ? mmToUm(row.pitchOrTpi)
-        : tpiToPitchUmExact(row.pitchOrTpi);
-    const drillUm =
-      row.system === 'metric' ? mmToUm(row.tapDrill) : inchToUmExact(row.tapDrill);
-    const actual = engagementPercentExact(majorUm, pitchUm, drillUm);
+    // The ROUNDING conversions on purpose — these are the ones the page calls.
+    // At micrometres they moved the published second decimal on the inch rows
+    // (#8-32 read 69.03 against a true 68.97). In nanometres an inch diameter
+    // is exact and this passes through the shipped path. See D72.
+    const majorNm = row.system === 'metric' ? mmToNm(row.major) : inchToNm(row.major);
+    const pitchNm =
+      row.system === 'metric' ? mmToNm(row.pitchOrTpi) : tpiToPitchNm(row.pitchOrTpi);
+    const drillNm =
+      row.system === 'metric' ? mmToNm(row.tapDrill) : inchToNm(row.tapDrill);
+    const actual = engagementPercentExact(majorNm, pitchNm, drillNm);
     expect(roundHalfEven(actual, 2)).toBeCloseTo(row.engagementPct, 2);
   });
 

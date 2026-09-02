@@ -13,26 +13,26 @@
  * engagement from 76.98 % to 55.0 %. Two reviewers of two different apps caught
  * it independently. This module exists to not do that.
  *
- * ─── Units: integer micrometres (CLAUDE.md rule 2, applied to length) ────────
+ * ─── Units: integer nanometres (CLAUDE.md rule 2, applied to length) ────────
  *
  * Rule 2 requires money to be an integer count of minor units because floats
  * lose currency. Length has the identical problem and the identical fix: every
- * dimension here is an INTEGER count of MICROMETRES (µm). A drill is 3300 µm,
+ * dimension here is an INTEGER count of MICROMETRES (nm). A drill is 3300 nm,
  * never 3.3 mm.
  *
  * This matters most for the drill series. Snapping a target to "the nearest
  * real drill" is an equality-and-ordering problem over a fixed catalogue, and
  * `3.3 === 3.3` is not reliable in IEEE-754 once a value has been converted
- * from inches and back. In integer µm it is exact, always.
+ * from inches and back. In integer nm it is exact, always.
  *
- * One inch is EXACTLY 25 400 µm — a definition, not a measurement (international
+ * One inch is EXACTLY 25 400 nm — a definition, not a measurement (international
  * yard and pound agreement, 1959). Inch drills therefore land on exact integers
  * too, and a mm → in → mm round trip is lossless.
  *
  * ─── Rounding policy (CLAUDE.md rule 3) ──────────────────────────────────────
  *
  * WHERE:      Never inside the arithmetic. `drillDiameterFor` returns an
- *             unrounded µm value as a float on purpose, because its only
+ *             unrounded nm value as a float on purpose, because its only
  *             consumers are (a) the display layer and (b) `snapToSeries`, which
  *             needs the true target to pick a neighbour correctly. Rounding it
  *             first would occasionally snap to the wrong drill.
@@ -66,44 +66,47 @@
  * `machinist-calc-research` 03-spec/calculations.md §2.
  */
 
-declare const MICROMETRE_BRAND: unique symbol;
+declare const NANOMETRE_BRAND: unique symbol;
 
 /**
- * A length in whole micrometres.
+ * A length in whole nanometres.
+ *
+ * Nanometres, not micrometres, and the reason is inch geometry — see the note
+ * further down before changing it.
  *
  * BRANDED ON PURPOSE. A plain `number` cannot be passed where this is expected,
  * so `engagementPercent(4, 0.7, 3.3)` — millimetres, the single most likely
  * mistake anyone will make against this API — is a compile error rather than a
  * result that is wrong by a factor of a thousand.
  *
- * Construct one with `um()`, `mmToUm()` or `inchToUm()`. Arithmetic on two
- * Micrometres yields a plain number, which is correct: a difference of two
+ * Construct one with `nm()`, `mmToNm()` or `inchToNm()`. Arithmetic on two
+ * Nanometres yields a plain number, which is correct: a difference of two
  * lengths is a length only by convention, and re-branding it should be a
  * deliberate act.
  */
-export type Micrometres = number & { readonly [MICROMETRE_BRAND]: true };
+export type Nanometres = number & { readonly [NANOMETRE_BRAND]: true };
 
 /**
- * Assert that a raw number is a whole, positive count of micrometres.
+ * Assert that a raw number is a whole, positive count of nanometres.
  *
- * Fractional µm is rejected rather than rounded. A caller holding 3.3 has
+ * Fractional nm is rejected rather than rounded. A caller holding 3.3 has
  * millimetres and should say so; silently accepting it is how a unit bug
  * survives to production.
  */
-export function um(value: number): Micrometres {
+export function nm(value: number): Nanometres {
   if (!Number.isFinite(value) || value <= 0) {
-    throw new RangeError(`micrometres must be positive and finite, got ${value}`);
+    throw new RangeError(`nanometres must be positive and finite, got ${value}`);
   }
   if (!Number.isInteger(value)) {
     throw new RangeError(
-      `micrometres must be a whole number, got ${value} — did you pass millimetres?`,
+      `nanometres must be a whole number, got ${value} — did you pass millimetres?`,
     );
   }
-  return value as Micrometres;
+  return value as Nanometres;
 }
 
-/** Exactly 25 400 µm, by definition. Not a measured constant. */
-export const UM_PER_INCH = 25_400;
+/** Exactly 25 400 nm, by definition. Not a measured constant. */
+export const NM_PER_INCH = 25_400_000;
 
 /**
  * ISO 68-1 basic profile height per unit pitch: H / P = √3 / 2.
@@ -140,7 +143,7 @@ export const MINOR_DIA_K = 1.25 * H_PER_PITCH;
  * Written as the division, never as the literal 76.98. At the full-precision
  * value the target is exactly `major − pitch`, so M8 lands on 6.750 mm and M12
  * on 10.250 mm — each exactly midway between two catalogue drills. Typed as
- * 76.98 they land fractions of a micrometre above midway, the ties vanish, and
+ * 76.98 they land fractions of a nanometre above midway, the ties vanish, and
  * `snapToSeries` can no longer reproduce M12's published 10.2 mm drill.
  */
 export const SHOP_RULE_PERCENT = 100 / ENGAGEMENT_K;
@@ -150,67 +153,58 @@ export const DEFAULT_ENGAGEMENT_PERCENT = 75;
 
 // ─── Unit conversion ────────────────────────────────────────────────────────
 
-export function mmToUm(mm: number): Micrometres {
-  return um(Math.round(mm * 1000));
+export function mmToNm(mm: number): Nanometres {
+  return nm(Math.round(mm * 1_000_000));
 }
 
-export function umToMm(value: Micrometres): number {
-  return value / 1000;
+export function nmToMm(value: Nanometres): number {
+  return value / 1_000_000;
 }
 
-export function inchToUm(inch: number): Micrometres {
-  return um(Math.round(inch * UM_PER_INCH));
+export function inchToNm(inch: number): Nanometres {
+  return nm(Math.round(inch * NM_PER_INCH));
 }
 
-export function umToInch(value: Micrometres): number {
-  return value / UM_PER_INCH;
+export function nmToInch(value: Nanometres): number {
+  return value / NM_PER_INCH;
 }
 
 /** Pitch from threads-per-inch, for Unified series. P = 1/n. */
-export function tpiToPitchUm(tpi: number): Micrometres {
+export function tpiToPitchNm(tpi: number): Nanometres {
   if (tpi <= 0) throw new RangeError(`tpi must be positive, got ${tpi}`);
-  return um(Math.round(UM_PER_INCH / tpi));
+  return nm(Math.round(NM_PER_INCH / tpi));
 }
 
 /*
- * ─── Inch quantities do not fit in whole micrometres ────────────────────────
+ * ─── Why nanometres and not micrometres ─────────────────────────────────────
  *
- * `Micrometres` is deliberately integral — it is the guard that catches a
- * millimetre passed where a micrometre was wanted. Metric threads survive that
- * exactly: 0.1 mm is 100 µm on the nose. Unified inch ones do not. 0.164 in is
- * 4165.6 µm and 1/32 in is 793.75 µm, and rounding each to whole micrometres
- * BEFORE the division moves the answer more than the fourth decimal this
- * project promises:
+ * This module counted in whole MICROMETRES until D72, and inch threads did not
+ * fit. 0.164 in is 4165.6 µm; 1/32 in is 793.75 µm; 1/64 in is 396.875 µm.
+ * Rounding each to a whole micrometre before the division moved the published
+ * SECOND decimal:
  *
- *     #8-32 on a #29 drill    exact 68.9741 %   via whole µm 69.03 %
- *     #10-24 on a #25 drill   exact 74.8246 %   via whole µm 74.87 %
+ *     #8-32 on a #29 drill     true 68.97 %    via whole µm 69.03 %
+ *     #10-24 on a #25 drill    true 74.82 %    via whole µm 74.87 %
  *
- * That is a published second decimal, on the series used across four of the
- * five target markets. The pair below returns raw, unrounded micrometres for
- * the geometry so the formula can be fed exact values; `engagementPercentExact`
- * is the matching escape hatch that accepts them.
+ * Physically nothing — and a digit this project publishes, on the series used
+ * across four of the five target markets.
  *
- * This does NOT yet fix the page, which still converts user inch input through
- * the rounding pair above. Doing that properly means representing lengths in
- * nanometres — 1/64 in is exactly 396 875 nm — which is what the Kotlin core
- * does and what this module should follow. Recorded as D72.
+ * At nanometre scale it comes out exact. NM_PER_INCH is 25 400 000 = 2^8 × 5^5
+ * × 127, so any inch figure quoted to five decimals or fewer is a whole number
+ * of nanometres, and 64 divides it: 1/64 in is exactly 396 875 nm, remainder
+ * zero. The fractional drill catalogue is therefore its exact nominal size
+ * rather than a near-miss of it. This is the representation the Kotlin core in
+ * `machinist-calc-app` already uses, which also makes the two cores comparable
+ * for the Gate 7 cross-check.
+ *
+ * WHAT STILL ROUNDS, stated honestly: `tpiToPitchNm` divides 25 400 000 by the
+ * thread count, and only some counts divide it exactly. 32 tpi gives 793 750 on
+ * the nose; 24 tpi gives 1 058 333.33 and is rounded. The residue is under half
+ * a nanometre on a million — 5 parts in 10 000 000, four orders of magnitude
+ * below the micrometre error it replaces, and far below the second decimal the
+ * golden fixture asserts. The golden inch rows are checked through THIS path,
+ * not through a private exact one, so that claim is tested rather than asserted.
  */
-
-/** Micrometres from inches, unrounded. See the note above. */
-export function inchToUmExact(inch: number): number {
-  if (!Number.isFinite(inch) || inch <= 0) {
-    throw new RangeError(`inch must be positive and finite, got ${inch}`);
-  }
-  return inch * UM_PER_INCH;
-}
-
-/** Pitch in unrounded micrometres from threads-per-inch. See the note above. */
-export function tpiToPitchUmExact(tpi: number): number {
-  if (!Number.isFinite(tpi) || tpi <= 0) {
-    throw new RangeError(`tpi must be positive and finite, got ${tpi}`);
-  }
-  return UM_PER_INCH / tpi;
-}
 
 // ─── Core arithmetic ────────────────────────────────────────────────────────
 
@@ -228,18 +222,18 @@ function assertPositive(name: string, value: number): void {
  * must be able to see it, not have it quietly hidden.
  */
 export function engagementPercent(
-  majorUm: Micrometres,
-  pitchUm: Micrometres,
-  drillUm: Micrometres,
+  majorNm: Nanometres,
+  pitchNm: Nanometres,
+  drillNm: Nanometres,
 ): number {
-  return engagementPercentExact(majorUm, pitchUm, drillUm);
+  return engagementPercentExact(majorNm, pitchNm, drillNm);
 }
 
 /**
- * Engagement for a drill diameter that is not a whole micrometre.
+ * Engagement for a drill diameter that is not a whole nanometre.
  *
  * The branded `engagementPercent` above is what callers should reach for: it
- * refuses anything but a real, whole-µm drill. This variant exists because
+ * refuses anything but a real, whole-nm drill. This variant exists because
  * `drillDiameterFor` returns a fractional TARGET — a diameter no drill in any
  * rack actually has — and proving the two functions are exact inverses requires
  * feeding that target back in.
@@ -248,58 +242,58 @@ export function engagementPercent(
  * hatch, and it is why the safe version is the one named without a suffix.
  */
 export function engagementPercentExact(
-  majorUm: number,
-  pitchUm: number,
-  drillUm: number,
+  majorNm: number,
+  pitchNm: number,
+  drillNm: number,
 ): number {
-  assertPositive('majorUm', majorUm);
-  assertPositive('pitchUm', pitchUm);
-  assertPositive('drillUm', drillUm);
-  return (100 * (majorUm - drillUm)) / (ENGAGEMENT_K * pitchUm);
+  assertPositive('majorNm', majorNm);
+  assertPositive('pitchNm', pitchNm);
+  assertPositive('drillNm', drillNm);
+  return (100 * (majorNm - drillNm)) / (ENGAGEMENT_K * pitchNm);
 }
 
 /**
- * Millimetres from a fractional µm value.
+ * Millimetres from a fractional nm value.
  *
- * `umToMm` takes a branded whole-µm length. This takes a computed target,
+ * `nmToMm` takes a branded whole-nm length. This takes a computed target,
  * which by construction is not one.
  */
-export function umExactToMm(value: number): number {
-  return value / 1000;
+export function nmExactToMm(value: number): number {
+  return value / 1_000_000;
 }
 
 /**
  * Drill diameter that would produce a target engagement.
  *
- * Deliberately returns a fractional µm value. See the rounding policy above:
+ * Deliberately returns a fractional nm value. See the rounding policy above:
  * this is the true target, and `snapToSeries` needs it unrounded to choose the
  * correct neighbour. Do not round it before passing it on.
  */
 export function drillDiameterFor(
-  majorUm: Micrometres,
-  pitchUm: Micrometres,
+  majorNm: Nanometres,
+  pitchNm: Nanometres,
   engagement: number,
 ): number {
-  assertPositive('majorUm', majorUm);
-  assertPositive('pitchUm', pitchUm);
+  assertPositive('majorNm', majorNm);
+  assertPositive('pitchNm', pitchNm);
   if (!Number.isFinite(engagement) || engagement <= 0 || engagement > 100) {
     throw new RangeError(`engagement must be in (0, 100], got ${engagement}`);
   }
-  return majorUm - (ENGAGEMENT_K * pitchUm * engagement) / 100;
+  return majorNm - (ENGAGEMENT_K * pitchNm * engagement) / 100;
 }
 
 /** Basic minor diameter D₁ = D − 1.25 H = (5/8)√3 P. Not the tap drill. */
-export function basicMinorDiameterUm(majorUm: Micrometres, pitchUm: Micrometres): number {
-  assertPositive('majorUm', majorUm);
-  assertPositive('pitchUm', pitchUm);
-  return majorUm - MINOR_DIA_K * pitchUm;
+export function basicMinorDiameterNm(majorNm: Nanometres, pitchNm: Nanometres): number {
+  assertPositive('majorNm', majorNm);
+  assertPositive('pitchNm', pitchNm);
+  return majorNm - MINOR_DIA_K * pitchNm;
 }
 
 // ─── The drill series ───────────────────────────────────────────────────────
 
 export interface Drill {
-  /** Exact diameter in µm. */
-  readonly um: Micrometres;
+  /** Exact diameter in nm. */
+  readonly nm: Nanometres;
   /** How a machinist names it: "3.3 mm", "#7", "27/64". */
   readonly label: string;
   /** Which catalogue it belongs to. */
@@ -310,12 +304,12 @@ export interface DrillChoice {
   readonly drill: Drill;
   /** Engagement this drill actually produces, unrounded. */
   readonly engagementPercent: number;
-  /** Signed µm difference from the requested target. */
-  readonly deltaUm: number;
+  /** Signed nm difference from the requested target. */
+  readonly deltaNm: number;
 }
 
 /**
- * Every real drill in `series`, ranked by closeness to `targetUm`.
+ * Every real drill in `series`, ranked by closeness to `targetNm`.
  *
  * This is the "schedule" that CLAUDE.md rule 10 requires: not one number, but
  * the neighbourhood, so a machinist can see what the drill in the next slot of
@@ -326,18 +320,18 @@ export interface DrillChoice {
  * shows the nearest few either side.
  */
 export function rankBySuitability(
-  majorUm: Micrometres,
-  pitchUm: Micrometres,
-  targetUm: number,
+  majorNm: Nanometres,
+  pitchNm: Nanometres,
+  targetNm: number,
   series: readonly Drill[],
 ): DrillChoice[] {
   return series
     .map((drill) => ({
       drill,
-      engagementPercent: engagementPercent(majorUm, pitchUm, drill.um),
-      deltaUm: drill.um - targetUm,
+      engagementPercent: engagementPercent(majorNm, pitchNm, drill.nm),
+      deltaNm: drill.nm - targetNm,
     }))
-    .sort((a, b) => Math.abs(a.deltaUm) - Math.abs(b.deltaUm));
+    .sort((a, b) => Math.abs(a.deltaNm) - Math.abs(b.deltaNm));
 }
 
 /**
@@ -396,16 +390,21 @@ export function rankBySuitability(
  * Of two drills exactly straddling a target, the one on the EVEN multiple of
  * the step between them — half-even, applied to a drill grid.
  *
- * M12 ties between 10.2 and 10.3 mm: the step is 100 µm, 10200/100 = 102 is
+ * M12 ties between 10.2 and 10.3 mm: the step is 100 nm, 10200/100 = 102 is
  * even, so 10.2 mm wins — the drill every chart names. M8 ties between 6.7 and
  * 6.8: 6700/100 = 67 is odd, so 6.8 mm wins, which is also what every chart
  * names. One rule, both directions.
  *
- * On a series whose local step does not divide the smaller diameter — the
- * fractional-inch index, where 1/64 in is 396.875 µm and cannot be stored
- * exactly in whole micrometres — "even multiple" is undefined. There the
- * fallback is the larger drill, which is the previous behaviour and errs
- * toward the easier tap.
+ * At micrometre scale this had a hole. 1/64 in was 396.875 µm, stored rounded,
+ * so the fractional index had no exact step and "even multiple" was undefined
+ * across it. In nanometres 1/64 in is exactly 396 875 and every fractional
+ * drill is a whole multiple of it, so half-even now applies to that catalogue
+ * as well — see D72.
+ *
+ * The guard stays regardless: a series with an irregular local step, such as
+ * the two catalogues interleaved across their boundary, has no even multiple to
+ * speak of. There the fallback is the larger drill, which errs toward the
+ * easier tap.
  */
 function evenOfPair(a: number, b: number): number {
   const lo = Math.min(a, b);
@@ -416,23 +415,23 @@ function evenOfPair(a: number, b: number): number {
 }
 
 export function snapToSeries(
-  majorUm: Micrometres,
-  pitchUm: Micrometres,
-  targetUm: number,
+  majorNm: Nanometres,
+  pitchNm: Nanometres,
+  targetNm: number,
   series: readonly Drill[],
 ): DrillChoice | undefined {
   if (series.length === 0) return undefined;
   const chosen = series.reduce((best, d) => {
-    const dDist = Math.abs(d.um - targetUm);
-    const bestDist = Math.abs(best.um - targetUm);
+    const dDist = Math.abs(d.nm - targetNm);
+    const bestDist = Math.abs(best.nm - targetNm);
     if (dDist < bestDist) return d;
-    if (dDist === bestDist) return d.um === evenOfPair(best.um, d.um) ? d : best;
+    if (dDist === bestDist) return d.nm === evenOfPair(best.nm, d.nm) ? d : best;
     return best;
   });
   return {
     drill: chosen,
-    engagementPercent: engagementPercent(majorUm, pitchUm, chosen.um),
-    deltaUm: chosen.um - targetUm,
+    engagementPercent: engagementPercent(majorNm, pitchNm, chosen.nm),
+    deltaNm: chosen.nm - targetNm,
   };
 }
 

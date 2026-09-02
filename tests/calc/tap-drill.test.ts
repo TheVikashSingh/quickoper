@@ -1,24 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ENGAGEMENT_PERCENT,
-  UM_PER_INCH,
-  basicMinorDiameterUm,
+  NM_PER_INCH,
+  basicMinorDiameterNm,
   drillDiameterFor,
   engagementPercent,
   engagementPercentExact,
-  inchToUm,
-  inchToUmExact,
-  mmToUm,
+  inchToNm,
+  mmToNm,
   rankBySuitability,
   roundHalfEven,
   SHOP_RULE_PERCENT,
   snapToSeries,
-  tpiToPitchUm,
-  tpiToPitchUmExact,
-  um,
-  umExactToMm,
-  umToInch,
-  umToMm,
+  tpiToPitchNm,
+  nm,
+  nmExactToMm,
+  nmToInch,
+  nmToMm,
   type Drill,
 } from '../../src/lib/calc/tap-drill';
 import { drillsFor } from '../../src/lib/calc/drill-series';
@@ -71,30 +69,33 @@ const INCH_TABLE = [
 ] as const;
 
 describe('unit conversion', () => {
-  it('treats one inch as exactly 25 400 µm', () => {
+  it('treats one inch as exactly 25 400 nm', () => {
     // International yard and pound agreement, 1959. A definition, not a measurement.
-    expect(UM_PER_INCH).toBe(25_400);
-    expect(inchToUm(1)).toBe(25_400);
+    expect(NM_PER_INCH).toBe(25_400_000);
+    expect(inchToNm(1)).toBe(25_400_000);
   });
 
-  it('round-trips mm → µm → mm without drift', () => {
+  it('round-trips mm → nm → mm without drift', () => {
     for (const { drillMm } of METRIC_TABLE) {
-      expect(umToMm(mmToUm(drillMm))).toBe(drillMm);
+      expect(nmToMm(mmToNm(drillMm))).toBe(drillMm);
     }
   });
 
-  it('round-trips inch → µm → inch at display precision', () => {
+  it('round-trips inch → nm → inch at display precision', () => {
     for (const { drillIn } of INCH_TABLE) {
-      expect(roundHalfEven(umToInch(inchToUm(drillIn)), 4)).toBe(
+      expect(roundHalfEven(nmToInch(inchToNm(drillIn)), 4)).toBe(
         roundHalfEven(drillIn, 4),
       );
     }
   });
 
   it('derives pitch from threads per inch', () => {
-    expect(tpiToPitchUm(20)).toBe(1270); // 25400 / 20
-    expect(tpiToPitchUm(32)).toBe(794); // 25400 / 32 = 793.75, half-up to 794
-    expect(() => tpiToPitchUm(0)).toThrow(RangeError);
+    expect(tpiToPitchNm(20)).toBe(1_270_000); // 25 400 000 / 20
+    // At micrometres this was 793.75 rounded to 794 — a 0.03 % error on the
+    // pitch, which is what pushed #8-32 to 69.03 % instead of 68.97 %. In
+    // nanometres it divides exactly. See D72.
+    expect(tpiToPitchNm(32)).toBe(793_750); // 25 400 000 / 32, remainder zero
+    expect(() => tpiToPitchNm(0)).toThrow(RangeError);
   });
 });
 
@@ -102,7 +103,7 @@ describe('engagement against the published metric tap drill table', () => {
   it.each(METRIC_TABLE)(
     '$thread with a $drillMm mm drill gives $engagement %',
     ({ majorMm, pitchMm, drillMm, engagement }) => {
-      const actual = engagementPercent(mmToUm(majorMm), mmToUm(pitchMm), mmToUm(drillMm));
+      const actual = engagementPercent(mmToNm(majorMm), mmToNm(pitchMm), mmToNm(drillMm));
       expect(roundHalfEven(actual, 2)).toBeCloseTo(engagement, 2);
     },
   );
@@ -119,16 +120,16 @@ describe('engagement against the published inch tap drill table', () => {
   it.each(INCH_TABLE)(
     '$thread with a $drillIn in drill gives $engagement %',
     ({ majorIn, tpi, drillIn, engagement }) => {
-      // Exact conversions, NOT the whole-µm pair. An inch is not a whole
-      // number of micrometres, and rounding the geometry before the division
+      // Exact conversions, NOT the whole-nm pair. An inch is not a whole
+      // number of nanometres, and rounding the geometry before the division
       // shifts these by ~0.06 points — enough to move the second decimal the
-      // fixture publishes. See the note above `inchToUmExact` and D72; the
+      // fixture publishes. See the note above `inchToNmExact` and D72; the
       // page still has this defect, and this assertion is what will prove the
       // fix when it lands.
-      const actual = engagementPercentExact(
-        inchToUmExact(majorIn),
-        tpiToPitchUmExact(tpi),
-        inchToUmExact(drillIn),
+      const actual = engagementPercent(
+        inchToNm(majorIn),
+        tpiToPitchNm(tpi),
+        inchToNm(drillIn),
       );
       expect(roundHalfEven(actual, 2)).toBeCloseTo(engagement, 2);
     },
@@ -141,7 +142,7 @@ describe('drillDiameterFor', () => {
     // at the full-precision percentage they agree EXACTLY, not approximately.
     // That exactness is load-bearing: it is what puts M8 and M12 precisely
     // midway between two drills so snapToSeries can break the tie. Asserted at
-    // the micrometre, not to 3 dp, because the old literal 76.98 would pass a
+    // the nanometre, not to 3 dp, because the old literal 76.98 would pass a
     // 3 dp check while still destroying the tie.
     for (const [majorMm, pitchMm] of [
       [4, 0.7],
@@ -150,33 +151,33 @@ describe('drillDiameterFor', () => {
       [20, 2.5],
     ] as const) {
       const target = drillDiameterFor(
-        mmToUm(majorMm),
-        mmToUm(pitchMm),
+        mmToNm(majorMm),
+        mmToNm(pitchMm),
         SHOP_RULE_PERCENT,
       );
-      expect(target).toBeCloseTo(mmToUm(majorMm) - mmToUm(pitchMm), 6);
+      expect(target).toBeCloseTo(mmToNm(majorMm) - mmToNm(pitchMm), 6);
     }
   });
 
   it('is the exact inverse of engagementPercent', () => {
     for (const pct of [50, 65, 75, SHOP_RULE_PERCENT, 80, 100]) {
-      const target = drillDiameterFor(mmToUm(8), mmToUm(1.25), pct);
-      const back = engagementPercentExact(mmToUm(8), mmToUm(1.25), target);
+      const target = drillDiameterFor(mmToNm(8), mmToNm(1.25), pct);
+      const back = engagementPercentExact(mmToNm(8), mmToNm(1.25), target);
       expect(back).toBeCloseTo(pct, 9);
     }
   });
 
   it('rejects an engagement outside (0, 100]', () => {
-    expect(() => drillDiameterFor(mmToUm(8), mmToUm(1.25), 0)).toThrow(RangeError);
-    expect(() => drillDiameterFor(mmToUm(8), mmToUm(1.25), 101)).toThrow(RangeError);
+    expect(() => drillDiameterFor(mmToNm(8), mmToNm(1.25), 0)).toThrow(RangeError);
+    expect(() => drillDiameterFor(mmToNm(8), mmToNm(1.25), 101)).toThrow(RangeError);
   });
 });
 
-describe('basicMinorDiameterUm', () => {
+describe('basicMinorDiameterNm', () => {
   it('is not the tap drill, and the difference is material', () => {
     // ISO 68-1: D₁ = D − 1.25 H. For M4 that is 3.2422 mm against a 3.3 mm
     // tap drill. Users conflate the two, so the tool reports both.
-    const minor = umExactToMm(basicMinorDiameterUm(mmToUm(4), mmToUm(0.7)));
+    const minor = nmExactToMm(basicMinorDiameterNm(mmToNm(4), mmToNm(0.7)));
     expect(roundHalfEven(minor, 4)).toBeCloseTo(3.2422, 4);
     expect(minor).toBeLessThan(3.3);
   });
@@ -184,11 +185,11 @@ describe('basicMinorDiameterUm', () => {
 
 describe('snapToSeries', () => {
   const metricSeries: Drill[] = [
-    { um: um(6500), label: '6.5 mm', series: 'metric' },
-    { um: um(6700), label: '6.7 mm', series: 'metric' },
-    { um: um(6800), label: '6.8 mm', series: 'metric' },
-    { um: um(6900), label: '6.9 mm', series: 'metric' },
-    { um: um(7000), label: '7.0 mm', series: 'metric' },
+    { nm: nm(6_500_000), label: '6.5 mm', series: 'metric' },
+    { nm: nm(6_700_000), label: '6.7 mm', series: 'metric' },
+    { nm: nm(6_800_000), label: '6.8 mm', series: 'metric' },
+    { nm: nm(6_900_000), label: '6.9 mm', series: 'metric' },
+    { nm: nm(7_000_000), label: '7.0 mm', series: 'metric' },
   ];
 
   it('agrees with the published chart for M8', () => {
@@ -198,9 +199,9 @@ describe('snapToSeries', () => {
     // world. At the shop rule this is an EXACT tie — 6.750 mm, dead between
     // 6.7 and 6.8 — and half-even resolves it upward because 6700/100 = 67 is
     // odd.
-    const target = drillDiameterFor(mmToUm(8), mmToUm(1.25), SHOP_RULE_PERCENT);
-    expect(target).toBe(6750);
-    const choice = snapToSeries(mmToUm(8), mmToUm(1.25), target, metricSeries);
+    const target = drillDiameterFor(mmToNm(8), mmToNm(1.25), SHOP_RULE_PERCENT);
+    expect(target).toBe(6_750_000);
+    const choice = snapToSeries(mmToNm(8), mmToNm(1.25), target, metricSeries);
     expect(choice?.drill.label).toBe('6.8 mm');
     expect(roundHalfEven(choice!.engagementPercent, 2)).toBeCloseTo(73.9, 2);
   });
@@ -212,62 +213,62 @@ describe('snapToSeries', () => {
     // what made an earlier revision conclude the table was underivable.
     // Half-even resolves it downward because 10200/100 = 102 is even.
     const m12Series: Drill[] = [
-      { um: um(10000), label: '10.0 mm', series: 'metric' },
-      { um: um(10100), label: '10.1 mm', series: 'metric' },
-      { um: um(10200), label: '10.2 mm', series: 'metric' },
-      { um: um(10300), label: '10.3 mm', series: 'metric' },
-      { um: um(10400), label: '10.4 mm', series: 'metric' },
+      { nm: nm(10_000_000), label: '10.0 mm', series: 'metric' },
+      { nm: nm(10_100_000), label: '10.1 mm', series: 'metric' },
+      { nm: nm(10_200_000), label: '10.2 mm', series: 'metric' },
+      { nm: nm(10_300_000), label: '10.3 mm', series: 'metric' },
+      { nm: nm(10_400_000), label: '10.4 mm', series: 'metric' },
     ];
-    const target = drillDiameterFor(mmToUm(12), mmToUm(1.75), SHOP_RULE_PERCENT);
-    expect(target).toBe(10250);
-    const choice = snapToSeries(mmToUm(12), mmToUm(1.75), target, m12Series);
+    const target = drillDiameterFor(mmToNm(12), mmToNm(1.75), SHOP_RULE_PERCENT);
+    expect(target).toBe(10_250_000);
+    const choice = snapToSeries(mmToNm(12), mmToNm(1.75), target, m12Series);
     expect(choice?.drill.label).toBe('10.2 mm');
     expect(roundHalfEven(choice!.engagementPercent, 2)).toBeCloseTo(79.18, 2);
   });
 
   it('picks the nearest drill in either direction', () => {
     // 6.71 is nearest 6.7; 6.79 is nearest 6.8. Direction is not the rule.
-    expect(snapToSeries(mmToUm(8), mmToUm(1.25), 6710, metricSeries)?.drill.label).toBe(
-      '6.7 mm',
-    );
-    expect(snapToSeries(mmToUm(8), mmToUm(1.25), 6790, metricSeries)?.drill.label).toBe(
-      '6.8 mm',
-    );
+    expect(
+      snapToSeries(mmToNm(8), mmToNm(1.25), 6_710_000, metricSeries)?.drill.label,
+    ).toBe('6.7 mm');
+    expect(
+      snapToSeries(mmToNm(8), mmToNm(1.25), 6_790_000, metricSeries)?.drill.label,
+    ).toBe('6.8 mm');
   });
 
   it('reports the engagement the chosen drill actually gives', () => {
-    const choice = snapToSeries(mmToUm(8), mmToUm(1.25), 6800, metricSeries);
+    const choice = snapToSeries(mmToNm(8), mmToNm(1.25), 6_800_000, metricSeries);
     expect(choice?.drill.label).toBe('6.8 mm');
     expect(roundHalfEven(choice!.engagementPercent, 2)).toBeCloseTo(73.9, 2);
   });
 
   it('returns the smallest drill when the target is below the series', () => {
-    const choice = snapToSeries(mmToUm(8), mmToUm(1.25), 1000, metricSeries);
-    expect(choice?.drill.um).toBe(6500);
-    expect(choice!.deltaUm).toBeGreaterThan(0); // caller can see it is out of range
+    const choice = snapToSeries(mmToNm(8), mmToNm(1.25), 1_000_000, metricSeries);
+    expect(choice?.drill.nm).toBe(6_500_000);
+    expect(choice!.deltaNm).toBeGreaterThan(0); // caller can see it is out of range
   });
 
   it('returns undefined for an empty series', () => {
-    expect(snapToSeries(mmToUm(8), mmToUm(1.25), 6800, [])).toBeUndefined();
+    expect(snapToSeries(mmToNm(8), mmToNm(1.25), 6_800_000, [])).toBeUndefined();
   });
 });
 
 describe('rankBySuitability', () => {
   const series: Drill[] = [
-    { um: um(3200), label: '3.2 mm', series: 'metric' },
-    { um: um(3300), label: '3.3 mm', series: 'metric' },
-    { um: um(3500), label: '3.5 mm', series: 'metric' },
+    { nm: nm(3_200_000), label: '3.2 mm', series: 'metric' },
+    { nm: nm(3_300_000), label: '3.3 mm', series: 'metric' },
+    { nm: nm(3_500_000), label: '3.5 mm', series: 'metric' },
   ];
 
   it('orders by absolute distance from the target', () => {
-    const ranked = rankBySuitability(mmToUm(4), mmToUm(0.7), 3300, series);
+    const ranked = rankBySuitability(mmToNm(4), mmToNm(0.7), 3_300_000, series);
     expect(ranked.map((r) => r.drill.label)).toEqual(['3.3 mm', '3.2 mm', '3.5 mm']);
   });
 
   it('exposes the competitor defect directly', () => {
     // The 0.5 mm-rounded 3.5 mm drill is in the list, and its engagement is
     // visibly 55 %. This is the comparison CLAUDE.md rule 10 asks for.
-    const ranked = rankBySuitability(mmToUm(4), mmToUm(0.7), 3300, series);
+    const ranked = rankBySuitability(mmToNm(4), mmToNm(0.7), 3_300_000, series);
     const bad = ranked.find((r) => r.drill.label === '3.5 mm')!;
     expect(roundHalfEven(bad.engagementPercent, 1)).toBeCloseTo(55.0, 1);
   });
@@ -277,14 +278,14 @@ describe('invariants', () => {
   it('increasing engagement never increases drill diameter', () => {
     let previous = Infinity;
     for (const pct of [50, 60, 70, 75, 80, 90, 100]) {
-      const d = drillDiameterFor(mmToUm(10), mmToUm(1.5), pct);
+      const d = drillDiameterFor(mmToNm(10), mmToNm(1.5), pct);
       expect(d).toBeLessThan(previous);
       previous = d;
     }
   });
 
   it('rejects zero and negative dimensions rather than returning NaN', () => {
-    // The brand makes these unconstructable through um(), which is the point.
+    // The brand makes these unconstructable through nm(), which is the point.
     // Cast past it deliberately to prove the runtime guard still holds for any
     // caller that reaches the function through untyped JS.
     expect(() => engagementPercentExact(0, 1250, 6800)).toThrow(RangeError);
@@ -295,9 +296,9 @@ describe('invariants', () => {
   it('never produces NaN or Infinity for valid input', () => {
     for (const row of METRIC_TABLE) {
       const v = engagementPercent(
-        mmToUm(row.majorMm),
-        mmToUm(row.pitchMm),
-        mmToUm(row.drillMm),
+        mmToNm(row.majorMm),
+        mmToNm(row.pitchMm),
+        mmToNm(row.drillMm),
       );
       expect(Number.isFinite(v)).toBe(true);
     }
@@ -336,8 +337,8 @@ describe('roundHalfEven', () => {
  * the rule cannot drift apart again in silence.
  */
 describe('the default the page loads with', () => {
-  const major = mmToUm(8);
-  const pitch = mmToUm(1.25);
+  const major = mmToNm(8);
+  const pitch = mmToNm(1.25);
   const target = drillDiameterFor(major, pitch, 75);
 
   it('returns the 6.8 mm drill every published chart specifies', () => {
@@ -349,7 +350,7 @@ describe('the default the page loads with', () => {
   it('picks a drill LARGER than the target — the page must not claim otherwise', () => {
     const choice = snapToSeries(major, pitch, target, drillsFor('metric'));
     expect(
-      choice === undefined ? 0 : choice.deltaUm,
+      choice === undefined ? 0 : choice.deltaNm,
       'D70: the rule is nearest-with-tie-to-larger, not largest-not-exceeding. ' +
         'If this now fails, the recommendation rule changed — update the two ' +
         'passages on the tap drill page and the llms.txt entry to match.',

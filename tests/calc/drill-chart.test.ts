@@ -42,8 +42,8 @@ describe('chart rows', () => {
   });
 
   it('is ascending by diameter, both catalogues interleaved', () => {
-    const um = chartRows('both').map((r) => r.um);
-    expect(um).toEqual([...um].sort((a, b) => a - b));
+    const diameters = chartRows('both').map((r) => r.nm);
+    expect(diameters).toEqual([...diameters].sort((a, b) => a - b));
     // Interleaving is the point of the combined view: 1/64" (0.397 mm) sorts
     // below 0.5 mm, so the first row is fractional even though metric leads
     // the source array.
