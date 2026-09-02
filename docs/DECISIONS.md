@@ -2443,6 +2443,51 @@ tolerance was already `toBeCloseTo(…, 1)`. Widening it would have retired the
 only check that can detect this, to hide a defect the check had just correctly
 found.
 
+### D73 — Above the top of the drill index there is no answer, and the largest drill is not one
+
+Found by the display gate D72 asked for, on its first run, which is the entire
+argument for building it.
+
+`snapToSeries` takes the NEAREST drill in the index. Above the ceiling that
+means the largest one, however far away it is — and the metric index stops at
+13 mm. So the page answered:
+
+| Thread | It recommended | Reporting |
+|---|---|---|
+| M16 × 2 | 13 mm | 115.47 % |
+| M20 × 2.5 | 13 mm | 215.54 % |
+| M24 × 3 | 13 mm | 282.26 % |
+| M30 × 3.5 | 13 mm | 373.90 % |
+
+Every one reachable by typing a common thread into the form. **"Use this drill:
+13 mm" for an M30 hole is a broken tap and a scrapped part.** The engagement
+figure beside it is absurd enough that an attentive machinist would stop, but
+the headline is a plausible-looking drill size in large type, and the
+engagement is in smaller type below it.
+
+Gate 9 is explicit — `unavailable` is an acceptable output, a plausible wrong
+number is not — and the Kotlin core in `machinist-calc-app` already refuses
+these, returning `NoDrillInRange`. The two cores disagreed, and the site was the
+one that was wrong.
+
+`tapDrillDisplay` now refuses when the target exceeds the largest drill in the
+chosen index, with a message naming both numbers: *"No drill in this index
+reaches 17.5643 mm. The largest it holds is 13 mm."*
+
+**Guarded at the top only, deliberately.** Below the smallest drill the nearest
+one genuinely is the nearest real drill — a 0.49 mm target against a 0.5 mm
+index is a fair answer, off by a fiftieth of a millimetre. 17.5 against 13 is
+off by 4.5 mm and serves nothing. The distinguishing fact is the distance, not
+the direction, and only one end of this index produces distances that matter.
+
+**Placed in the display layer, not in `snapToSeries`.** The calc function's
+contract — nearest drill in the series provided — is honest and is asserted by
+existing tests including one for targets below the series. What was missing was
+a caller deciding that "nearest" had stopped being "suitable". Moving that
+judgement into `snapToSeries` would change a shared primitive to fix one
+caller's presentation problem. If the fractional index or a future number-drill
+index needs the same rule, this is the layer that already has it.
+
 **Resolved by moving the whole machining domain to nanometres.** `Micrometres`
 became `Nanometres` across `tap-drill.ts`, `drill-series.ts`, `drill-chart.ts`
 and `feeds-speeds.ts`, with their pages and tests. The brand stays integral —
