@@ -18,6 +18,7 @@ import {
   umToMm,
   type Drill,
 } from '../../src/lib/calc/tap-drill';
+import { drillsFor } from '../../src/lib/calc/drill-series';
 
 /**
  * Fixtures for tap drill sizing.
@@ -270,5 +271,40 @@ describe('roundHalfEven', () => {
   it('survives the float-representation trap', () => {
     // 1.005 * 100 is 100.49999999999999 in IEEE-754.
     expect(roundHalfEven(1.005, 2)).toBe(1.0);
+  });
+});
+
+/**
+ * The page's default view, pinned. See DECISIONS.md D70.
+ *
+ * `/machining/tap-drill-calculator` loads with M8 x 1.25 at 75% and explains,
+ * in prose, which drill that produces and why it may be larger than the target.
+ * That prose said the opposite of what this code does for two pull requests —
+ * the implementation was right, the paragraph describing it was wrong, and no
+ * test had an opinion about the paragraph.
+ *
+ * These two assertions are the pin. Reverting to "largest not exceeding" fails
+ * them with a message naming the decision, so the rule and the explanation of
+ * the rule cannot drift apart again in silence.
+ */
+describe('the default the page loads with', () => {
+  const major = mmToUm(8);
+  const pitch = mmToUm(1.25);
+  const target = drillDiameterFor(major, pitch, 75);
+
+  it('returns the 6.8 mm drill every published chart specifies', () => {
+    const choice = snapToSeries(major, pitch, target, drillsFor('metric'));
+    expect(choice?.drill.label).toBe('6.8 mm');
+    expect(roundHalfEven(choice?.engagementPercent ?? 0, 2)).toBe(73.9);
+  });
+
+  it('picks a drill LARGER than the target — the page must not claim otherwise', () => {
+    const choice = snapToSeries(major, pitch, target, drillsFor('metric'));
+    expect(
+      choice === undefined ? 0 : choice.deltaUm,
+      'D70: the rule is nearest-with-tie-to-larger, not largest-not-exceeding. ' +
+        'If this now fails, the recommendation rule changed — update the two ' +
+        'passages on the tap drill page and the llms.txt entry to match.',
+    ).toBeGreaterThan(0);
   });
 });
