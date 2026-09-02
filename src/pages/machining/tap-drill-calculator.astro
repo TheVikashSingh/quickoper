@@ -67,8 +67,8 @@ const FAQ = [
     a: 'Because it is the usual shop compromise. Higher engagement is a stronger thread and a harder, hotter, more breakage-prone tapping operation; the extra holding power above about 75% is small because the failure moves into the screw rather than the thread. 60% to 80% is the normal working band, and the field is yours to change.',
   },
   {
-    q: 'Why is the recommended drill never larger than the target?',
-    a: 'Going larger silently reduces engagement below what you asked for. That is the specific defect this tool exists to avoid: rounding M4 × 0.7 up from 3.30 mm to 3.50 mm drops engagement from 77% to 55%, which is a thread that strips. If you want the larger drill, it is in the table with its real engagement beside it, and you can choose it knowingly.',
+    q: 'Which drill does it pick, and can it come out larger than the target?',
+    a: 'It picks the nearest drill in your index to the computed target, and where two are equally near it takes the larger one. So yes, it can be larger, and often is: M8 × 1.25 at 75% wants 6.7822 mm and gets the 6.8 mm drill, which gives 73.9%. That is what every published chart specifies, and it is why the engagement you get is reported beside the engagement you asked for rather than assumed to match. What protects you is not the direction of the rounding — it is that the drill comes from an index of sizes that exist, and that its true engagement is always shown.',
   },
   {
     q: 'Where are the number and letter drills?',
@@ -355,7 +355,7 @@ const label = 'block text-sm font-semibold text-ink-soft';
         of them describes the hole you are about to make.
       </p>
       <h3 class="font-display text-ink text-xl font-semibold">
-        Why the recommendation never rounds up
+        What actually protects you, and it is not the direction of the rounding
       </h3>
       <p>
         Several shipping tools compute the target diameter and then round it to a
@@ -365,11 +365,25 @@ const label = 'block text-sm font-semibold text-ink-soft';
         the wild.
       </p>
       <p>
-        So the rule here is one-directional: the recommended drill is the largest one in
-        your index that does not exceed the target. Engagement can only come out at or
-        above what you asked for, never below. If the larger drill is the one you own, it
-        is in the table with its true engagement beside it, and choosing it is then an
-        informed decision rather than an invisible substitution.
+        The obvious fix is to round one way only — never exceed the target, so engagement
+        can never come out below what was asked. This tool was built that way first, and
+        it was wrong. Never-exceed returns 6.7 mm for M8 × 1.25 where every catalogue in
+        the world says 6.8 mm. A machinist checking a thread they already know would
+        conclude the tool was broken, and they would be right: the tool was the outlier.
+      </p>
+      <p>
+        So the rule is the one the charts use — the <strong>nearest</strong> drill in your index,
+        with a tie going to the larger. A marginally larger hole taps more easily and breaks
+        fewer taps, and the strength given up above roughly 75% is small because the failure
+        has already moved into the fastener. The recommendation can therefore land above the
+        target: M8 × 1.25 at 75% wants 6.7822 mm and gets 6.8 mm, which is 73.9%.
+      </p>
+      <p>
+        What stops the 3.50 mm failure is not the rounding direction. It is two other
+        things: the drill comes from an index of sizes that <em>exist</em> rather than from
+        an arithmetic half-millimetre grid, and the engagement reported is always the one the
+        chosen drill truly produces, printed beside the one you asked for. Those two together
+        are what make a silent substitution impossible.
       </p>
       <h3 class="font-display text-ink text-xl font-semibold">
         Minor diameter is not the tap drill

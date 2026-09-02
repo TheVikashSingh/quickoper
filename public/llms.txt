@@ -308,17 +308,19 @@ Verification: https://quickoper.com/verify
 
 ### Tap drill calculator
 URL: https://quickoper.com/machining/tap-drill-calculator
-Computes: the largest drill in a real index that does not exceed the diameter
-for a target thread engagement, the engagement that drill ACTUALLY produces, the
-basic minor diameter, and the surrounding drill sizes with their engagements.
+Computes: the NEAREST drill in a real index to the diameter for a target thread
+engagement, with a tie going to the larger drill, plus the engagement that drill
+ACTUALLY produces, the basic minor diameter, and the surrounding drill sizes with
+their engagements.
 Inputs: thread major diameter, pitch (or threads per inch), target engagement
 percentage, unit system, drill index to search.
 Key figures: engagement = 100 x (D - d) / (1.299 x P), from the ISO 68-1 basic
 profile where H = 0.866025 x P. 100 / 1.299 = 76.98%, which is why the shop rule
 "drill = major - pitch" lands just under 77%. Basic minor diameter is
 D1 = D - 1.0825 x P and is NOT the tap drill. Standard tap drills do not give a
-uniform engagement: M8 on the published 6.8 mm drill gives 73.90%, M12 on 10.2 mm
-gives 79.18%, #8-32 on a #29 gives 68.98%.
+uniform engagement, and the recommendation can land ABOVE the target diameter:
+M8 x 1.25 at 75% wants 6.7822 mm and gets the 6.8 mm drill, which gives 73.90%.
+M12 on the published 10.2 mm drill gives 79.18%; #8-32 on a #29 gives 68.98%.
 Jurisdiction: none. ISO metric and Unified inch.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/verify

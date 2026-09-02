@@ -2320,6 +2320,53 @@ repository, and it is the same shape as D45: `_headers` was correct-looking,
 committed, and parsed by nothing until a deploy failed on it. When a gate is
 added, verify the pipeline *ran the step*, not that the pipeline was green.
 
+### D70 — The tap drill page described a rule the code had already rejected
+
+`/machining/tap-drill-calculator` shipped in PR #61 asserting, in a FAQ answer
+and in a full explanation section, that "the recommended drill is the largest
+one in your index that does not exceed the target" and that "engagement can only
+come out at or above what you asked for, never below."
+
+`snapToSeries` does nothing of the kind. It takes the **nearest** drill, tie to
+the larger — and the comment above it explains at length that never-exceed was
+the first implementation, that it was wrong, and why. The prose describing the
+rejected rule was left behind when the rule changed.
+
+**It is falsified by the page's own default view.** M8 × 1.25 at 75% wants
+6.7822 mm. The tool returns 6.8 mm — larger than the target — and the result
+panel prints "You will get 73.9% / you asked for 75%", directly under an
+explanation saying engagement can never come out below what was asked. Anyone
+reading the page top to bottom sees the contradiction without typing anything.
+
+**Why it survived two pull requests.** Every gate this project owns checks the
+code against a standard, or the build against a document, or a link against the
+network. Nothing checks the *prose* against the *code*, and prose is where the
+argument for correctness actually lives. 330 tests passed the whole time: the
+implementation was right and well covered. What was wrong was the sentence
+describing it, and a test suite has no opinion about sentences.
+
+This is the same shape as the four findings in the research repo's
+`findings-from-build.md` — right answer, wrong claim about it — and it is the
+first instance where the code was correct and the page was not, rather than the
+reverse.
+
+**What changed:** both passages now describe nearest-with-tie-to-larger, state
+plainly that the recommendation *can* land above the target, and keep the M4 ×
+0.7 → 3.50 mm competitor defect where it was, reframed correctly. The defence
+against that defect was never the rounding direction; it is that the drill comes
+from an index of sizes that exist, and that the true engagement is always
+printed beside the requested one. `llms.txt` carried the same false sentence to
+AI retrieval systems and is corrected too.
+
+**The pin:** `tests/calc/tap-drill.test.ts` now asserts that M8 × 1.25 at 75%
+returns 6.8 mm and that the chosen drill EXCEEDS the target diameter. Reverting
+to never-exceed fails a test whose message names this decision, so the rule and
+the paragraph describing it cannot drift apart again without something going
+red. A general prose-versus-code gate is not attempted; this pins the one claim
+that was wrong and the one input the page loads with.
+
+---
+
 ### D26 — Indexability is an invariant, and it is checked
 
 **The homepage shipped with `noindex` for six pull requests.** Set in PR #5 when
