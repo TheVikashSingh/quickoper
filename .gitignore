@@ -36,3 +36,6 @@ Thumbs.db
 
 # local agent overrides — machine-specific, never shared
 .claude/settings.local.json
+
+# Local dev-server launch config, not part of the site
+.claude/launch.json

@@ -28,7 +28,7 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 26 (25 substantive — `/404` is not) |
+| Pages built | 27 (26 substantive — `/404` is not) |
 | Working calculators | 4 |
 | Tests | 206 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
@@ -208,6 +208,27 @@ error-prone half.
 The power section stays blank until kc1.1 and mc are supplied rather than
 defaulting them, for the same reason.
 
+### The drill size chart
+
+`/machining/drill-size-chart` publishes both generated catalogues as a printable
+table: 151 metric sizes and 32 fractional inch, both units on every row. It is
+the first machining page that ships **no JavaScript at all** — 0.53 KB, the
+content floor. There is no units toggle because both units are already printed,
+which is what a chart on a wall has to do, and the CSV is a build-time endpoint
+at `/machining/drill-size-chart.csv` rather than a blob built in the browser.
+
+`src/lib/calc/drill-chart.ts` formats the rows once and both the page and the
+CSV consume it, so the printed table and the downloaded file cannot drift apart.
+
+TWO OMISSIONS ARE STATED ABOVE THE TABLES, not below them. The transcribed
+series (number, letter, DIN 338 R40) were already declared by `PENDING_SERIES`.
+The second was found by hand-checking the page against
+`03-spec/data/golden-tap-drill.csv`: the catalogue stops at 13 mm and 1/2 in, so
+M16, M20, M24 and M30 have no drill on it, and neither does the 17/32 in a
+5/8-11 calls for. Every golden row INSIDE the range matched exactly. The tap
+drill calculator searches the same catalogue and stops at the same place — that
+ceiling is worth revisiting, and it is a `drill-series.ts` change, not a page one.
+
 ### The conversion surface
 
 `/machining/app` describes the app; `/apps` is the site-level index linked from
@@ -262,7 +283,7 @@ hour available to this vertical.
 
 ## Next
 
-**The content threshold is met.** The build produces 26 pages, of which 25 are
+**The content threshold is met.** The build produces 27 pages, of which 26 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -314,7 +335,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **25** — none to go |
+| 15+ substantive pages | **26** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |

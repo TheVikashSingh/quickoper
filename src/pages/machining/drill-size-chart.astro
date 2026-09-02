@@ -1,0 +1,556 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+import { chartRows } from '../../lib/calc/drill-chart';
+import { PENDING_SERIES } from '../../lib/calc/drill-series';
+
+/**
+ * The drill size chart.
+ *
+ * ─── Why this page ships no JavaScript ──────────────────────────────────────
+ *
+ * A chart is not a calculator. Every row is the same for every visitor, so the
+ * whole table renders at build time and the page sits at the 0.53 KB content
+ * floor — the inline theme script and nothing else. There is no units toggle
+ * because both units are already printed on every row, which is what a chart on
+ * a wall has to do: the machinist reading it is holding a drill, not a mouse.
+ *
+ * The CSV is a real file at /machining/drill-size-chart.csv, generated at build
+ * time from the same module the table is, rather than serialised in the browser
+ * on click.
+ *
+ * ─── What is on it, and what is deliberately not ────────────────────────────
+ *
+ * Metric and fractional inch only. Both are GENERATED from their series
+ * definitions in `drill-series.ts`, so no diameter here is a value anyone
+ * transcribed. Number drills, letter drills and the DIN 338 R40 preferred
+ * series are eighty-odd decimal numbers copied out of a catalogue, and they
+ * arrive when a person has checked them. The page says so ABOVE the tables, not
+ * only below them: on a printed chart the omission is more dangerous than on a
+ * calculator, because a wall chart reads as complete.
+ */
+
+const LAST_VERIFIED = '2026-09-01';
+
+/**
+ * Sources link to the ICS classification, not to a per-standard page.
+ *
+ * Deep links like `iso.org/standard/<id>.html` were fabricated once on the tap
+ * drill page and all three 404'd. ISO also renumbers them across revisions, so
+ * even a correct one rots. The durable identifier is the DESIGNATION, which is
+ * in the label; the URL points at the classification the standard lives under.
+ * ICS 25.100.30 is "Drills, countersinks, reamers" — checked against the live
+ * page, not assumed, and scripts/check-sources.mjs re-checks it every build.
+ */
+const SOURCES = [
+  {
+    label:
+      'ISO 235 / DIN 338 — parallel-shank twist drills, metric diameter series. ICS 25.100.30, Drills, countersinks, reamers',
+    url: 'https://www.iso.org/ics/25.100.30/x/',
+    retrieved: LAST_VERIFIED,
+  },
+  {
+    label: 'ASME B94.11M — twist drills, fractional inch series',
+    url: 'https://www.asme.org/codes-standards',
+    retrieved: LAST_VERIFIED,
+  },
+  {
+    label:
+      'International yard and pound agreement (1959) — 1 inch = 25.4 mm exactly. NIST Special Publication 811',
+    url: 'https://www.nist.gov/pml/special-publication-811',
+    retrieved: LAST_VERIFIED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const metric = chartRows('metric');
+const fractional = chartRows('fractional');
+
+/** Split a list into `n` roughly equal columns, each filled downwards. */
+function columns<T>(rows: readonly T[], n: number): T[][] {
+  const per = Math.ceil(rows.length / n);
+  return Array.from({ length: n }, (_, i) => rows.slice(i * per, (i + 1) * per));
+}
+
+const metricColumns = columns(metric, 3);
+const fractionalColumns = columns(fractional, 2);
+
+/**
+ * The ceilings, read off the catalogues rather than typed.
+ *
+ * They are a real limit and the page states them: the metric index stops at a
+ * jobber-set ceiling, so M16 (14.0 mm), M20 (17.5) and M24 (21.0) have no drill
+ * here. Hardcoding "13 mm" in the prose would go stale silently the day the
+ * series is extended, which is the failure this whole page argues against.
+ */
+const metricMax = metric[metric.length - 1]?.label ?? 'unavailable';
+const fractionalMax = fractional[fractional.length - 1]?.label ?? 'unavailable';
+
+const FAQ = [
+  {
+    q: 'Is this chart complete?',
+    a: 'No, and that is printed on it rather than left to be discovered. It carries the metric index and the fractional inch series, and it stops at 13 mm and 1/2 inch, so M16, M20 and M24 have no drill on this sheet. Number drills (#80 to #1), letter drills (A to Z) and the DIN 338 R40 preferred series are not on it either, because those are transcribed tables rather than generated series and nobody has checked them against a manufacturer catalogue yet. A chart that quietly omits the number drills will have you reach for a 13/64 inch where a #7 was right.',
+  },
+  {
+    q: 'Why does 12.7 mm appear twice?',
+    a: 'It does not. 12.7 mm and 1/2 inch are the same drill, listed once in each series because both marks are stamped on real tooling and someone looking for either should find it. The inch is exactly 25.4 mm by international agreement, so that is an identity rather than a near miss, and it is the only one in the range this chart covers.',
+  },
+  {
+    q: 'Where do the numbers come from?',
+    a: 'They are generated, not typed. The metric index is produced from its step definition and the fractional series from n times 25.4 divided by 64, so a wrong value here would require the arithmetic to be wrong, and the arithmetic is under test. That is the whole reason the transcribed series are absent: they carry a risk this method removes.',
+  },
+  {
+    q: 'How do I print it without the website around it?',
+    a: 'Print the page as it is. The navigation, footer and buttons are dropped, the page prints on white with black ink whatever your screen theme is, the table headings repeat on every sheet and no row is split across a page break. A4 portrait, three columns of metric sizes.',
+  },
+  {
+    q: 'Why three decimal places on the millimetre column?',
+    a: 'Because two would print 1/64 inch and a 0.4 mm drill as 0.40 and 0.40, and a chart showing two different drills as the same size has stopped being a chart. Three decimals separates every pair on this page, while still claiming less precision than a drill actually holds.',
+  },
+  {
+    q: 'Does it work offline?',
+    a: 'Yes, and it needs no JavaScript at all. The whole table is in the HTML. Once the page has loaded it keeps working with no connection, and printed it needs no computer.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    name: 'Drill size chart — metric and fractional inch',
+    url: `${SITE.url}/machining/drill-size-chart`,
+    description: `Twist drill diameters in millimetres and inches: a ${metric.length}-size metric index from 0.5 mm to 13.0 mm and the ${fractional.length}-size fractional inch series from 1/64 inch to 1/2 inch, each generated from its series definition rather than transcribed.`,
+    creator: { '@type': 'Organization', name: SITE.name },
+    distribution: [
+      {
+        '@type': 'DataDownload',
+        encodingFormat: 'text/csv',
+        contentUrl: `${SITE.url}/machining/drill-size-chart.csv`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Drill size chart',
+        item: `${SITE.url}/machining/drill-size-chart`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+
+const th = 'px-2 py-1 text-left font-mono text-xs uppercase tracking-wide text-ink-mute';
+const thNum =
+  'px-2 py-1 text-right font-mono text-xs uppercase tracking-wide text-ink-mute';
+// The drill mark never wraps: '11.9 mm' broken over two lines makes that one
+// row taller than its neighbours, and a column whose rows are different heights
+// stops scanning cleanly — which is the only thing a wall chart has to do.
+const td = 'border-line border-t px-2 py-1 whitespace-nowrap';
+const tdNum = 'border-line border-t px-2 py-1 text-right font-numeric';
+---
+
+<BaseLayout
+  title="Drill size chart — metric and fractional inch, printable"
+  description="Every metric drill from 0.5 to 13.0 mm and every fractional inch drill from 1/64 to 1/2, with both units on every row. Generated from the series definitions, printable on one sheet, and honest about the series it does not carry."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-4xl px-4 py-10">
+    <nav class="text-ink-mute no-print font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Drill size chart
+    </nav>
+
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      Drill size chart
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      {metric.length} metric sizes from 0.5 to 13.0 mm and {fractional.length} fractional inch
+      sizes from 1/64 inch to 1/2 inch, with both units on every row. Print it and put it on
+      the wall.
+    </p>
+
+    <!-- ── What is not on it, said before the tables ───────────────────── -->
+    <section class="border-caution bg-surface rounded-panel mt-8 border-l-4 p-5">
+      <h2 class="font-display text-ink text-lg font-semibold">
+        What this chart does not carry
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        A printed chart reads as complete, so this belongs above the tables rather than
+        buried under them. Three series are missing, all for the same reason: they are
+        transcribed tables, not generated series, and nothing ships here until a person
+        has checked it against a manufacturer catalogue. A fourth limit is the range
+        itself.
+      </p>
+      <ul class="mt-3 space-y-2">
+        <li class="text-sm">
+          <span class="text-ink font-semibold"
+            >Anything above {metricMax} or {fractionalMax}</span
+          >
+          <span class="text-ink-mute">
+            {
+              /* Explicit: Prettier strips the leading space when an inline tag
+                starts a line, and check-spacing only catches it between word
+                characters — here the neighbours are a quote mark and an entity. */
+            }
+            {' '}&mdash; these are jobber-set ranges, not the whole of either series, and
+            the omission has a concrete cost: M16 wants a 14.0 mm drill, M20 a 17.5 mm and
+            M24 a 21.0 mm, and none of the three is on this sheet. Neither is the 17/32
+            inch a 5/8-11 calls for. This is the same catalogue the tap drill calculator
+            searches, so that tool stops at the same place; above it, work from your
+            supplier's table.</span
+          >
+        </li>
+        {
+          PENDING_SERIES.map((s) => (
+            <li class="text-sm">
+              <span class="text-ink font-semibold">{s.name}</span>
+              <span class="text-ink-mute"> &mdash; {s.reason}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <!-- ── The chart: metric ───────────────────────────────────────────── -->
+    <section class="mt-10">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="font-display text-ink text-2xl font-semibold">
+          Metric drills, 0.5 to 13.0 mm
+        </h2>
+        <a
+          class="border-line-strong text-ink-soft hover:text-brand focus-visible:outline-brand no-print rounded-control border px-3 py-1 font-mono text-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          href="/machining/drill-size-chart.csv"
+          download>Download CSV</a
+        >
+      </div>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        0.05 mm steps up to 3 mm, 0.1 mm above it. This is a shop index, and a superset of
+        the sizes the tap drill tables call for. It is not a reproduction of the DIN 338
+        R40 preferred-number series, which is a different and as yet unverified list.
+      </p>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3 print:grid-cols-3">
+        {
+          /*
+           * No `avoid-break` on these wrappers, unlike the fractional ones.
+           * A 51-row column is taller than an A4 page, and asking the browser
+           * not to break inside a box it cannot fit is an instruction it must
+           * either ignore or satisfy by pushing the whole table to a fresh page
+           * and overflowing anyway. Individual rows carry break-inside: avoid
+           * from the print stylesheet, and `thead` repeats per page, which is
+           * the behaviour that actually helps here.
+           */
+          metricColumns.map((col) => (
+            <div class="border-line rounded-panel overflow-hidden border">
+              <table class="w-full text-sm">
+                <thead class="bg-sunken">
+                  <tr>
+                    <th class={th}>Drill</th>
+                    <th class={thNum}>mm</th>
+                    <th class={thNum}>inch</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {col.map((row) => (
+                    <tr>
+                      <td class={td}>{row.label}</td>
+                      <td class={tdNum}>{row.mm}</td>
+                      <td class={tdNum}>{row.inch}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── The chart: fractional ───────────────────────────────────────── -->
+    <section class="mt-10">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        Fractional inch drills, 1/64 to 1/2
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        Every 64th, reduced the way the drill is actually marked. Each diameter is n
+        &times; 25.4 &divide; 64 mm, which makes the millimetre column exact rather than
+        converted: a quarter inch is 6.350 mm and nothing is rounded away.
+      </p>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2 print:grid-cols-2">
+        {
+          fractionalColumns.map((col) => (
+            <div class="border-line rounded-panel avoid-break overflow-hidden border">
+              <table class="w-full text-sm">
+                <thead class="bg-sunken">
+                  <tr>
+                    <th class={th}>Drill</th>
+                    <th class={thNum}>mm</th>
+                    <th class={thNum}>inch</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {col.map((row) => (
+                    <tr>
+                      <td class={td}>{row.label}</td>
+                      <td class={tdNum}>{row.mm}</td>
+                      <td class={tdNum}>{row.inch}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))
+        }
+      </div>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        A half inch and 12.7 mm are the same drill, which is why that size appears in both
+        tables. The inch is exactly 25.4 mm, so it is an identity rather than a near miss,
+        and it is the only one in this range.
+      </p>
+    </section>
+
+    <!-- ── How this was generated ──────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">How this was generated</h2>
+      <pre
+        class="border-line bg-sunken rounded-panel font-numeric mt-4 overflow-x-auto border p-4 text-sm leading-relaxed">metric      0.50, 0.55 ... 3.00, 3.10 ... 13.00 mm   0.05 mm step below 3 mm, 0.1 mm above
+fractional  n x 25.4 / 64 mm,  n = 1 ... 32          1/64 inch to 1/2 inch
+
+mm column     = the diameter itself, shown to 3 decimals
+inch column   = mm / 25.4,           shown to 4 decimals
+
+1/4 inch  =  16 x 25.4 / 64  =  6.350 mm      exact
+6.8 mm    =  6.8 / 25.4      =  0.2677 inch   rounded from 0.267716...</pre>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        Rounding is half-even on the last shown digit, and it is presentation only: no
+        figure on this page re-enters a calculation. The columns are fixed-width rather
+        than trimmed, so a printed column aligns on its decimal point.
+      </p>
+    </section>
+
+    <!-- ── Explanation ─────────────────────────────────────────────────── -->
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        Why a generated chart is safer than a transcribed one
+      </h2>
+      <p>
+        There are four drill series in common shop use, and they divide cleanly into two
+        kinds. Metric and fractional inch drills are defined by a rule: a step size and a
+        range, or a fraction of an inch. Number drills (#80 through #1) and letter drills
+        (A through Z) are defined by a list, eighty-odd decimal values that exist because
+        they exist, with no arithmetic connecting one to the next.
+      </p>
+      <p>
+        That distinction decides how each can go wrong. A generated series can only be
+        wrong if its rule is wrong, and a wrong rule is loud: it shifts every value at
+        once, so any single spot check catches it. A transcribed list fails one row at a
+        time, silently, and the failure looks exactly like a correct value to anyone who
+        has not gone back to the catalogue. A mistyped digit in a #29 is a drill a tenth
+        of a millimetre from the right one, which is a thread that strips.
+      </p>
+      <p>
+        So this chart carries the two series that can be generated and names the two that
+        cannot. That is a real cost. An inch-first machinist gets fractional sizes and no
+        number drills, which is half the rack, and it is the cost this project chooses.
+        The alternative is a chart that looks complete and contains a value nobody
+        checked, printed and pinned to a wall where it will be trusted for years without
+        anyone ever going back to the source.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        What the metric column actually is
+      </h3>
+      <p>
+        It is a shop index: 0.05 mm steps from 0.5 mm to 3 mm, then 0.1 mm steps to 13 mm.
+        That is what a good metric drill set contains, and it is a superset of the sizes
+        published tap drill tables call for, which is the property that matters. A chart
+        that omits 1.25 mm cannot serve an M1.6 thread, and one that omits 2.05 mm cannot
+        serve an M2.5.
+      </p>
+      <p>
+        It is deliberately <em>not</em> presented as the DIN 338 R40 preferred-number series.
+        R40 is a Renard series, and reproducing it is a transcription job subject to exactly
+        the verification this page is built to respect. The two overlap heavily and are not
+        the same list, and claiming the standard when what is shown is the index would be the
+        kind of small inaccuracy that costs more than it saves.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Both units on every row, not a toggle
+      </h3>
+      <p>
+        Most drill charts pick a side. An imperial chart gives fractions with millimetres
+        in small grey type, or nothing at all; a metric chart returns the favour. On a
+        screen a units toggle papers over this, and on paper a toggle does not exist.
+      </p>
+      <p>
+        A machinist reading a chart is usually holding a drill and standing at a machine,
+        and the question is nearly always cross-unit: this hole is dimensioned in inches
+        and my index is metric, or the drawing says 6.8 mm and the drawer in front of me
+        is marked in 64ths. Printing both columns on every row costs one column of paper
+        and removes the arithmetic entirely. It is also why this page ships no JavaScript
+        at all: there is nothing to interact with, because the answer to every question
+        the chart can be asked is already on it.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Three decimals, and why not two
+      </h3>
+      <p>
+        A 1/64 inch drill is 0.396875 mm. A 0.4 mm drill is 0.4 mm. To two decimals those
+        print as 0.40 and 0.40, and a chart that shows two different drills as the same
+        size has stopped being a chart. Three decimals separates every pair on this page
+        with room to spare, while still claiming far less precision than a drill actually
+        holds: a jobber drill's diameter tolerance is measured in hundredths of a
+        millimetre, so the third decimal is a printing convenience, not a promise about
+        the tool in your hand.
+      </p>
+      <p>
+        The inch column runs to four decimals for the mirror-image reason. A tenth of a
+        millimetre at the top of this range is about four thousandths of an inch, so three
+        decimals would merge adjacent metric sizes into a single inch figure. Four keeps
+        them distinct and matches how inch drill sizes are conventionally written.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Using it with the tap drill calculator
+      </h3>
+      <p>
+        This chart tells you which drills exist. It does not tell you which one to use for
+        a given thread, and the difference matters more than it sounds. The drill for a
+        tapped hole is chosen to leave a target thread engagement, and because real
+        indexes come in fixed steps, the engagement a standard drill delivers drifts
+        thread by thread. M8 &times; 1.25 on the usual 6.8 mm drill gives 73.9 per cent
+        engagement, not the 75 most charts imply. M12 &times; 1.75 on 10.2 mm gives 79.2.
+      </p>
+      <p>
+        Neither figure is wrong; they are what happens when a continuous formula meets a
+        discrete rack. The tap drill calculator reports the engagement the recommended
+        drill actually produces, and this chart is the rack it recommends from.
+      </p>
+    </section>
+
+    <!-- ── App ─────────────────────────────────────────────────────────── -->
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel no-print mt-12 border p-5"
+    >
+      <h2 class="font-display text-ink text-xl font-semibold">
+        This, but in your pocket on the shop floor
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        The same arithmetic is going into a metric-first Android app: feeds and speeds,
+        thread and tap drill, your machines and materials saved, offline, one payment, no
+        subscription. It is in development and this page is free forever either way.
+      </p>
+      <a
+        class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+        href="/machining/app">What it will do, and what it will cost &rarr;</a
+      >
+    </section>
+
+    <!-- ── FAQ ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Related ─────────────────────────────────────────────────────── -->
+    <section class="no-print mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Related</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        <li>
+          <a
+            class="text-brand underline underline-offset-2"
+            href="/machining/tap-drill-calculator">Tap drill calculator</a
+          >
+          <span class="text-ink-mute"
+            >— which of these drills to use for a thread, and the engagement it really
+            gives you.</span
+          >
+        </li>
+        <li>
+          <a
+            class="text-brand underline underline-offset-2"
+            href="/machining/feeds-and-speeds-calculator">Feeds and speeds calculator</a
+          >
+          <span class="text-ink-mute"
+            >— spindle speed and feed once the drill is chosen.</span
+          >
+        </li>
+        <li>
+          <a class="text-brand underline underline-offset-2" href="/machining"
+            >All machining calculators</a
+          >
+          <span class="text-ink-mute">— the hub.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute"> &mdash; retrieved {s.retrieved}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        The standards are cited for the series definitions, the step and the range, not
+        for individual diameters, because the diameters here are generated from those
+        definitions rather than copied from a table. Links point at the ISO classification
+        and the ASME catalogue rather than at per-standard pages, which are renumbered
+        across revisions; the designation in each label is the durable reference.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      Drill diameters are nominal. A real drill is made to a diameter tolerance and cuts a
+      hole slightly larger than itself, by an amount that depends on the material, the
+      point geometry, the rigidity of the setup and whether the hole was spotted first.
+      Check against your tooling supplier's data before cutting anything you cannot scrap.
+    </p>
+
+    <p class="text-ink-mute print-only hidden pt-4 text-xs">
+      quickoper.com/machining/drill-size-chart — metric and fractional inch only. Number
+      drills, letter drills and the DIN 338 R40 series are not on this chart.
+    </p>
+  </div>
+</BaseLayout>
