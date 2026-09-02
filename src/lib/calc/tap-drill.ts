@@ -52,14 +52,18 @@
  * ─── Sources ────────────────────────────────────────────────────────────────
  *
  *   - ISO 68-1: metric screw thread basic profile. Fundamental triangle height
- *     H = 0.866025 × P; the flank engaged by a nut is 5H/8 per side.
+ *     H = (√3 / 2) × P; the flank engaged by a nut is 5H/8 per side.
  *   - ISO 261 / ISO 262: metric coarse pitch series.
  *   - ASME B1.1: Unified inch screw threads; same geometry, P = 1/n.
  *   - ISO 235 / DIN 338: twist drill diameter series.
  *
- * The engagement constant 1.299 is 2 × (5/8) × 2 × 0.866025 / 1.0825 as it
- * appears throughout machining practice; equivalently 100 / 1.299 = 76.98 %,
- * which is why the shop rule "drill = major − pitch" lands just under 77 %.
+ * The engagement constant is 1.5H per unit pitch — 3√3/4 = 1.2990381… — and
+ * 100 / K = 76.9800 %, which is why the shop rule "drill = major − pitch" lands
+ * just under 77 %. It is DERIVED from √3 here rather than typed as the trade's
+ * 1.299: that four-figure rounding moves the second decimal of the engagement
+ * this module publishes on #8-32, #10-24 and 5/16-18, and it destroys the exact
+ * ties that let `snapToSeries` reproduce the published chart. See
+ * `machinist-calc-research` 03-spec/calculations.md §2.
  */
 
 declare const MICROMETRE_BRAND: unique symbol;
@@ -102,19 +106,44 @@ export function um(value: number): Micrometres {
 export const UM_PER_INCH = 25_400;
 
 /**
- * Thread-engagement constant for 60° threads (ISO metric and Unified inch).
+ * ISO 68-1 basic profile height per unit pitch: H / P = √3 / 2.
+ *
+ * A geometric identity — the height of an equilateral triangle of side P — not
+ * a measured or published quantity, so there is nothing to cite and nothing to
+ * transcribe. BOTH constants below multiply this one value, and that they share
+ * a single H is what keeps `SHOP_RULE_PERCENT` and the 83⅓ % basic-minor
+ * relationship exact. Deriving them from different roundings of H is precisely
+ * what breaks that.
+ */
+export const H_PER_PITCH = Math.sqrt(3) / 2;
+
+/**
+ * Thread-engagement constant for 60° threads (ISO metric and Unified inch):
+ * 1.5H per unit pitch = 3√3/4 = 1.2990381…
  *
  * %engagement = 100 × (major − drill) / (K × pitch)
  */
-export const ENGAGEMENT_K = 1.299;
+export const ENGAGEMENT_K = 1.5 * H_PER_PITCH;
 
 /**
- * Basic minor diameter coefficient: D₁ = D − 1.0825 × P.
+ * Basic minor diameter coefficient: D₁ = D − 1.25 × H = (5/8)√3 × P.
  *
- * Derivation: 2 × (5/8) × H where H = 0.866025 × P. This is NOT the tap drill
- * and users conflate the two constantly, which is why the tool reports both.
+ * Derivation: 2 × (5/8) × H. This is NOT the tap drill and users conflate the
+ * two constantly, which is why the tool reports both.
  */
-export const MINOR_DIA_K = 1.0825;
+export const MINOR_DIA_K = 1.25 * H_PER_PITCH;
+
+/**
+ * The engagement the shop rule "drill = major − pitch" actually gives:
+ * 100 / K = 76.9800 %.
+ *
+ * Written as the division, never as the literal 76.98. At the full-precision
+ * value the target is exactly `major − pitch`, so M8 lands on 6.750 mm and M12
+ * on 10.250 mm — each exactly midway between two catalogue drills. Typed as
+ * 76.98 they land fractions of a micrometre above midway, the ties vanish, and
+ * `snapToSeries` can no longer reproduce M12's published 10.2 mm drill.
+ */
+export const SHOP_RULE_PERCENT = 100 / ENGAGEMENT_K;
 
 /** Default engagement when the user expresses no preference. */
 export const DEFAULT_ENGAGEMENT_PERCENT = 75;
@@ -141,6 +170,46 @@ export function umToInch(value: Micrometres): number {
 export function tpiToPitchUm(tpi: number): Micrometres {
   if (tpi <= 0) throw new RangeError(`tpi must be positive, got ${tpi}`);
   return um(Math.round(UM_PER_INCH / tpi));
+}
+
+/*
+ * ─── Inch quantities do not fit in whole micrometres ────────────────────────
+ *
+ * `Micrometres` is deliberately integral — it is the guard that catches a
+ * millimetre passed where a micrometre was wanted. Metric threads survive that
+ * exactly: 0.1 mm is 100 µm on the nose. Unified inch ones do not. 0.164 in is
+ * 4165.6 µm and 1/32 in is 793.75 µm, and rounding each to whole micrometres
+ * BEFORE the division moves the answer more than the fourth decimal this
+ * project promises:
+ *
+ *     #8-32 on a #29 drill    exact 68.9741 %   via whole µm 69.03 %
+ *     #10-24 on a #25 drill   exact 74.8246 %   via whole µm 74.87 %
+ *
+ * That is a published second decimal, on the series used across four of the
+ * five target markets. The pair below returns raw, unrounded micrometres for
+ * the geometry so the formula can be fed exact values; `engagementPercentExact`
+ * is the matching escape hatch that accepts them.
+ *
+ * This does NOT yet fix the page, which still converts user inch input through
+ * the rounding pair above. Doing that properly means representing lengths in
+ * nanometres — 1/64 in is exactly 396 875 nm — which is what the Kotlin core
+ * does and what this module should follow. Recorded as D72.
+ */
+
+/** Micrometres from inches, unrounded. See the note above. */
+export function inchToUmExact(inch: number): number {
+  if (!Number.isFinite(inch) || inch <= 0) {
+    throw new RangeError(`inch must be positive and finite, got ${inch}`);
+  }
+  return inch * UM_PER_INCH;
+}
+
+/** Pitch in unrounded micrometres from threads-per-inch. See the note above. */
+export function tpiToPitchUmExact(tpi: number): number {
+  if (!Number.isFinite(tpi) || tpi <= 0) {
+    throw new RangeError(`tpi must be positive and finite, got ${tpi}`);
+  }
+  return UM_PER_INCH / tpi;
 }
 
 // ─── Core arithmetic ────────────────────────────────────────────────────────
@@ -219,7 +288,7 @@ export function drillDiameterFor(
   return majorUm - (ENGAGEMENT_K * pitchUm * engagement) / 100;
 }
 
-/** Basic minor diameter D₁ = D − 1.0825 P. Not the tap drill. */
+/** Basic minor diameter D₁ = D − 1.25 H = (5/8)√3 P. Not the tap drill. */
 export function basicMinorDiameterUm(majorUm: Micrometres, pitchUm: Micrometres): number {
   assertPositive('majorUm', majorUm);
   assertPositive('pitchUm', pitchUm);
@@ -297,23 +366,55 @@ export function rankBySuitability(
  * chosen drill truly produces. Those two together are what stop M4 × 0.7 from
  * silently becoming a 3.5 mm hole at 55 %.
  *
- * ─── The published table is not derivable, and that is a finding ────────────
+ * ─── The tie is broken half-even, and that reproduces the chart ─────────────
  *
- * Nearest-with-tie-to-larger reproduces the published tap drill for M6, M8,
- * M10, M16 and M20, and misses M12 by one step (it gives 10.3 mm where charts
- * say 10.2 mm). No other rule does better, because the chart is not the output
- * of a rule: the engagements across it are not constant, running from 73.90 %
- * at M8 to 79.18 % at M12.
+ * An earlier revision broke ties toward the LARGER drill and concluded the
+ * published table was underivable: it reproduced M6, M8, M10, M16 and M20 but
+ * missed M12, giving 10.3 mm where every chart says 10.2 mm, and "no other rule
+ * does better".
  *
- * So this function computes from the standard and does not claim to reproduce
- * the chart. Where they differ it is by one drill size, both answers are
- * defensible, and the page says so. Matching the chart exactly requires the
- * chart — transcribed and verified — which is the whole argument for the
- * provenance gate.
+ * That was wrong, and the cause was a rounded constant rather than the rule.
+ * At full precision the shop-rule target is exactly `major − pitch`, so M8
+ * lands on 6.750 mm and M12 on 10.250 mm — both EXACTLY midway between two
+ * drills — and the chart resolves those two ties in OPPOSITE directions (M8 up
+ * to 6.8, M12 down to 10.2). No monotone rule can satisfy both, which is what
+ * the old conclusion correctly observed and then over-generalised.
+ *
+ * Half-even is not monotone. Breaking an exact tie to the even multiple of the
+ * local step reproduces the published chart on every metric row in range, and
+ * it is not a rule invented to win M12: half-even is already this module's
+ * declared rounding mode for display (`roundHalfEven`), applied here to a grid
+ * of real drills instead of to a decimal place.
+ *
+ * Where the target is not an exact tie — every user-entered percentage that is
+ * not the shop rule — this is plain nearest, unchanged.
  *
  * Returns `undefined` only for an empty series, which is a programming error
  * rather than a user one.
  */
+/**
+ * Of two drills exactly straddling a target, the one on the EVEN multiple of
+ * the step between them — half-even, applied to a drill grid.
+ *
+ * M12 ties between 10.2 and 10.3 mm: the step is 100 µm, 10200/100 = 102 is
+ * even, so 10.2 mm wins — the drill every chart names. M8 ties between 6.7 and
+ * 6.8: 6700/100 = 67 is odd, so 6.8 mm wins, which is also what every chart
+ * names. One rule, both directions.
+ *
+ * On a series whose local step does not divide the smaller diameter — the
+ * fractional-inch index, where 1/64 in is 396.875 µm and cannot be stored
+ * exactly in whole micrometres — "even multiple" is undefined. There the
+ * fallback is the larger drill, which is the previous behaviour and errs
+ * toward the easier tap.
+ */
+function evenOfPair(a: number, b: number): number {
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  const step = hi - lo;
+  const q = lo / step;
+  return Number.isInteger(q) && q % 2 === 0 ? lo : hi;
+}
+
 export function snapToSeries(
   majorUm: Micrometres,
   pitchUm: Micrometres,
@@ -325,8 +426,7 @@ export function snapToSeries(
     const dDist = Math.abs(d.um - targetUm);
     const bestDist = Math.abs(best.um - targetUm);
     if (dDist < bestDist) return d;
-    // Tie: prefer the larger drill, matching published chart convention.
-    if (dDist === bestDist && d.um > best.um) return d;
+    if (dDist === bestDist) return d.um === evenOfPair(best.um, d.um) ? d : best;
     return best;
   });
   return {

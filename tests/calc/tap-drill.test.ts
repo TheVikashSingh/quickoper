@@ -7,11 +7,14 @@ import {
   engagementPercent,
   engagementPercentExact,
   inchToUm,
+  inchToUmExact,
   mmToUm,
   rankBySuitability,
   roundHalfEven,
+  SHOP_RULE_PERCENT,
   snapToSeries,
   tpiToPitchUm,
+  tpiToPitchUmExact,
   um,
   umExactToMm,
   umToInch,
@@ -57,12 +60,12 @@ const METRIC_TABLE = [
 
 // ── Unified inch coarse series. Drill column: ASME B1.1 tap drill practice as
 // ── published in the same manufacturer catalogues. Note the engagements vary
-// ── far more widely than the metric series — #8-32 on a #29 drill is 68.98 %.
+// ── far more widely than the metric series — #8-32 on a #29 drill is 68.97 %.
 const INCH_TABLE = [
   { thread: '#4-40', majorIn: 0.112, tpi: 40, drillIn: 0.089, engagement: 70.82 },
   { thread: '#6-32', majorIn: 0.138, tpi: 32, drillIn: 0.1065, engagement: 77.6 },
-  { thread: '#8-32', majorIn: 0.164, tpi: 32, drillIn: 0.136, engagement: 68.98 },
-  { thread: '#10-24', majorIn: 0.19, tpi: 24, drillIn: 0.1495, engagement: 74.83 },
+  { thread: '#8-32', majorIn: 0.164, tpi: 32, drillIn: 0.136, engagement: 68.97 },
+  { thread: '#10-24', majorIn: 0.19, tpi: 24, drillIn: 0.1495, engagement: 74.82 },
   { thread: '1/4-20', majorIn: 0.25, tpi: 20, drillIn: 0.201, engagement: 75.44 },
   { thread: '3/8-16', majorIn: 0.375, tpi: 16, drillIn: 0.3125, engagement: 76.98 },
 ] as const;
@@ -116,25 +119,47 @@ describe('engagement against the published inch tap drill table', () => {
   it.each(INCH_TABLE)(
     '$thread with a $drillIn in drill gives $engagement %',
     ({ majorIn, tpi, drillIn, engagement }) => {
-      const actual = engagementPercent(
-        inchToUm(majorIn),
-        tpiToPitchUm(tpi),
-        inchToUm(drillIn),
+      // Exact conversions, NOT the whole-µm pair. An inch is not a whole
+      // number of micrometres, and rounding the geometry before the division
+      // shifts these by ~0.06 points — enough to move the second decimal the
+      // fixture publishes. See the note above `inchToUmExact` and D72; the
+      // page still has this defect, and this assertion is what will prove the
+      // fix when it lands.
+      const actual = engagementPercentExact(
+        inchToUmExact(majorIn),
+        tpiToPitchUmExact(tpi),
+        inchToUmExact(drillIn),
       );
-      expect(roundHalfEven(actual, 2)).toBeCloseTo(engagement, 1);
+      expect(roundHalfEven(actual, 2)).toBeCloseTo(engagement, 2);
     },
   );
 });
 
 describe('drillDiameterFor', () => {
-  it('reproduces the shop rule drill = major − pitch at 76.98 %', () => {
-    // 100 / 1.299 = 76.98, so the classic rule and the formula must agree.
-    const target = drillDiameterFor(mmToUm(4), mmToUm(0.7), 76.98);
-    expect(roundHalfEven(umExactToMm(target), 3)).toBeCloseTo(3.3, 3);
+  it('reproduces the shop rule drill = major − pitch exactly', () => {
+    // 100 / K = 76.98 %, so the classic rule and the formula must agree — and
+    // at the full-precision percentage they agree EXACTLY, not approximately.
+    // That exactness is load-bearing: it is what puts M8 and M12 precisely
+    // midway between two drills so snapToSeries can break the tie. Asserted at
+    // the micrometre, not to 3 dp, because the old literal 76.98 would pass a
+    // 3 dp check while still destroying the tie.
+    for (const [majorMm, pitchMm] of [
+      [4, 0.7],
+      [8, 1.25],
+      [12, 1.75],
+      [20, 2.5],
+    ] as const) {
+      const target = drillDiameterFor(
+        mmToUm(majorMm),
+        mmToUm(pitchMm),
+        SHOP_RULE_PERCENT,
+      );
+      expect(target).toBeCloseTo(mmToUm(majorMm) - mmToUm(pitchMm), 6);
+    }
   });
 
   it('is the exact inverse of engagementPercent', () => {
-    for (const pct of [50, 65, 75, 76.98, 80, 100]) {
+    for (const pct of [50, 65, 75, SHOP_RULE_PERCENT, 80, 100]) {
       const target = drillDiameterFor(mmToUm(8), mmToUm(1.25), pct);
       const back = engagementPercentExact(mmToUm(8), mmToUm(1.25), target);
       expect(back).toBeCloseTo(pct, 9);
@@ -149,7 +174,7 @@ describe('drillDiameterFor', () => {
 
 describe('basicMinorDiameterUm', () => {
   it('is not the tap drill, and the difference is material', () => {
-    // ISO 68-1: D₁ = D − 1.0825 P. For M4 that is 3.2422 mm against a 3.3 mm
+    // ISO 68-1: D₁ = D − 1.25 H. For M4 that is 3.2422 mm against a 3.3 mm
     // tap drill. Users conflate the two, so the tool reports both.
     const minor = umExactToMm(basicMinorDiameterUm(mmToUm(4), mmToUm(0.7)));
     expect(roundHalfEven(minor, 4)).toBeCloseTo(3.2422, 4);
@@ -170,11 +195,34 @@ describe('snapToSeries', () => {
     // The published tap drill for M8 x 1.25 is 6.8 mm, in every catalogue.
     // An earlier rule chose the largest drill NOT EXCEEDING the target, which
     // returned 6.7 mm and made the tool the outlier against every chart in the
-    // world. Nearest-with-tie-to-larger is what charts actually do.
-    const target = drillDiameterFor(mmToUm(8), mmToUm(1.25), 76.98);
+    // world. At the shop rule this is an EXACT tie — 6.750 mm, dead between
+    // 6.7 and 6.8 — and half-even resolves it upward because 6700/100 = 67 is
+    // odd.
+    const target = drillDiameterFor(mmToUm(8), mmToUm(1.25), SHOP_RULE_PERCENT);
+    expect(target).toBe(6750);
     const choice = snapToSeries(mmToUm(8), mmToUm(1.25), target, metricSeries);
     expect(choice?.drill.label).toBe('6.8 mm');
     expect(roundHalfEven(choice!.engagementPercent, 2)).toBeCloseTo(73.9, 2);
+  });
+
+  it('agrees with the published chart for M12, the row that broke the old rule', () => {
+    // THE regression this rule exists for. M12 x 1.75 ties at exactly 10.250 mm
+    // and every published chart names 10.2 mm — the SMALLER drill, the opposite
+    // direction from M8. Tie-to-larger returned 10.3 mm and 74.78 %, which is
+    // what made an earlier revision conclude the table was underivable.
+    // Half-even resolves it downward because 10200/100 = 102 is even.
+    const m12Series: Drill[] = [
+      { um: um(10000), label: '10.0 mm', series: 'metric' },
+      { um: um(10100), label: '10.1 mm', series: 'metric' },
+      { um: um(10200), label: '10.2 mm', series: 'metric' },
+      { um: um(10300), label: '10.3 mm', series: 'metric' },
+      { um: um(10400), label: '10.4 mm', series: 'metric' },
+    ];
+    const target = drillDiameterFor(mmToUm(12), mmToUm(1.75), SHOP_RULE_PERCENT);
+    expect(target).toBe(10250);
+    const choice = snapToSeries(mmToUm(12), mmToUm(1.75), target, m12Series);
+    expect(choice?.drill.label).toBe('10.2 mm');
+    expect(roundHalfEven(choice!.engagementPercent, 2)).toBeCloseTo(79.18, 2);
   });
 
   it('picks the nearest drill in either direction', () => {

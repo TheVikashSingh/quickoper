@@ -4,10 +4,11 @@ import { describe, expect, it } from 'vitest';
 import {
   ENGAGEMENT_K,
   engagementPercentExact,
-  inchToUm,
+  MINOR_DIA_K,
+  inchToUmExact,
   mmToUm,
   roundHalfEven,
-  tpiToPitchUm,
+  tpiToPitchUmExact,
 } from '../../src/lib/calc/tap-drill';
 
 /**
@@ -160,17 +161,34 @@ describe('the arithmetic agrees with the fixture', () => {
   // the recorded engagement column — it does NOT check that the drill sizes
   // themselves are right. Only a human with a catalogue does that.
   it.each(GOLDEN)('$thread on $drillLabel gives $engagementPct %', (row) => {
-    const majorUm = row.system === 'metric' ? mmToUm(row.major) : inchToUm(row.major);
+    // Inch rows use the exact conversions: an inch is not a whole number of
+    // micrometres and pre-rounding the geometry moves the published second
+    // decimal. See D72.
+    const majorUm =
+      row.system === 'metric' ? mmToUm(row.major) : inchToUmExact(row.major);
     const pitchUm =
-      row.system === 'metric' ? mmToUm(row.pitchOrTpi) : tpiToPitchUm(row.pitchOrTpi);
+      row.system === 'metric'
+        ? mmToUm(row.pitchOrTpi)
+        : tpiToPitchUmExact(row.pitchOrTpi);
     const drillUm =
-      row.system === 'metric' ? mmToUm(row.tapDrill) : inchToUm(row.tapDrill);
+      row.system === 'metric' ? mmToUm(row.tapDrill) : inchToUmExact(row.tapDrill);
     const actual = engagementPercentExact(majorUm, pitchUm, drillUm);
-    expect(roundHalfEven(actual, 2)).toBeCloseTo(row.engagementPct, 1);
+    expect(roundHalfEven(actual, 2)).toBeCloseTo(row.engagementPct, 2);
   });
 
   it('uses the documented engagement constant', () => {
     // If someone tunes K to make a fixture pass, this fails first and loudly.
-    expect(ENGAGEMENT_K).toBe(1.299);
+    // K is 3√3/4, derived from ISO 68-1's H = (√3/2)P. NOT the trade's rounded
+    // 1.299, which moves the published second decimal on three of these rows.
+    expect(ENGAGEMENT_K).toBeCloseTo(1.2990381056766578, 12);
+    expect(ENGAGEMENT_K).not.toBe(1.299);
+  });
+
+  it('derives both constants from one H, so D₁ is exactly 83⅓ % engagement', () => {
+    // The ratio is (5/8)/(3/4) = 5/6 with H cancelling — pure geometry, true
+    // for any H. It holds only while BOTH constants come from the SAME H;
+    // mixing two roundings drifts it to 83.331 %, which is the specific
+    // mistake the truncated 1.299/1.0825 pair used to justify itself.
+    expect((100 * MINOR_DIA_K) / ENGAGEMENT_K).toBeCloseTo(100 * (5 / 6), 10);
   });
 });
