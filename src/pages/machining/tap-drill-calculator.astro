@@ -512,23 +512,8 @@ const label = 'block text-sm font-semibold text-ink-soft';
 </BaseLayout>
 
 <script>
-  import {
-    basicMinorDiameterUm,
-    drillDiameterFor,
-    ENGAGEMENT_K,
-    engagementPercentExact,
-    inchToUm,
-    mmToUm,
-    roundHalfEven,
-    snapToSeries,
-    tpiToPitchUm,
-    umExactToMm,
-    umToInch,
-    umToMm,
-    type Drill,
-    type Micrometres,
-  } from '../../lib/calc/tap-drill';
-  import { drillsFor, type SeriesName } from '../../lib/calc/drill-series';
+  import { tapDrillDisplay, type DisplayUnits } from '../../lib/calc/tap-drill-display';
+  import type { SeriesName } from '../../lib/calc/drill-series';
 
   /**
    * Resolve an element or fail loudly at load.
@@ -550,31 +535,12 @@ const label = 'block text-sm font-semibold text-ink-soft';
   const errorEl = must('td-error');
   const csvBtn = must('td-csv');
 
-  const DECIMALS = 4;
-
-  // The engagement constant as the working box shows it. Six decimals, taken
-  // from the exported constant rather than typed, so the number the page
-  // displays cannot drift from the number it computes with.
-  const K_SHOWN = roundHalfEven(ENGAGEMENT_K, 6);
   let csvRows: string[][] = [];
 
   const num = (name: string): number =>
     Number((form.elements.namedItem(name) as HTMLInputElement).value);
   const pick = (name: string): string =>
     (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
-
-  /** Display a length in the user's chosen unit, never fewer than 4 decimals. */
-  function len(valueUm: number, units: string): string {
-    return units === 'mm'
-      ? `${roundHalfEven(umExactToMm(valueUm), DECIMALS)} mm`
-      : `${roundHalfEven(valueUm / 25400, DECIMALS)} in`;
-  }
-
-  function drillLen(d: Drill, units: string): string {
-    return units === 'mm'
-      ? `${roundHalfEven(umToMm(d.um), DECIMALS)} mm`
-      : `${roundHalfEven(umToInch(d.um), DECIMALS)} in`;
-  }
 
   function render(): void {
     const units = pick('units');
@@ -585,26 +551,22 @@ const label = 'block text-sm font-semibold text-ink-soft';
 
     errorEl.classList.add('hidden');
     try {
-      const majorUm: Micrometres = units === 'mm' ? mmToUm(majorRaw) : inchToUm(majorRaw);
-      const pitchUm: Micrometres =
-        units === 'mm' ? mmToUm(pitchRaw) : tpiToPitchUm(pitchRaw);
-      if (pitchUm >= majorUm)
-        throw new RangeError('Pitch must be smaller than the diameter.');
+      // Everything below is presentation. The numbers, their units and their
+      // rounding are decided in `calc/tap-drill-display.ts` and asserted
+      // against the golden fixture there — D72 is what happens when a template
+      // does its own arithmetic.
+      const d = tapDrillDisplay({
+        major: majorRaw,
+        pitch: pitchRaw,
+        engagementPercent: target,
+        units: units as DisplayUnits,
+        series,
+      });
 
-      const targetUm = drillDiameterFor(majorUm, pitchUm, target);
-      if (targetUm <= 0)
-        throw new RangeError('That engagement leaves no drill diameter.');
-
-      const drills = drillsFor(series);
-      const choice = snapToSeries(majorUm, pitchUm, targetUm, drills);
-      if (!choice) throw new RangeError('No drill index selected.');
-
-      const minorUm = basicMinorDiameterUm(majorUm, pitchUm);
-      const actual = roundHalfEven(choice.engagementPercent, 2);
       const band =
-        actual >= target
+        d.engagementPercent >= target
           ? 'text-positive'
-          : actual >= target - 5
+          : d.engagementPercent >= target - 5
             ? 'text-caution'
             : 'text-negative';
 
@@ -612,59 +574,38 @@ const label = 'block text-sm font-semibold text-ink-soft';
         <div class="grid gap-4 sm:grid-cols-3">
           <div>
             <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Use this drill</p>
-            <p class="mt-1 font-numeric text-3xl font-semibold text-brand">${choice.drill.label}</p>
-            <p class="text-sm text-ink-mute">${drillLen(choice.drill, units)}</p>
+            <p class="mt-1 font-numeric text-3xl font-semibold text-brand">${d.drillLabel}</p>
+            <p class="text-sm text-ink-mute">${d.drillLength}</p>
           </div>
           <div>
             <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">You will get</p>
-            <p class="mt-1 font-numeric text-3xl font-semibold ${band}">${actual}%</p>
-            <p class="text-sm text-ink-mute">you asked for ${target}%</p>
+            <p class="mt-1 font-numeric text-3xl font-semibold ${band}">${d.engagementPercent}%</p>
+            <p class="text-sm text-ink-mute">you asked for ${d.requestedPercent}%</p>
           </div>
           <div>
             <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Exact target</p>
-            <p class="mt-1 font-numeric text-3xl font-semibold text-ink">${len(targetUm, units)}</p>
+            <p class="mt-1 font-numeric text-3xl font-semibold text-ink">${d.targetLength}</p>
             <p class="text-sm text-ink-mute">no drill is this size</p>
           </div>
         </div>
         <p class="mt-4 text-sm text-ink-soft">
-          Basic minor diameter <span class="font-numeric">${len(minorUm, units)}</span> — the thread root, <strong>not</strong> the drill.
+          Basic minor diameter <span class="font-numeric">${d.minorLength}</span> — the thread root, <strong>not</strong> the drill.
         </p>`;
 
-      // The neighbourhood: nearest few either side of the target.
-      const ranked = drills
-        .map((d) => ({ d, delta: d.um - targetUm }))
-        .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))
-        .slice(0, 7)
-        .sort((a, b) => a.d.um - b.d.um);
-
       csvRows = [['drill', 'diameter', 'engagement_percent', 'delta_from_target']];
-      tableEl.innerHTML = ranked
-        .map(({ d, delta }) => {
-          const e = roundHalfEven(engagementPercentExact(majorUm, pitchUm, d.um), 2);
-          const chosen = d.um === choice.drill.um;
-          csvRows.push([
-            d.label,
-            drillLen(d, units),
-            String(e),
-            `${delta > 0 ? '+' : ''}${roundHalfEven(units === 'mm' ? delta / 1000 : delta / 25400, DECIMALS)}`,
-          ]);
-          return `<tr class="${chosen ? 'bg-brand-soft font-semibold' : ''}">
-            <td class="border-line border-t px-3 py-2">${d.label}${chosen ? ' &larr; recommended' : ''}</td>
-            <td class="border-line border-t px-3 py-2 text-right font-numeric">${drillLen(d, units)}</td>
-            <td class="border-line border-t px-3 py-2 text-right font-numeric">${e}%</td>
-            <td class="border-line border-t px-3 py-2 text-right font-numeric text-ink-mute">${delta > 0 ? '+' : ''}${roundHalfEven(units === 'mm' ? delta / 1000 : delta / 25400, DECIMALS)}</td>
+      tableEl.innerHTML = d.neighbours
+        .map((n) => {
+          csvRows.push([n.label, n.length, String(n.engagementPercent), n.delta]);
+          return `<tr class="${n.chosen ? 'bg-brand-soft font-semibold' : ''}">
+            <td class="border-line border-t px-3 py-2">${n.label}${n.chosen ? ' &larr; recommended' : ''}</td>
+            <td class="border-line border-t px-3 py-2 text-right font-numeric">${n.length}</td>
+            <td class="border-line border-t px-3 py-2 text-right font-numeric">${n.engagementPercent}%</td>
+            <td class="border-line border-t px-3 py-2 text-right font-numeric text-ink-mute">${n.delta}</td>
           </tr>`;
         })
         .join('');
 
-      const u = units === 'mm' ? 'mm' : 'in';
-      workingEl.textContent =
-        `%engagement = 100 × (D − d) / (K × P)   K = 3√3⁄4 = ${K_SHOWN}\n\n` +
-        `D  major diameter  = ${roundHalfEven(units === 'mm' ? umToMm(majorUm) : umToInch(majorUm), DECIMALS)} ${u}\n` +
-        `P  pitch           = ${roundHalfEven(units === 'mm' ? umToMm(pitchUm) : umToInch(pitchUm), DECIMALS)} ${u}\n` +
-        `d  target diameter = ${roundHalfEven(units === 'mm' ? umExactToMm(targetUm) : targetUm / 25400, DECIMALS)} ${u}   (for ${target}%)\n` +
-        `d  chosen drill    = ${drillLen(choice.drill, units)}   ${choice.drill.label}\n\n` +
-        `100 × (${roundHalfEven(units === 'mm' ? umToMm(majorUm) : umToInch(majorUm), DECIMALS)} − ${roundHalfEven(units === 'mm' ? umToMm(choice.drill.um) : umToInch(choice.drill.um), DECIMALS)}) / (${K_SHOWN} × ${roundHalfEven(units === 'mm' ? umToMm(pitchUm) : umToInch(pitchUm), DECIMALS)}) = ${actual}%`;
+      workingEl.textContent = d.working;
     } catch (err) {
       errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
       errorEl.classList.remove('hidden');

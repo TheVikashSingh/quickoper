@@ -519,11 +519,12 @@ const hint = 'text-ink-mute mt-1 text-xs';
     type UnitSystem,
   } from '../../lib/calc/feeds-speeds';
   import {
-    inchToUm,
-    mmToUm,
+    inchToNm,
+    NM_PER_INCH,
+    mmToNm,
     roundHalfEven,
-    umExactToMm,
-    type Micrometres,
+    nmExactToMm,
+    type Nanometres,
   } from '../../lib/calc/tap-drill';
 
   function must<T extends HTMLElement>(id: string): T {
@@ -547,8 +548,9 @@ const hint = 'text-ink-mute mt-1 text-xs';
   const pick = (name: string): string =>
     (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
 
-  const toUm = (v: number, u: UnitSystem) => (u === 'metric' ? mmToUm(v) : inchToUm(v));
-  const fromUm = (v: number, u: UnitSystem) => (u === 'metric' ? v / 1000 : v / 25400);
+  const toNm = (v: number, u: UnitSystem) => (u === 'metric' ? mmToNm(v) : inchToNm(v));
+  const fromNm = (v: number, u: UnitSystem) =>
+    u === 'metric' ? v / 1_000_000 : v / NM_PER_INCH;
   const lenUnit = (u: UnitSystem) => (u === 'metric' ? 'mm' : 'in');
 
   /** Labels change with the operation. A lathe has no teeth and no radial depth. */
@@ -574,17 +576,17 @@ const hint = 'text-ink-mute mt-1 text-xs';
       const u = pick('units') as UnitSystem;
       const turning = pick('op') === 'turning';
       const vc = num(form, 'vc');
-      const dcUm = toUm(num(form, 'dc'), u);
-      const apUm = toUm(num(form, 'ap'), u);
-      const rpm = spindleSpeed(vc, dcUm, u);
+      const dcNm = toNm(num(form, 'dc'), u);
+      const apNm = toNm(num(form, 'ap'), u);
+      const rpm = spindleSpeed(vc, dcNm, u);
 
       // Turning takes feed per revolution directly; milling derives it.
-      const fzUm = toUm(num(form, 'fz'), u);
-      const fnUm = turning ? fzUm : feedPerRev(fzUm, num(form, 'teeth'));
-      const vfUm = tableFeed(fnUm, rpm);
-      const aeUm = turning ? dcUm : toUm(num(form, 'ae'), u);
-      const mrr = turning ? turningMrr(vc, apUm, fnUm) : millingMrr(aeUm, apUm, vfUm);
-      const hmUm = turning ? fnUm : meanChipThickness(fzUm, aeUm, dcUm);
+      const fzNm = toNm(num(form, 'fz'), u);
+      const fnNm = turning ? fzNm : feedPerRev(fzNm, num(form, 'teeth'));
+      const vfNm = tableFeed(fnNm, rpm);
+      const aeNm = turning ? dcNm : toNm(num(form, 'ae'), u);
+      const mrr = turning ? turningMrr(vc, apNm, fnNm) : millingMrr(aeNm, apNm, vfNm);
+      const hmNm = turning ? fnNm : meanChipThickness(fzNm, aeNm, dcNm);
 
       const L = lenUnit(u);
       const feedMin = u === 'metric' ? 'mm/min' : 'in/min';
@@ -599,29 +601,29 @@ const hint = 'text-ink-mute mt-1 text-xs';
 
       resultEl.innerHTML = `<div class="grid gap-4 sm:grid-cols-3">
         ${stat('Spindle speed', `${roundHalfEven(rpm, 0)}`, 'rev/min')}
-        ${stat('Feed', `${roundHalfEven(fromUm(vfUm, u), D)}`, feedMin)}
-        ${stat('Feed per rev', `${roundHalfEven(fromUm(fnUm, u), D)}`, feedRev)}
+        ${stat('Feed', `${roundHalfEven(fromNm(vfNm, u), D)}`, feedMin)}
+        ${stat('Feed per rev', `${roundHalfEven(fromNm(fnNm, u), D)}`, feedRev)}
         ${stat('Removal rate', `${roundHalfEven(mrr, D)}`, mrrUnit)}
-        ${stat(turning ? 'Chip thickness' : 'Mean chip (approx)', `${roundHalfEven(fromUm(hmUm, u), D)}`, L)}
+        ${stat(turning ? 'Chip thickness' : 'Mean chip (approx)', `${roundHalfEven(fromNm(hmNm, u), D)}`, L)}
       </div>`;
 
-      const show = (v: number) => roundHalfEven(fromUm(v, u), D);
+      const show = (v: number) => roundHalfEven(fromNm(v, u), D);
       workingEl.textContent =
         `n  = ${u === 'metric' ? 'Vc × 1000' : 'Vc × 12'} / (π × Dc)\n` +
-        `   = ${u === 'metric' ? `${vc} × 1000` : `${vc} × 12`} / (π × ${show(dcUm)} ${L})\n` +
+        `   = ${u === 'metric' ? `${vc} × 1000` : `${vc} × 12`} / (π × ${show(dcNm)} ${L})\n` +
         `   = ${roundHalfEven(rpm, 4)} rev/min\n\n` +
         (turning
-          ? `fn = ${show(fnUm)} ${feedRev}   (entered)\n`
-          : `fn = fz × z = ${show(fzUm)} × ${num(form, 'teeth')} = ${show(fnUm)} ${feedRev}\n`) +
-        `vf = fn × n = ${show(fnUm)} × ${roundHalfEven(rpm, 2)} = ${show(vfUm)} ${feedMin}\n\n` +
+          ? `fn = ${show(fnNm)} ${feedRev}   (entered)\n`
+          : `fn = fz × z = ${show(fzNm)} × ${num(form, 'teeth')} = ${show(fnNm)} ${feedRev}\n`) +
+        `vf = fn × n = ${show(fnNm)} × ${roundHalfEven(rpm, 2)} = ${show(vfNm)} ${feedMin}\n\n` +
         (turning
-          ? `Q  = Vc × ap × fn = ${vc} × ${show(apUm)} × ${show(fnUm)} = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`
-          : `Q  = ae × ap × vf / 1000 = ${show(aeUm)} × ${show(apUm)} × ${show(vfUm)} / 1000 = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`) +
+          ? `Q  = Vc × ap × fn = ${vc} × ${show(apNm)} × ${show(fnNm)} = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`
+          : `Q  = ae × ap × vf / 1000 = ${show(aeNm)} × ${show(apNm)} × ${show(vfNm)} / 1000 = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`) +
         (turning
           ? ''
-          : `\nhm ≈ fz × √(ae/Dc) = ${show(fzUm)} × √(${show(aeUm)}/${show(dcUm)}) = ${show(hmUm)} ${L}   (approximate)\n`);
+          : `\nhm ≈ fz × √(ae/Dc) = ${show(fzNm)} × √(${show(aeNm)}/${show(dcNm)}) = ${show(hmNm)} ${L}   (approximate)\n`);
 
-      renderPower(aeUm, apUm, vfUm, hmUm, u, turning);
+      renderPower(aeNm, apNm, vfNm, hmNm, u, turning);
     } catch (err) {
       errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
       errorEl.classList.remove('hidden');
@@ -632,10 +634,10 @@ const hint = 'text-ink-mute mt-1 text-xs';
   }
 
   function renderPower(
-    aeUm: Micrometres,
-    apUm: Micrometres,
-    vfUm: number,
-    hmUm: number,
+    aeNm: Nanometres,
+    apNm: Nanometres,
+    vfNm: number,
+    hmNm: number,
     u: UnitSystem,
     turning: boolean,
   ): void {
@@ -651,8 +653,8 @@ const hint = 'text-ink-mute mt-1 text-xs';
     }
     try {
       const eta = num(powerForm, 'eta') || DEFAULT_EFFICIENCY;
-      const kc = specificCuttingForce(Number(kc11), Number(mc), hmUm);
-      const pc = millingPower(aeUm, apUm, vfUm, kc, eta);
+      const kc = specificCuttingForce(Number(kc11), Number(mc), hmNm);
+      const pc = millingPower(aeNm, apNm, vfNm, kc, eta);
       const machine = raw(powerForm, 'machine');
       let verdict = '';
       if (machine !== '') {
@@ -667,7 +669,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
       powerEl.innerHTML = `<div class="border-line bg-surface rounded-panel border p-4">
         <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Net cutting power</p>
         <p class="mt-1 font-numeric text-3xl font-semibold text-brand">${roundHalfEven(pc, 3)} kW</p>
-        <p class="text-ink-mute mt-1 text-sm">kc = ${roundHalfEven(kc, 1)} N/mm² at ${roundHalfEven(umExactToMm(hmUm), 4)} mm chip${
+        <p class="text-ink-mute mt-1 text-sm">kc = ${roundHalfEven(kc, 1)} N/mm² at ${roundHalfEven(nmExactToMm(hmNm), 4)} mm chip${
           turning ? '' : ' (thinned)'
         }</p>${verdict}
       </div>`;

@@ -2,17 +2,17 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ENGAGEMENT_PERCENT,
-  basicMinorDiameterUm,
+  basicMinorDiameterNm,
   drillDiameterFor,
   engagementPercentExact,
-  inchToUm,
-  mmToUm,
+  inchToNm,
+  mmToNm,
   rankBySuitability,
   roundHalfEven,
   snapToSeries,
-  um,
-  umToInch,
-  umToMm,
+  nm,
+  nmToInch,
+  nmToMm,
   type Drill,
 } from '../../src/lib/calc/tap-drill';
 
@@ -30,15 +30,15 @@ import {
  * thread diameter of 10 metres is not telling us anything about the tool.
  */
 
-/** Thread major diameters from roughly M1 to M64, in µm. */
-const majorUm = fc.integer({ min: 1_000, max: 64_000 }).map((n) => um(n));
+/** Thread major diameters from roughly M1 to M64, in nm. */
+const majorNm = fc.integer({ min: 1_000, max: 64_000 }).map((n) => nm(n));
 
-/** Pitches from 0.2 mm to 6 mm, in µm — covers fine through coarse. */
-const pitchUm = fc.integer({ min: 200, max: 6_000 }).map((n) => um(n));
+/** Pitches from 0.2 mm to 6 mm, in nm — covers fine through coarse. */
+const pitchNm = fc.integer({ min: 200, max: 6_000 }).map((n) => nm(n));
 
 /** A thread whose pitch is plausible for its diameter (pitch < diameter/3). */
 const thread = fc
-  .tuple(majorUm, pitchUm)
+  .tuple(majorNm, pitchNm)
   .filter(([major, pitch]) => pitch * 3 < major)
   .map(([major, pitch]) => ({ major, pitch }));
 
@@ -94,7 +94,7 @@ describe('the minor diameter is always below the tap drill', () => {
       fc.property(thread, ({ major, pitch }) => {
         // D₁ = D − 1.0825P is below the 75 % tap drill, always. If this ever
         // inverts, one of the two constants has been mistyped.
-        const minor = basicMinorDiameterUm(major, pitch);
+        const minor = basicMinorDiameterNm(major, pitch);
         const drill = drillDiameterFor(major, pitch, DEFAULT_ENGAGEMENT_PERCENT);
         expect(minor).toBeLessThan(drill);
       }),
@@ -104,21 +104,21 @@ describe('the minor diameter is always below the tap drill', () => {
 });
 
 describe('unit conversion is lossless', () => {
-  it('mm → µm → mm returns the original for any 3-decimal millimetre value', () => {
+  it('mm → nm → mm returns the original for any 3-decimal millimetre value', () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 1_000_000 }), (micro) => {
         const mm = micro / 1000;
-        expect(umToMm(mmToUm(mm))).toBe(mm);
+        expect(nmToMm(mmToNm(mm))).toBe(mm);
       }),
       { numRuns: 500 },
     );
   });
 
-  it('inch → µm → inch survives to display precision', () => {
+  it('inch → nm → inch survives to display precision', () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 400_000 }), (tenThousandths) => {
         const inches = tenThousandths / 10_000;
-        expect(roundHalfEven(umToInch(inchToUm(inches)), 3)).toBeCloseTo(inches, 2);
+        expect(roundHalfEven(nmToInch(inchToNm(inches)), 3)).toBeCloseTo(inches, 2);
       }),
       { numRuns: 500 },
     );
@@ -127,7 +127,7 @@ describe('unit conversion is lossless', () => {
 
 describe('series selection never violates its contract', () => {
   const series: readonly [Drill, ...Drill[]] = Array.from({ length: 60 }, (_, i) => ({
-    um: um(1_000 + i * 100),
+    nm: nm(1_000 + i * 100),
     label: `${(1_000 + i * 100) / 1000} mm`,
     series: 'metric' as const,
   })) as unknown as [Drill, ...Drill[]];
@@ -141,8 +141,8 @@ describe('series selection never violates its contract', () => {
         // No drill in the whole catalogue may sit closer to the target than the
         // one recommended. Direction is not the rule - proximity is, which is
         // what published charts do.
-        const best = Math.min(...series.map((d) => Math.abs(d.um - target)));
-        expect(Math.abs(choice!.drill.um - target)).toBeCloseTo(best, 9);
+        const best = Math.min(...series.map((d) => Math.abs(d.nm - target)));
+        expect(Math.abs(choice!.drill.nm - target)).toBeCloseTo(best, 9);
       }),
       { numRuns: 400 },
     );
@@ -152,10 +152,10 @@ describe('series selection never violates its contract', () => {
     fc.assert(
       fc.property(thread, engagement, ({ major, pitch }, pct) => {
         const target = drillDiameterFor(major, pitch, pct);
-        fc.pre(target >= series[0].um);
+        fc.pre(target >= series[0].nm);
         const choice = snapToSeries(major, pitch, target, series)!;
         expect(choice.engagementPercent).toBeCloseTo(
-          engagementPercentExact(major, pitch, choice.drill.um),
+          engagementPercentExact(major, pitch, choice.drill.nm),
           9,
         );
       }),
@@ -170,7 +170,7 @@ describe('series selection never violates its contract', () => {
         fc.integer({ min: 1_000, max: 7_000 }),
         ({ major, pitch }, t) => {
           const deltas = rankBySuitability(major, pitch, t, series).map((r) =>
-            Math.abs(r.deltaUm),
+            Math.abs(r.deltaNm),
           );
           const sorted = [...deltas].sort((a, b) => a - b);
           expect(deltas).toEqual(sorted);
@@ -187,7 +187,7 @@ describe('nothing ever escapes as NaN or Infinity', () => {
       fc.property(thread, engagement, ({ major, pitch }, pct) => {
         const target = drillDiameterFor(major, pitch, pct);
         expect(Number.isFinite(target)).toBe(true);
-        expect(Number.isFinite(basicMinorDiameterUm(major, pitch))).toBe(true);
+        expect(Number.isFinite(basicMinorDiameterNm(major, pitch))).toBe(true);
         fc.pre(target > 0);
         expect(Number.isFinite(engagementPercentExact(major, pitch, target))).toBe(true);
       }),
@@ -198,7 +198,7 @@ describe('nothing ever escapes as NaN or Infinity', () => {
   it('rejects rather than returns NaN for non-finite input', () => {
     fc.assert(
       fc.property(fc.constantFrom(NaN, Infinity, -Infinity, 0, -1), (bad) => {
-        expect(() => um(bad)).toThrow(RangeError);
+        expect(() => nm(bad)).toThrow(RangeError);
       }),
     );
   });
@@ -209,9 +209,9 @@ describe('the brand rejects millimetres at runtime as well as compile time', () 
     fc.assert(
       fc.property(fc.double({ min: 0.001, max: 999, noNaN: true }), (mm) => {
         fc.pre(!Number.isInteger(mm));
-        // Someone reaching for um(3.3) has millimetres in hand. Rounding it
+        // Someone reaching for nm(3.3) has millimetres in hand. Rounding it
         // silently is how a factor-of-1000 bug reaches a machinist.
-        expect(() => um(mm)).toThrow(RangeError);
+        expect(() => nm(mm)).toThrow(RangeError);
       }),
       { numRuns: 200 },
     );

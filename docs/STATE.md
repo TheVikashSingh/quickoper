@@ -30,7 +30,7 @@ changes the answer to "what exists" or "what is next".
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
 | Pages built | 27 (26 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 206 passing |
+| Tests | 393 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.68 KB of 19.5 KB (0.82 KB spare) — `/finance/uk-early-repayment-charge-calculator` |
 | Content pages JS | 0.53 KB (inline theme script only); homepage 12.90 KB — it carries an island (D34) |
@@ -395,7 +395,12 @@ downstream, and that clock does not start until the domain resolves.
 - **Verify in a browser, not only by the gates.** Real defects that passed every
   automated check and were found only by looking: a wrong chart axis, a dead
   null-coalesce, four separate contrast failures, 49 missing spaces, slot
-  paragraphs sitting flush, and a strategy toggle that was clickable and inert.
+  paragraphs sitting flush, a strategy toggle that was clickable and inert, and
+  a tap drill target displayed as `201.2861 in` instead of `0.2013 in` — a
+  thousand times wrong on the headline figure, past 334 tests and eleven gates
+  (D72). That one produced `tests/calc/tap-drill-display.test.ts`, which checks
+  the STRINGS a page renders against the golden fixture rather than the numbers
+  behind them, and which found D73 on its first run.
 - **Do not prefix shell commands with `cd … &&`.** It makes every call a compound
   command that no permission pattern matches, so it prompts the operator every
   time. Use `git -C <path>` and `npm --prefix <path>`. Settings in
@@ -415,7 +420,7 @@ Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
 file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: four
-calculators, eight derivation pages, five trust pages, 25 substantive pages, 206
+calculators, eight derivation pages, five trust pages, 25 substantive pages, 393
 tests, eleven CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.
