@@ -64,8 +64,8 @@ const FAQ = [
     a: 'It is net power at the cut, before drive losses beyond the efficiency you entered, and it is the power the cut itself demands. Compare it against the spindle rating with a margin; a cut that computes at 90% of rated power is not a cut you want to take. Note also that kc1.1 and mc are yours to supply — a wrong kc1.1 gives a confidently wrong wattage.',
   },
   {
-    q: 'Why is there no drilling mode?',
-    a: 'Because drilling reduces to the turning arithmetic with the drill diameter as Dc and feed in mm/rev, and adding a third mode that reuses the same two formulas would be interface for its own sake. Use turning and read fn.',
+    q: 'How is drilling different from turning here?',
+    a: 'In the removal rate, and it is not a small difference. A drill removes the whole cylinder it advances into, so Q = Dc × fn × Vc / 4 — which is the turning expression at a depth of cut of exactly Dc/4 and at no other value. This page told people to use turning mode for drilling until D74; that gives the right spindle speed and feed, but the removal rate and the power come out at whatever depth of cut you typed. For a 10 mm drill, entering Dc/2 doubles them and entering Dc quadruples them. Drilling and boring are now their own modes and neither asks you for a depth of cut.',
   },
   {
     q: 'Does this work offline?',
@@ -153,7 +153,13 @@ const hint = 'text-ink-mute mt-1 text-xs';
               ><input type="radio" name="op" value="milling" checked /> Milling</label
             >
             <label class="flex items-center gap-2"
-              ><input type="radio" name="op" value="turning" /> Turning &amp; boring</label
+              ><input type="radio" name="op" value="turning" /> Turning</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="op" value="drilling" /> Drilling</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="op" value="boring" /> Boring</label
             >
           </div>
         </fieldset>
@@ -252,7 +258,21 @@ const hint = 'text-ink-mute mt-1 text-xs';
           />
           <p class={hint}>Width of cut. Equals diameter when slotting.</p>
         </div>
-        <div>
+        <div id="fs-d0-wrap" hidden>
+          <label class={label} for="fs-d0">Starting bore d₀</label>
+          <input
+            class={`${field} mt-1`}
+            id="fs-d0"
+            name="d0"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0.001"
+            value="20"
+          />
+          <p class={hint}>The hole as it is now. The depth of cut is derived.</p>
+        </div>
+        <div id="fs-ap-wrap">
           <label class={label} for="fs-ap">Axial depth aₚ</label>
           <input
             class={`${field} mt-1`}
@@ -507,11 +527,13 @@ const hint = 'text-ink-mute mt-1 text-xs';
 
 <script>
   import {
+    boringDepthOfCut,
+    drillingMrr,
     DEFAULT_EFFICIENCY,
     feedPerRev,
     meanChipThickness,
     millingMrr,
-    millingPower,
+    cuttingPower,
     specificCuttingForce,
     spindleSpeed,
     tableFeed,
@@ -520,11 +542,11 @@ const hint = 'text-ink-mute mt-1 text-xs';
   } from '../../lib/calc/feeds-speeds';
   import {
     inchToNm,
+    nm,
     NM_PER_INCH,
     mmToNm,
     roundHalfEven,
     nmExactToMm,
-    type Nanometres,
   } from '../../lib/calc/tap-drill';
 
   function must<T extends HTMLElement>(id: string): T {
@@ -553,20 +575,39 @@ const hint = 'text-ink-mute mt-1 text-xs';
     u === 'metric' ? v / 1_000_000 : v / NM_PER_INCH;
   const lenUnit = (u: UnitSystem) => (u === 'metric' ? 'mm' : 'in');
 
-  /** Labels change with the operation. A lathe has no teeth and no radial depth. */
+  /**
+   * Which fields an operation actually has.
+   *
+   * Only milling has a tooth count and a radial width of cut. Only milling and
+   * turning have a depth of cut you enter: drilling's is fixed by the drill,
+   * and boring's is derived from the two diameters, which is the point of
+   * asking for both — see D74.
+   */
+  const DIAMETER_LABEL: Record<string, [string, string]> = {
+    milling: ['Cutter diameter', 'Tool diameter at the cut.'],
+    turning: ['Workpiece diameter', 'Diameter at the cut, not the stock size.'],
+    drilling: ['Drill diameter', 'The hole the drill produces.'],
+    boring: ['Final bore d₁', 'The hole this pass produces. Vc applies here.'],
+  };
+
   function relabel(): void {
-    const turning = pick('op') === 'turning';
+    const op = pick('op');
     const u = pick('units') as UnitSystem;
     must('fs-vc-u').textContent = u === 'metric' ? 'Vc (m/min)' : 'Vc (sfm)';
-    must('fs-dc-label').textContent = turning ? 'Workpiece diameter' : 'Cutter diameter';
-    must('fs-dc-hint').textContent = turning
-      ? 'Diameter at the cut, not the stock size.'
-      : 'Tool diameter at the cut.';
-    must('fs-fz-label').innerHTML = turning
-      ? 'Feed per revolution f<sub>n</sub>'
-      : 'Feed per tooth f<sub>z</sub>';
-    must('fs-teeth-wrap').hidden = turning;
-    must('fs-ae-wrap').hidden = turning;
+
+    const [dcLabel, dcHint] = DIAMETER_LABEL[op] ?? DIAMETER_LABEL.milling!;
+    must('fs-dc-label').textContent = dcLabel;
+    must('fs-dc-hint').textContent = dcHint;
+
+    must('fs-fz-label').innerHTML =
+      op === 'milling'
+        ? 'Feed per tooth f<sub>z</sub>'
+        : 'Feed per revolution f<sub>n</sub>';
+
+    must('fs-teeth-wrap').hidden = op !== 'milling';
+    must('fs-ae-wrap').hidden = op !== 'milling';
+    must('fs-ap-wrap').hidden = op === 'drilling' || op === 'boring';
+    must('fs-d0-wrap').hidden = op !== 'boring';
   }
 
   function render(): void {
@@ -574,19 +615,41 @@ const hint = 'text-ink-mute mt-1 text-xs';
     errorEl.classList.add('hidden');
     try {
       const u = pick('units') as UnitSystem;
-      const turning = pick('op') === 'turning';
+      const op = pick('op');
+      const milling = op === 'milling';
       const vc = num(form, 'vc');
       const dcNm = toNm(num(form, 'dc'), u);
-      const apNm = toNm(num(form, 'ap'), u);
       const rpm = spindleSpeed(vc, dcNm, u);
 
-      // Turning takes feed per revolution directly; milling derives it.
+      // Only milling derives feed per revolution from a tooth count; every
+      // other operation is given fn directly, which is how their data sheets
+      // and their machine controls are both written.
       const fzNm = toNm(num(form, 'fz'), u);
-      const fnNm = turning ? fzNm : feedPerRev(fzNm, num(form, 'teeth'));
+      const fnNm = milling ? feedPerRev(fzNm, num(form, 'teeth')) : fzNm;
       const vfNm = tableFeed(fnNm, rpm);
-      const aeNm = turning ? dcNm : toNm(num(form, 'ae'), u);
-      const mrr = turning ? turningMrr(vc, apNm, fnNm) : millingMrr(aeNm, apNm, vfNm);
-      const hmNm = turning ? fnNm : meanChipThickness(fzNm, aeNm, dcNm);
+      const aeNm = milling ? toNm(num(form, 'ae'), u) : dcNm;
+
+      // The depth of cut, per operation.
+      //
+      // Drilling has none to enter — the drill fixes it — and the value used
+      // here is Dc/4, which is not a placeholder: the derivation in
+      // `drillingMrr` shows drilling IS turning at exactly that depth. Boring's
+      // is derived from the two diameters so it cannot be entered doubled (D74).
+      const apNm =
+        op === 'drilling'
+          ? nm(Math.round(dcNm / 4))
+          : op === 'boring'
+            ? boringDepthOfCut(toNm(num(form, 'd0'), u), dcNm)
+            : toNm(num(form, 'ap'), u);
+
+      const mrr =
+        op === 'milling'
+          ? millingMrr(aeNm, apNm, vfNm)
+          : op === 'drilling'
+            ? drillingMrr(vc, dcNm, fnNm)
+            : turningMrr(vc, apNm, fnNm);
+
+      const hmNm = milling ? meanChipThickness(fzNm, aeNm, dcNm) : fnNm;
 
       const L = lenUnit(u);
       const feedMin = u === 'metric' ? 'mm/min' : 'in/min';
@@ -604,7 +667,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
         ${stat('Feed', `${roundHalfEven(fromNm(vfNm, u), D)}`, feedMin)}
         ${stat('Feed per rev', `${roundHalfEven(fromNm(fnNm, u), D)}`, feedRev)}
         ${stat('Removal rate', `${roundHalfEven(mrr, D)}`, mrrUnit)}
-        ${stat(turning ? 'Chip thickness' : 'Mean chip (approx)', `${roundHalfEven(fromNm(hmNm, u), D)}`, L)}
+        ${stat(milling ? 'Mean chip (approx)' : 'Chip thickness', `${roundHalfEven(fromNm(hmNm, u), D)}`, L)}
       </div>`;
 
       const show = (v: number) => roundHalfEven(fromNm(v, u), D);
@@ -612,18 +675,24 @@ const hint = 'text-ink-mute mt-1 text-xs';
         `n  = ${u === 'metric' ? 'Vc × 1000' : 'Vc × 12'} / (π × Dc)\n` +
         `   = ${u === 'metric' ? `${vc} × 1000` : `${vc} × 12`} / (π × ${show(dcNm)} ${L})\n` +
         `   = ${roundHalfEven(rpm, 4)} rev/min\n\n` +
-        (turning
-          ? `fn = ${show(fnNm)} ${feedRev}   (entered)\n`
-          : `fn = fz × z = ${show(fzNm)} × ${num(form, 'teeth')} = ${show(fnNm)} ${feedRev}\n`) +
+        (milling
+          ? `fn = fz × z = ${show(fzNm)} × ${num(form, 'teeth')} = ${show(fnNm)} ${feedRev}\n`
+          : `fn = ${show(fnNm)} ${feedRev}   (entered)\n`) +
         `vf = fn × n = ${show(fnNm)} × ${roundHalfEven(rpm, 2)} = ${show(vfNm)} ${feedMin}\n\n` +
-        (turning
-          ? `Q  = Vc × ap × fn = ${vc} × ${show(apNm)} × ${show(fnNm)} = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`
-          : `Q  = ae × ap × vf / 1000 = ${show(aeNm)} × ${show(apNm)} × ${show(vfNm)} / 1000 = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`) +
-        (turning
-          ? ''
-          : `\nhm ≈ fz × √(ae/Dc) = ${show(fzNm)} × √(${show(aeNm)}/${show(dcNm)}) = ${show(hmNm)} ${L}   (approximate)\n`);
+        (op === 'milling'
+          ? `Q  = ae × ap × vf / 1000 = ${show(aeNm)} × ${show(apNm)} × ${show(vfNm)} / 1000 = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`
+          : op === 'drilling'
+            ? `Q  = Dc × fn × Vc / 4 = ${show(dcNm)} × ${show(fnNm)} × ${vc} / 4 = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n` +
+              `     a drill removes the whole cylinder, not a swept slot\n`
+            : op === 'boring'
+              ? `ap = (d₁ − d₀) / 2 = derived, ${show(apNm)} ${L}\n` +
+                `Q  = Vc × ap × fn = ${vc} × ${show(apNm)} × ${show(fnNm)} = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`
+              : `Q  = Vc × ap × fn = ${vc} × ${show(apNm)} × ${show(fnNm)} = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`) +
+        (milling
+          ? `\nhm ≈ fz × √(ae/Dc) = ${show(fzNm)} × √(${show(aeNm)}/${show(dcNm)}) = ${show(hmNm)} ${L}   (approximate)\n`
+          : '');
 
-      renderPower(aeNm, apNm, vfNm, hmNm, u, turning);
+      renderPower(mrr, hmNm, u, milling);
     } catch (err) {
       errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
       errorEl.classList.remove('hidden');
@@ -633,14 +702,15 @@ const hint = 'text-ink-mute mt-1 text-xs';
     }
   }
 
-  function renderPower(
-    aeNm: Nanometres,
-    apNm: Nanometres,
-    vfNm: number,
-    hmNm: number,
-    u: UnitSystem,
-    turning: boolean,
-  ): void {
+  /**
+   * Power from the removal rate the operation actually has.
+   *
+   * It used to take ae, ap and vf and hand them to `millingPower`, which
+   * recomputes the MILLING removal rate from them. Turning passed Dc as ae, so
+   * the power was computed from `Dc × ap × vf / 1000` rather than `Vc × ap ×
+   * fn` — understating it by exactly π. See D75.
+   */
+  function renderPower(mrr: number, hmNm: number, u: UnitSystem, thinned: boolean): void {
     const kc11 = raw(powerForm, 'kc11');
     const mc = raw(powerForm, 'mc');
     if (kc11 === '' || mc === '') {
@@ -654,7 +724,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
     try {
       const eta = num(powerForm, 'eta') || DEFAULT_EFFICIENCY;
       const kc = specificCuttingForce(Number(kc11), Number(mc), hmNm);
-      const pc = millingPower(aeNm, apNm, vfNm, kc, eta);
+      const pc = cuttingPower(mrr, kc, eta);
       const machine = raw(powerForm, 'machine');
       let verdict = '';
       if (machine !== '') {
@@ -670,7 +740,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
         <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Net cutting power</p>
         <p class="mt-1 font-numeric text-3xl font-semibold text-brand">${roundHalfEven(pc, 3)} kW</p>
         <p class="text-ink-mute mt-1 text-sm">kc = ${roundHalfEven(kc, 1)} N/mm² at ${roundHalfEven(nmExactToMm(hmNm), 4)} mm chip${
-          turning ? '' : ' (thinned)'
+          thinned ? ' (thinned)' : ''
         }</p>${verdict}
       </div>`;
     } catch (err) {

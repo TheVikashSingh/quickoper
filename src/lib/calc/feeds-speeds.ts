@@ -49,7 +49,7 @@
  *     major tooling manufacturer's technical guide.
  */
 
-import { NM_PER_INCH, type Nanometres } from './tap-drill';
+import { nm, NM_PER_INCH, type Nanometres } from './tap-drill';
 
 /** Spindle efficiency is never 1. 0.75–0.9 is the usual band for a mill. */
 export const DEFAULT_EFFICIENCY = 0.8;
@@ -151,6 +151,76 @@ export function turningMrr(
 }
 
 /**
+ * Drilling material removal rate, in cm³/min.
+ *
+ * `Q = (Dc × fn × Vc) / 4`, with Dc and fn in mm and Vc in m/min.
+ *
+ * ─── Derived here, because §3 does not give it ──────────────────────────────
+ *
+ * `calculations.md` §3 publishes removal rates for milling and turning only,
+ * and requires all four operations. A drill removes the whole cylinder it
+ * advances into rather than a swept slot, so the cut section is the full hole
+ * area `π Dc² / 4` mm² advancing at vf mm/min:
+ *
+ *     Q = (π Dc² / 4) × vf                        mm³/min
+ *
+ * Substituting `vf = fn × n` and `n = Vc × 1000 / (π Dc)` cancels π and one
+ * power of Dc:
+ *
+ *     Q = (π Dc²/4) × fn × Vc × 1000 / (π Dc)     mm³/min
+ *       = Dc × fn × Vc × 1000 / 4                 mm³/min
+ *       = Dc × fn × Vc / 4                        cm³/min
+ *
+ * The closed form is exact, not an approximation of the cylinder, and
+ * `feeds-speeds.test.ts` asserts the two against each other so it cannot drift
+ * from the geometry it came from.
+ *
+ * ─── Why this is not "just turning", which the page used to claim ───────────
+ *
+ * The shape says drilling is turning at an effective depth of `Dc / 4`, and
+ * that is the whole problem with the advice this page gave before D74. Turning
+ * mode makes ap an input, and only `Dc / 4` makes it equivalent. Nothing told
+ * the user that. A 10 mm drill at fn 0.2, Vc 80 is 40 cm³/min; entering
+ * `ap = Dc/2` gives 80, and `ap = Dc` gives 160 — two and four times, and power
+ * scales with it.
+ */
+export function drillingMrr(
+  cuttingSpeed: number,
+  dcNm: Nanometres,
+  fnNmPerRev: number,
+): number {
+  assertPositive('cuttingSpeed', cuttingSpeed);
+  assertPositive('dcNm', dcNm);
+  assertPositive('fnNmPerRev', fnNmPerRev);
+  return (cuttingSpeed * (dcNm / 1_000_000) * (fnNmPerRev / 1_000_000)) / 4;
+}
+
+/**
+ * The radial depth of cut a boring pass takes: `ap = (d1 − d0) / 2`.
+ *
+ * Boring is internal turning, so its removal rate is `turningMrr` — but ap is
+ * derived from the two diameters rather than entered, and that is deliberate.
+ * The diameter grows by TWICE whatever the tool takes off the radius, so a user
+ * asked for "depth of cut" who types the diameter change doubles the removal
+ * rate and the power demand. Taking both diameters makes that unrepresentable.
+ */
+export function boringDepthOfCut(startNm: Nanometres, finalNm: Nanometres): Nanometres {
+  assertPositive('startNm', startNm);
+  assertPositive('finalNm', finalNm);
+  if (finalNm <= startNm) {
+    throw new RangeError(
+      `A boring pass must enlarge the hole: final ${finalNm / 1_000_000} mm is not ` +
+        `greater than start ${startNm / 1_000_000} mm`,
+    );
+  }
+  // Halving an odd nanometre count leaves a half, so this quantises — the
+  // same type-boundary rounding `mmToNm` already performs, not a precision
+  // decision. Half a nanometre is twelve orders of magnitude below the figure
+  // it feeds.
+  return nm(Math.round((finalNm - startNm) / 2));
+}
+
+/**
  * Specific cutting force via Kienzle, in N/mm².
  *
  * kc = kc1.1 × h^(−mc)
@@ -183,6 +253,31 @@ export function specificCuttingForce(
  * machine's rated power and warn — never block. Machinists exceed a rating
  * deliberately for a short cut and resent being stopped.
  */
+export function cuttingPower(
+  mrrCm3PerMin: number,
+  kc: number,
+  efficiency: number = DEFAULT_EFFICIENCY,
+): number {
+  assertPositive('mrrCm3PerMin', mrrCm3PerMin);
+  assertPositive('kc', kc);
+  if (!(efficiency > 0 && efficiency <= 1)) {
+    throw new RangeError(`efficiency must be in (0, 1], got ${efficiency}`);
+  }
+  // §3 writes the milling form as Pc = (ae × ap × vf × kc) / (60 × 10⁶ × η).
+  // The first three terms are the removal rate in mm³/min, so with Q in cm³/min
+  // the same expression is Q × 1000 × kc / (60 × 10⁶ × η) = Q × kc / (60000 × η).
+  // Written this way, every operation uses one power path instead of one
+  // operation's formula being reused for another's numbers — which is what
+  // D75 was.
+  return (mrrCm3PerMin * kc) / (60_000 * efficiency);
+}
+
+/**
+ * Net cutting power for milling, in kW.
+ *
+ * Kept as the milling-shaped entry point, expressed through [cuttingPower] so
+ * the two cannot diverge.
+ */
 export function millingPower(
   aeNm: Nanometres,
   apNm: Nanometres,
@@ -190,14 +285,7 @@ export function millingPower(
   kc: number,
   efficiency: number = DEFAULT_EFFICIENCY,
 ): number {
-  assertPositive('kc', kc);
-  if (!(efficiency > 0 && efficiency <= 1)) {
-    throw new RangeError(`efficiency must be in (0, 1], got ${efficiency}`);
-  }
-  const aeMm = aeNm / 1_000_000;
-  const apMm = apNm / 1_000_000;
-  const vfMmPerMin = vfNmPerMin / 1_000_000;
-  return (aeMm * apMm * vfMmPerMin * kc) / (60e6 * efficiency);
+  return cuttingPower(millingMrr(aeNm, apNm, vfNmPerMin), kc, efficiency);
 }
 
 /**

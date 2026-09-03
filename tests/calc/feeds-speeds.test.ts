@@ -1,10 +1,13 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
+  boringDepthOfCut,
   DEFAULT_EFFICIENCY,
+  drillingMrr,
   feedPerRev,
   meanChipThickness,
   millingMrr,
+  cuttingPower,
   millingPower,
   specificCuttingForce,
   spindleSpeed,
@@ -233,5 +236,131 @@ describe('invariants across the whole domain', () => {
       }),
       { numRuns: 400 },
     );
+  });
+});
+
+/**
+ * Drilling and boring — the two operations §3 requires and the page lacked.
+ *
+ * Independently computed from the ISO 3002-1 definitions, as the fixtures above
+ * are. DRILLING Vc 80 m/min, Dc 10 mm, fn 0.2 mm/rev: n = 2546.4791, vf =
+ * 509.2958, Q = 40. BORING Vc 150 m/min, 20 -> 24 mm, fn 0.15: ap = 2,
+ * n = 1989.4368, Q = 45.
+ */
+describe('drilling', () => {
+  it('matches the worked example', () => {
+    const q = drillingMrr(80, mmToNm(10), mmToNm(0.2));
+    expect(roundHalfEven(q, 4)).toBeCloseTo(40, 3);
+  });
+
+  /**
+   * The closed form must equal the geometry it came from. `Q = Dc x fn x Vc/4`
+   * is an algebraic simplification of the swept cylinder; asserting them
+   * against each other is what stops the shortcut becoming an approximation
+   * nobody rechecks.
+   */
+  it('agrees with the swept cylinder it was derived from', () => {
+    for (const dcMm of [3, 6.8, 10, 12.7, 25]) {
+      for (const fnMm of [0.05, 0.2, 0.35]) {
+        const vc = 80;
+        const closed = drillingMrr(vc, mmToNm(dcMm), mmToNm(fnMm));
+        const rpm = spindleSpeed(vc, mmToNm(dcMm), 'metric');
+        const vfMm = fnMm * rpm;
+        const cylinder = ((Math.PI * dcMm * dcMm) / 4) * (vfMm / 1000);
+        expect(closed).toBeCloseTo(cylinder, 9);
+      }
+    }
+  });
+
+  /**
+   * D74, pinned. The page used to tell users drilling "reduces to the turning
+   * arithmetic". It does — but only at ap = Dc/4, which nothing said. These are
+   * the numbers a user following that advice would have got.
+   */
+  it('is only equal to turning at a depth of cut of Dc/4', () => {
+    const vc = 80;
+    const dcMm = 10;
+    const fnMm = 0.2;
+    const truth = drillingMrr(vc, mmToNm(dcMm), mmToNm(fnMm));
+
+    expect(turningMrr(vc, mmToNm(dcMm / 4), mmToNm(fnMm))).toBeCloseTo(truth, 9);
+    expect(turningMrr(vc, mmToNm(dcMm / 2), mmToNm(fnMm))).toBeCloseTo(truth * 2, 9);
+    expect(turningMrr(vc, mmToNm(dcMm), mmToNm(fnMm))).toBeCloseTo(truth * 4, 9);
+  });
+
+  it('rejects a zero or negative input', () => {
+    expect(() => drillingMrr(0, mmToNm(10), mmToNm(0.2))).toThrow(RangeError);
+    expect(() => drillingMrr(80, mmToNm(10), 0)).toThrow(RangeError);
+  });
+});
+
+describe('boring', () => {
+  it('derives the depth of cut from the two diameters', () => {
+    expect(boringDepthOfCut(mmToNm(20), mmToNm(24))).toBe(mmToNm(2));
+  });
+
+  it('matches the worked example, using the turning removal rate', () => {
+    const ap = boringDepthOfCut(mmToNm(20), mmToNm(24));
+    expect(roundHalfEven(turningMrr(150, ap, mmToNm(0.15)), 4)).toBeCloseTo(45, 3);
+  });
+
+  /**
+   * The trap the two-diameter input exists to close: 20 -> 24 mm is a 4 mm
+   * diameter change and a 2 mm depth of cut. A user asked for "depth" who types
+   * the diameter change doubles everything downstream.
+   */
+  it('is half the diameter change, not the diameter change', () => {
+    const derived = boringDepthOfCut(mmToNm(20), mmToNm(24));
+    const naive = mmToNm(4);
+    expect(turningMrr(150, naive, mmToNm(0.15))).toBeCloseTo(
+      turningMrr(150, derived, mmToNm(0.15)) * 2,
+      9,
+    );
+  });
+
+  it('refuses a pass that does not enlarge the hole', () => {
+    expect(() => boringDepthOfCut(mmToNm(24), mmToNm(24))).toThrow(RangeError);
+    expect(() => boringDepthOfCut(mmToNm(24), mmToNm(20))).toThrow(RangeError);
+  });
+});
+
+/**
+ * D75: power must come from the removal rate the operation actually has.
+ *
+ * `renderPower` used to hand ae, ap and vf to `millingPower`, which recomputes
+ * the MILLING removal rate from them. Turning passed Dc as ae, so its power was
+ * computed from `Dc x ap x vf / 1000` instead of `Vc x ap x fn` — understating
+ * it by exactly pi, on the figure a machinist checks against spindle rating.
+ */
+describe('cutting power comes from the removal rate, whatever produced it', () => {
+  const kc = specificCuttingForce(1500, 0.25, mmToNm(0.25));
+  const eta = 0.8;
+
+  it('milling is unchanged: the shaped entry point agrees with the general one', () => {
+    const q = millingMrr(mmToNm(5), mmToNm(2), mmToNm(1273.2395));
+    expect(millingPower(mmToNm(5), mmToNm(2), mmToNm(1273.2395), kc, eta)).toBeCloseTo(
+      cuttingPower(q, kc, eta),
+      12,
+    );
+  });
+
+  it('turning power is pi times what the milling form gave it', () => {
+    const vc = 200;
+    const dcNm = mmToNm(50);
+    const apNm = mmToNm(2);
+    const fnNm = mmToNm(0.25);
+    const rpm = spindleSpeed(vc, dcNm, 'metric');
+    const vfNm = tableFeed(fnNm, rpm);
+
+    const correct = cuttingPower(turningMrr(vc, apNm, fnNm), kc, eta);
+    const oldWay = millingPower(dcNm, apNm, vfNm, kc, eta); // Dc passed as ae
+
+    expect(correct / oldWay).toBeCloseTo(Math.PI, 6);
+    expect(correct).toBeGreaterThan(oldWay);
+  });
+
+  it('rejects a zero or negative removal rate', () => {
+    expect(() => cuttingPower(0, kc, eta)).toThrow(RangeError);
+    expect(() => cuttingPower(10, kc, 1.2)).toThrow(RangeError);
   });
 });
