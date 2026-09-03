@@ -30,7 +30,7 @@ changes the answer to "what exists" or "what is next".
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
 | Pages built | 27 (26 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 393 passing |
+| Tests | 404 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.68 KB of 19.5 KB (0.82 KB spare) — `/finance/uk-early-repayment-charge-calculator` |
 | Content pages JS | 0.53 KB (inline theme script only); homepage 12.90 KB — it carries an island (D34) |
@@ -420,7 +420,7 @@ Read `CLAUDE.md`, then `docs/DECISIONS.md` (including **Superseded**), then this
 file. That is the whole context; the git history and PR bodies carry the detail.
 
 **Where the project actually is.** Feature-complete for v1 content: four
-calculators, eight derivation pages, five trust pages, 25 substantive pages, 393
+calculators, eight derivation pages, five trust pages, 25 substantive pages, 404
 tests, eleven CI gates. **The site is live at `https://quickoper.com`** as of
 2026-08-11 — Cloudflare Workers static assets, DNS on Cloudflare, registrar
 still Hostinger, mail still Hostinger and verified working after the move.

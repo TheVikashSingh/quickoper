@@ -2443,6 +2443,42 @@ tolerance was already `toBeCloseTo(…, 1)`. Widening it would have retired the
 only check that can detect this, to hide a defect the check had just correctly
 found.
 
+**Resolved by moving the whole machining domain to nanometres.** `Micrometres`
+became `Nanometres` across `tap-drill.ts`, `drill-series.ts`, `drill-chart.ts`
+and `feeds-speeds.ts`, with their pages and tests. The brand stays integral —
+that guard was never the problem, the scale was.
+
+`NM_PER_INCH` is 25 400 000 = 2⁸ × 5⁵ × 127, so any inch figure quoted to five
+decimals or fewer is a whole number of nanometres, and 64 divides it: **1/64 in
+is exactly 396 875 nm, remainder zero.** The fractional drill catalogue is now
+its exact nominal size rather than a rounded near-miss, and `Math.round` came
+out of its generator because it had become a no-op that implied a precision loss
+that was gone. It is also the representation the Kotlin core already uses, which
+makes the two directly comparable for the Gate 7 cross-check.
+
+The golden inch rows were then **rewired onto the rounding conversions the page
+actually calls**, not a private exact variant, and they pass at two decimals. So
+the claim "the shipped path is correct" is tested rather than asserted, and
+`inchToUmExact`/`tpiToPitchUmExact` were deleted as the dead workarounds they
+had become.
+
+**What still rounds, stated.** `tpiToPitchNm` divides 25 400 000 by the thread
+count and only some counts divide exactly — 32 tpi gives 793 750 on the nose,
+24 tpi gives 1 058 333.33 and is rounded. The residue is under half a nanometre
+in a million, four orders of magnitude below the micrometre error it replaces
+and far below the second decimal the fixture asserts.
+
+**The part worth keeping: 334 tests and eleven gates passed while the page
+displayed a number a thousand times wrong.** Both calculator pages rendered inch
+lengths by dividing nanometres by `25400` — the *micrometre*-per-inch constant,
+a bare numeric literal that no rename could see and no type could catch, because
+both sides are `number`. 1/4-20 showed a target of **201.2861 in**. Nothing in
+the suite covers presentation-layer unit conversion: the calc tests stop at the
+module boundary, and the byte-budget, link, spacing and schema gates have no
+opinion about arithmetic. It was found by opening the page and reading it, which
+is the same way D70 was found and the same lesson — the tests prove the code
+does what it was told, and say nothing about the layer that formats the answer.
+
 ### D73 — Above the top of the drill index there is no answer, and the largest drill is not one
 
 Found by the display gate D72 asked for, on its first run, which is the entire
@@ -2488,41 +2524,87 @@ judgement into `snapToSeries` would change a shared primitive to fix one
 caller's presentation problem. If the fractional index or a future number-drill
 index needs the same rule, this is the layer that already has it.
 
-**Resolved by moving the whole machining domain to nanometres.** `Micrometres`
-became `Nanometres` across `tap-drill.ts`, `drill-series.ts`, `drill-chart.ts`
-and `feeds-speeds.ts`, with their pages and tests. The brand stays integral —
-that guard was never the problem, the scale was.
+### D74 — Drilling does not "reduce to the turning arithmetic", and the FAQ said it did
 
-`NM_PER_INCH` is 25 400 000 = 2⁸ × 5⁵ × 127, so any inch figure quoted to five
-decimals or fewer is a whole number of nanometres, and 64 divides it: **1/64 in
-is exactly 396 875 nm, remainder zero.** The fractional drill catalogue is now
-its exact nominal size rather than a rounded near-miss, and `Math.round` came
-out of its generator because it had become a no-op that implied a precision loss
-that was gone. It is also the representation the Kotlin core already uses, which
-makes the two directly comparable for the Gate 7 cross-check.
+`calculations.md` §3 requires milling, turning, drilling and boring. The page
+shipped two, and an FAQ answer explaining why the other two were unnecessary:
 
-The golden inch rows were then **rewired onto the rounding conversions the page
-actually calls**, not a private exact variant, and they pass at two decimals. So
-the claim "the shipped path is correct" is tested rather than asserted, and
-`inchToUmExact`/`tpiToPitchUmExact` were deleted as the dead workarounds they
-had become.
+> Because drilling reduces to the turning arithmetic with the drill diameter as
+> Dc and feed in mm/rev, and adding a third mode that reuses the same two
+> formulas would be interface for its own sake. Use turning and read fn.
 
-**What still rounds, stated.** `tpiToPitchNm` divides 25 400 000 by the thread
-count and only some counts divide exactly — 32 tpi gives 793 750 on the nose,
-24 tpi gives 1 058 333.33 and is rounded. The residue is under half a nanometre
-in a million, four orders of magnitude below the micrometre error it replaces
-and far below the second decimal the fixture asserts.
+**The premise is half true and the advice is wrong.** Drilling does reduce to
+the turning expression — at a depth of cut of exactly `Dc / 4`, and at no other
+value. A drill removes the whole cylinder it advances into, so
+`Q = (π Dc² / 4) × vf`, and substituting `vf = fn × n` with
+`n = Vc × 1000 / (π Dc)` cancels π and one power of Dc to leave
+`Q = Dc × fn × Vc / 4` — which is `Vc × ap × fn` with `ap = Dc/4`.
 
-**The part worth keeping: 334 tests and eleven gates passed while the page
-displayed a number a thousand times wrong.** Both calculator pages rendered inch
-lengths by dividing nanometres by `25400` — the *micrometre*-per-inch constant,
-a bare numeric literal that no rename could see and no type could catch, because
-both sides are `number`. 1/4-20 showed a target of **201.2861 in**. Nothing in
-the suite covers presentation-layer unit conversion: the calc tests stop at the
-module boundary, and the byte-budget, link, spacing and schema gates have no
-opinion about arithmetic. It was found by opening the page and reading it, which
-is the same way D70 was found and the same lesson — the tests prove the code
-does what it was told, and say nothing about the layer that formats the answer.
+Turning mode makes ap an input, and nothing on the page said which value to
+type. For a 10 mm drill at fn 0.2, Vc 80 — a 40 cm³/min cut:
+
+| What the user enters for ap | Removal rate | Factor |
+|---|---|---|
+| `Dc/4` = 2.5 mm — the only correct value | 40 | 1.00× |
+| `Dc/2` = 5 mm — "it cuts to half its diameter" | 80 | **2.00×** |
+| `Dc` = 10 mm — "the whole hole" | 160 | **4.00×** |
+| 1 mm — a plausible finishing depth | 16 | 0.40× |
+
+Power scales linearly with the removal rate, so a machinist checking against
+spindle rating was off by the same factor.
+
+Drilling and boring are now their own modes and **neither asks for a depth of
+cut** — drilling's is fixed by the drill, and boring's is derived from the two
+diameters. The FAQ now states the difference instead of denying it.
+
+**Boring takes both diameters on purpose.** `ap = (d1 − d0) / 2`, because the
+diameter grows by twice what the tool takes off the radius. Asking for "depth of
+cut" invites the commonest error in the operation — entering the diameter change
+and doubling everything downstream. Taking both makes it unrepresentable, and
+the working box shows the derivation rather than hiding it.
+
+### D75 — Turning's cutting power was computed with the milling formula, and was π times too small
+
+Found while adding D74's modes, and worse than D74.
+
+`renderPower` took ae, ap and vf and handed them to `millingPower`, which
+recomputes the **milling** removal rate `ae × ap × vf / 1000` from them. Turning
+had no ae, so the page passed **Dc** in its place. The result:
+
+```
+        page:  Q = Dc × ap × vf / 1000
+    should be: Q = Vc × ap × fn
+```
+
+and since `vf = fn × n` with `n = Vc × 1000 / (π Dc)`, the first is the second
+divided by **exactly π**. Not approximately — the Dc cancels and π is left
+standing.
+
+On the page's own turning defaults — Vc 200, Dm 50, ap 2, fn 0.25, kc1.1 1500,
+mc 0.25, η 0.8:
+
+| | Removal rate | Net power | On a 3 kW spindle |
+|---|---|---|---|
+| What it showed | 31.83 cm³/min | 1.407 kW | 47% — comfortable |
+| The truth | 100.00 cm³/min | 4.419 kW | **147% — overloaded** |
+
+The removal rate displayed beside it was always right; only the power was
+wrong, which is what made it survivable. §3 asks for exactly this feature —
+*"warn when computed Pc exceeds the selected machine"* — and it was under-warning
+by a factor of three on every turning cut.
+
+**The fix is structural, not arithmetic.** `cuttingPower(Q, kc, η)` now takes a
+removal rate rather than one operation's inputs, so all four operations share
+one power path and no operation's formula can be reused for another's numbers.
+`millingPower` is kept as the milling-shaped entry point and expressed through
+it, so the two cannot diverge. A test asserts the ratio is π, which is the only
+way to state "this specific bug is gone" rather than "the numbers changed".
+
+**Why no gate caught it.** The same reason as D70 and D72: every check stops at
+a module boundary. `millingPower` was correct and tested. `turningMrr` was
+correct and tested. What was wrong was a call site handing one function the
+other's arguments, and nothing in the suite exercised the page's wiring. That is
+three defects now in the seam between a correct module and a correct module.
 
 ---
 
