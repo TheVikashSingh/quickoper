@@ -167,6 +167,37 @@ export function tapDrillDisplay(input: TapDrillInput): TapDrillDisplay {
     );
   }
 
+  /*
+   * A hole at or above the major diameter cuts no thread at all.
+   *
+   * D73 guarded the top of the INDEX. This guards the top of the THREAD, and
+   * they are different failures: here the target is comfortably inside the
+   * index, so nothing above fires, but the drill that lands nearest it is as
+   * wide as the fastener.
+   *
+   *     M6 x 1 at  1%  ->  target 5.9870 mm  ->  nearest drill 6 mm  ->   0%
+   *     M6 x 1 at  3%  ->  target 5.9610 mm  ->  nearest drill 6 mm  ->   0%
+   *     M5.99 x 1 at 1% -> target 5.9770 mm  ->  nearest drill 6 mm  -> -0.77%
+   *
+   * The last is a hole WIDER than the thread it is meant to tap. All three
+   * were headlined as "Use this drill: 6 mm" in 3xl brand-coloured type, with
+   * the 0% relegated to a stat beside it. That is precisely the shape Gate 9
+   * forbids: a plausible-looking drill size that is not an answer.
+   *
+   * The Kotlin core already refuses these — `noNeighbourIsAtOrAboveTheMajor
+   * Diameter` asserts every neighbour has a positive engagement, and the
+   * screen shows "That leaves no thread". Two implementations disagreeing is
+   * the Gate 7 signal; this is the web side catching up, as with D73.
+   */
+  if (choice.drill.nm >= majorNm) {
+    throw new RangeError(
+      `That leaves no thread. A ${formatLength(choice.drill.nm, units)} drill is the ` +
+        `nearest to ${formatLength(targetNm, units)}, but the thread's major diameter is ` +
+        `${formatLength(majorNm, units)} — the hole would be as wide as the fastener. ` +
+        `Ask for more engagement.`,
+    );
+  }
+
   const neighbours = drills
     .map((d) => ({ d, delta: d.nm - targetNm }))
     .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))
