@@ -56,6 +56,55 @@ export const DEFAULT_EFFICIENCY = 0.8;
 
 export type UnitSystem = 'metric' | 'inch';
 
+/**
+ * 1 in = 25.4 mm exactly (international yard and pound agreement, 1959), so
+ * 1 in³ = 25.4³ mm³ = 16.387064 cm³. Exact, not measured.
+ */
+export const CM3_PER_IN3 = 16.387064;
+
+/**
+ * Surface feet per minute to metres per minute: 1 ft = 0.3048 m exactly, from
+ * the same 1959 agreement.
+ */
+export const M_PER_MIN_PER_SFM = 0.3048;
+
+/**
+ * Cutting speed as the arithmetic below requires it, from whichever convention
+ * the user's data sheet is written in.
+ *
+ * Every removal-rate function here works in m/min because that is what the
+ * formulas in `calculations.md` §3 are written in. A caller that hands a
+ * surface-feet-per-minute figure straight to one of them gets an answer wrong
+ * by 25.4²/12 = 53.7633, which is exactly what the feeds page did in inch mode
+ * until this function existed.
+ */
+export function cuttingSpeedToMetric(cuttingSpeed: number, units: UnitSystem): number {
+  assertPositive('cuttingSpeed', cuttingSpeed);
+  return units === 'metric' ? cuttingSpeed : cuttingSpeed * M_PER_MIN_PER_SFM;
+}
+
+/**
+ * A removal rate and the unit it is actually in, together.
+ *
+ * The value and its label are returned as one object on purpose. Every removal
+ * rate computed in this module is cm³/min, and the failure this closes is the
+ * page selecting an `in³/min` string beside an unconverted cm³/min number —
+ * wrong by 16.387064 with nothing on screen to suggest it. Handing back a
+ * number and letting the caller pick a label is what allowed that, so the two
+ * now travel together and cannot disagree.
+ *
+ * The Kotlin implementation made the identical mistake independently, which is
+ * some evidence this is the natural one to make rather than a lapse.
+ */
+export function removalRateFor(
+  cm3PerMin: number,
+  units: UnitSystem,
+): { readonly value: number; readonly unit: 'cm³/min' | 'in³/min' } {
+  return units === 'metric'
+    ? { value: cm3PerMin, unit: 'cm³/min' }
+    : { value: cm3PerMin / CM3_PER_IN3, unit: 'in³/min' };
+}
+
 function assertPositive(name: string, value: number): void {
   if (!Number.isFinite(value) || value <= 0) {
     throw new RangeError(`${name} must be a positive finite number, got ${value}`);
@@ -131,9 +180,14 @@ export function millingMrr(
 }
 
 /**
- * Material removal rate for turning, in cm³/min.
+ * Material removal rate for turning, in cm³/min — ALWAYS cm³/min, whichever
+ * unit system is passed.
  *
  * Q = Vc × ap × fn, with Vc in m/min, ap in mm and fn in mm/rev.
+ *
+ * `units` says which convention the CUTTING SPEED is written in, because the
+ * lengths arrive as `Nanometres` and carry none of their own. The return is
+ * metric either way; `removalRateFor` renders it in the user's volume unit.
  *
  * A DIFFERENT FORMULA, not the milling one relabelled. Turning removes a ring
  * of material per revolution rather than a swept slot, and apps that reuse the
@@ -143,15 +197,22 @@ export function turningMrr(
   cuttingSpeed: number,
   apNm: Nanometres,
   fnNmPerRev: number,
+  units: UnitSystem,
 ): number {
-  assertPositive('cuttingSpeed', cuttingSpeed);
   assertPositive('apNm', apNm);
   assertPositive('fnNmPerRev', fnNmPerRev);
-  return cuttingSpeed * (apNm / 1_000_000) * (fnNmPerRev / 1_000_000);
+  // `units` is required rather than defaulted. The lengths arrive as
+  // Nanometres, which carry no unit system, so nothing else in this signature
+  // reveals which convention the cutting speed is written in — and a default
+  // would silently pick one.
+  const vc = cuttingSpeedToMetric(cuttingSpeed, units);
+  return vc * (apNm / 1_000_000) * (fnNmPerRev / 1_000_000);
 }
 
 /**
- * Drilling material removal rate, in cm³/min.
+ * Drilling material removal rate, in cm³/min — ALWAYS cm³/min, whichever unit
+ * system is passed. See `turningMrr` on `units`, and `removalRateFor` for
+ * rendering it.
  *
  * `Q = (Dc × fn × Vc) / 4`, with Dc and fn in mm and Vc in m/min.
  *
@@ -188,11 +249,12 @@ export function drillingMrr(
   cuttingSpeed: number,
   dcNm: Nanometres,
   fnNmPerRev: number,
+  units: UnitSystem,
 ): number {
-  assertPositive('cuttingSpeed', cuttingSpeed);
   assertPositive('dcNm', dcNm);
   assertPositive('fnNmPerRev', fnNmPerRev);
-  return (cuttingSpeed * (dcNm / 1_000_000) * (fnNmPerRev / 1_000_000)) / 4;
+  const vc = cuttingSpeedToMetric(cuttingSpeed, units);
+  return (vc * (dcNm / 1_000_000) * (fnNmPerRev / 1_000_000)) / 4;
 }
 
 /**
