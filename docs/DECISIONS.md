@@ -2624,6 +2624,64 @@ This is the fifth time a check found something real by being asked to look
 (D18). It is also the second latent launch-blocker found by inspecting state
 rather than writing new code — the first was six 404s in the site navigation.
 
+### D76 — A removal rate and its unit must travel together, and inch mode proved it
+
+The feeds page displayed a removal rate **16.387064× too high for milling and
+53.7633× too high for turning, boring and drilling**, for as long as inch mode
+has existed. On a 1 in bar at 400 sfm, 0.010 in/rev, 0.100 in depth of cut it
+printed 258.064 in³/min for a cut that removes 4.8.
+
+Two independent errors compounded, and neither is arithmetic:
+
+1. **A label chosen instead of a conversion.** Every MRR function normalises
+   `Nanometres` to millimetres and returns cm³/min — always, because
+   `Nanometres` carry no unit system. The page selected the string `in³/min`
+   for inch mode and printed the unconverted number beside it.
+2. **A convention assumed instead of stated.** `turningMrr` and `drillingMrr`
+   take Vc in m/min. The page handed them the surface-feet-per-minute figure
+   the user typed.
+
+Together: 25.4² / 12 = 53.7633. The first alone: 16.387064.
+
+**Every individual function was correct.** The arithmetic was never wrong; the
+unit handling between the functions was, and it lived in a `.astro` template
+where no test could see it — `vitest.config` covers `src/lib/calc/**`. That is
+D72's shape exactly: the site once rendered `201.2861 in` where the answer was
+`0.2013 in`, past a whole green suite, because a conversion lived in a template
+instead of a tested function. The lesson was recorded and then not applied one
+directory over.
+
+The fix is two functions in the tested module, and the shape of them is the
+decision:
+
+- `cuttingSpeedToMetric(vc, units)`, and **`units` is a required parameter of
+  `turningMrr` and `drillingMrr`** rather than a defaulted one. The lengths
+  arrive as `Nanometres` and reveal nothing, so a default would silently pick a
+  convention. Making it required turned this into 13 compiler errors at the
+  existing call sites, which is where a unit mismatch should surface.
+- `removalRateFor(cm3PerMin, units)` returns **`{ value, unit }` together**. The
+  defect was a value and a label disagreeing, so they are now one object and
+  cannot. A caller cannot relabel without converting, because it never touches
+  the label.
+
+The derivation box was wrong in a way worth recording separately: metric and
+inch are genuinely **different equations**, not one equation with the numbers
+swapped. Metric divides mm³ down to cm³; inch multiplies surface feet per minute
+up to inches per minute. The box printed the metric form to inch users, so it
+read `Q = 0.25 × 0.1 × 24.4462 / 1000 = 10.015 in³/min` — an equation whose left
+side evaluates to 0.00061. **A working box that formats its own values is a
+second display layer, and the first thing it does is disagree with the first.**
+It now quotes the panel's rendered figure rather than rounding again.
+
+The Kotlin implementation made the identical mistake independently and fixed it
+first: `FeedsSpeedsPresentation.kt` has `CM3_PER_IN3 = 16.387064` and a comment
+naming the web side as the sibling case. So Gate 7 worked exactly as intended —
+two independent implementations disagreed, and the disagreement was the signal.
+Nobody acted on it for as long as it took an audit to ask.
+
+Both defects are now asserted by tests that were confirmed to fail when each is
+reintroduced separately. A regression test that has never failed proves nothing.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
