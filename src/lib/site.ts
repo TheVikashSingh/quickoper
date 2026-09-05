@@ -44,5 +44,5 @@ export const SITE = {
   repo: 'https://github.com/TheVikashSingh/quickoper',
 
   /** Bumped when the trust pages are substantively revised. */
-  legalLastUpdated: '2026-08-07',
+  legalLastUpdated: '2026-09-05',
 } as const;
