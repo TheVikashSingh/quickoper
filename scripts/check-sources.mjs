@@ -21,6 +21,16 @@
  * its own not-found page too. So the body is checked for the markers those
  * pages use.
  *
+ * ─── Bot walls ──────────────────────────────────────────────────────────────
+ *
+ * A third case, and the sneakiest: some hosts answer an automated request with
+ * HTTP 200 and an anti-bot interstitial. `aaii.com` runs one — it returns 200
+ * and a 6 KB "Pardon Our Interruption" page for the very URL that serves a
+ * 35 KB PDF to a browser. That is neither a live citation nor a dead one, and
+ * scoring it `ok` is a FALSE PASS: the link would go on passing after the
+ * publisher deleted the page. It is reported like a 403 — the host will not
+ * let us look, so a person has to.
+ *
  * ─── Network policy ─────────────────────────────────────────────────────────
  *
  * A definite 404 or a soft-404 marker FAILS the build — that is a real,
@@ -43,6 +53,20 @@ const SOFT_404 = [
   'webstore error',
   'page not found',
   'sorry, the page you',
+];
+
+/**
+ * Markers that mean "a bot check answered, not the publisher".
+ *
+ * Distinct from SOFT_404: those mean the resource is gone, these mean we were
+ * not allowed to ask. Only phrases distinctive enough that they cannot occur in
+ * an ordinary page's prose. The first was observed on aaii.com.
+ */
+const BOT_WALL = [
+  'pardon our interruption',
+  'attention required! | cloudflare',
+  'checking your browser before accessing',
+  'enable javascript and cookies to continue',
 ];
 
 /**
@@ -122,6 +146,17 @@ async function check(url) {
       return { state: 'fail', detail: `HTTP ${res.status}` };
     }
     const body = (await res.text()).slice(0, 40_000).toLowerCase();
+
+    // Ask this BEFORE the soft-404 test: an interstitial is not evidence either
+    // way, and calling it `ok` would be the false pass this gate exists to stop.
+    const wall = BOT_WALL.find((m) => body.includes(m));
+    if (wall !== undefined) {
+      return {
+        state: 'warn',
+        detail: `HTTP 200 but an anti-bot interstitial answered ("${wall}") — not checkable from here`,
+      };
+    }
+
     const marker = SOFT_404.find((m) => body.includes(m));
     if (marker !== undefined) {
       return { state: 'fail', detail: `HTTP 200 but the page says "${marker}"` };
