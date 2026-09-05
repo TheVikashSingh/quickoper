@@ -11,7 +11,8 @@ import {
   feedPerRev,
   meanChipThickness,
   millingMrr,
-  cuttingPower,
+  netCuttingPower,
+  machinePower,
   millingPower,
   specificCuttingForce,
   spindleSpeed,
@@ -355,7 +356,7 @@ describe('cutting power comes from the removal rate, whatever produced it', () =
   it('milling is unchanged: the shaped entry point agrees with the general one', () => {
     const q = millingMrr(mmToNm(5), mmToNm(2), mmToNm(1273.2395));
     expect(millingPower(mmToNm(5), mmToNm(2), mmToNm(1273.2395), kc, eta)).toBeCloseTo(
-      cuttingPower(q, kc, eta),
+      machinePower(netCuttingPower(q, kc), eta),
       12,
     );
   });
@@ -368,7 +369,10 @@ describe('cutting power comes from the removal rate, whatever produced it', () =
     const rpm = spindleSpeed(vc, dcNm, 'metric');
     const vfNm = tableFeed(fnNm, rpm);
 
-    const correct = cuttingPower(turningMrr(vc, apNm, fnNm, 'metric'), kc, eta);
+    const correct = machinePower(
+      netCuttingPower(turningMrr(vc, apNm, fnNm, 'metric'), kc),
+      eta,
+    );
     const oldWay = millingPower(dcNm, apNm, vfNm, kc, eta); // Dc passed as ae
 
     expect(correct / oldWay).toBeCloseTo(Math.PI, 6);
@@ -376,8 +380,186 @@ describe('cutting power comes from the removal rate, whatever produced it', () =
   });
 
   it('rejects a zero or negative removal rate', () => {
-    expect(() => cuttingPower(0, kc, eta)).toThrow(RangeError);
-    expect(() => cuttingPower(10, kc, 1.2)).toThrow(RangeError);
+    expect(() => machinePower(netCuttingPower(0, kc), eta)).toThrow(RangeError);
+    expect(() => machinePower(netCuttingPower(10, kc), 1.2)).toThrow(RangeError);
+  });
+});
+
+/**
+ * Inch mode, which is where this module was wrong.
+ *
+ * The page displayed a removal rate 16.387064x too high for milling and
+ * 53.7633x too high for turning, boring and drilling, for as long as inch mode
+ * has existed. Two independent errors compounded:
+ *
+ *   1. Every MRR function normalises Nanometres to MILLIMETRES and returns
+ *      cm3/min. The page chose an 'in3/min' LABEL for inch mode and printed the
+ *      unconverted number beside it.
+ *   2. turningMrr and drillingMrr take Vc in m/min. The page handed them the
+ *      surface-feet-per-minute figure the user typed.
+ *
+ * Together: 25.4^2 / 12 = 53.7633. The first alone: 16.387064.
+ *
+ * Nothing caught it because the arithmetic was never wrong -- the CONVERSIONS
+ * were, and they lived in the page rather than in a tested function. Which is
+ * the same shape as D72, and the reason these now live here.
+ *
+ * Expected values are derived from the definitions, not from this module:
+ *   1 in = 25.4 mm and 1 ft = 0.3048 m EXACTLY -- international yard and pound
+ *   agreement, 1959. So 1 in3 = 25.4^3 mm3 = 16.387064 cm3, and one surface
+ *   foot per minute is 0.3048 m/min.
+ */
+describe('inch units', () => {
+  it('holds the two exact 1959 conversion constants', () => {
+    expect(CM3_PER_IN3).toBe(16.387064);
+    expect(CM3_PER_IN3).toBeCloseTo(2.54 ** 3, 12);
+    expect(M_PER_MIN_PER_SFM).toBe(0.3048);
+  });
+
+  it('converts surface feet per minute to metres per minute, and leaves metric alone', () => {
+    expect(cuttingSpeedToMetric(100, 'metric')).toBe(100);
+    // 400 sfm x 0.3048 = 121.92 m/min.
+    expect(cuttingSpeedToMetric(400, 'inch')).toBeCloseTo(121.92, 12);
+  });
+
+  it('never hands back a unit its value is not in', () => {
+    const metric = removalRateFor(100, 'metric');
+    expect(metric).toEqual({ value: 100, unit: 'cm³/min' });
+
+    const inch = removalRateFor(100, 'inch');
+    expect(inch.unit).toBe('in³/min');
+    expect(inch.value).toBeCloseTo(100 / 16.387064, 12);
+    // The defect stated as an assertion: an in3/min label beside an
+    // unconverted cm3/min number.
+    expect(inch.value).not.toBeCloseTo(100, 6);
+  });
+
+  /**
+   * The three end-to-end values, each derived by hand in inch units.
+   *
+   * Turning:  Vc 400 sfm = 4800 in/min; Q = 4800 x 0.100 x 0.010 = 4.8 in3/min
+   * Drilling: Vc 300 sfm = 3600 in/min; Q = 0.375 x 0.006 x 3600 / 4
+   *                                        = 2.025 in3/min
+   * Milling:  Q = ae x ap x vf = 0.25 x 0.100 x 24.4462 = 0.611155 in3/min
+   */
+  it('turning in inch units gives the inch answer, not 53.7633x it', () => {
+    const cm3 = turningMrr(400, inchToNm(0.1), inchToNm(0.01), 'inch');
+    const shown = removalRateFor(cm3, 'inch');
+    expect(shown.value).toBeCloseTo(4.8, 9);
+    expect(shown.unit).toBe('in³/min');
+    // The old behaviour, named so a regression is unmistakable.
+    expect(shown.value).not.toBeCloseTo(4.8 * (25.4 ** 2 / 12), 6);
+  });
+
+  it('drilling in inch units gives the inch answer', () => {
+    const cm3 = drillingMrr(300, inchToNm(0.375), inchToNm(0.006), 'inch');
+    expect(removalRateFor(cm3, 'inch').value).toBeCloseTo(2.025, 9);
+  });
+
+  it('milling in inch units gives the inch answer, not 16.387064x it', () => {
+    // millingMrr takes no cutting speed, so only the display conversion was
+    // ever wrong for milling -- which is why its factor is the smaller one.
+    const cm3 = millingMrr(inchToNm(0.25), inchToNm(0.1), inchToNm(24.4462));
+    const shown = removalRateFor(cm3, 'inch');
+    expect(shown.value).toBeCloseTo(0.611155, 9);
+    expect(cm3).toBeCloseTo(0.611155 * 16.387064, 9);
+  });
+
+  /**
+   * The metric path must not have moved. Every expected value here predates the
+   * change and is asserted elsewhere in this file too.
+   */
+  it('leaves every metric answer exactly where it was', () => {
+    expect(turningMrr(200, mmToNm(2), mmToNm(0.25), 'metric')).toBeCloseTo(100, 9);
+    expect(drillingMrr(80, mmToNm(10), mmToNm(0.2), 'metric')).toBeCloseTo(40, 9);
+    expect(removalRateFor(40, 'metric').value).toBe(40);
+  });
+
+  /**
+   * Turning and drilling agree with each other in inch mode exactly as they do
+   * in metric: a drill IS turning at ap = Dc/4 (D74), and that identity must
+   * not depend on which unit the user typed.
+   */
+  it('keeps the drilling-is-turning-at-Dc/4 identity in inch units', () => {
+    const vc = 250;
+    const dc = inchToNm(0.5);
+    const fn = inchToNm(0.008);
+    const drill = drillingMrr(vc, dc, fn, 'inch');
+    const turn = turningMrr(vc, nm(Math.round(dc / 4)), fn, 'inch');
+    expect(drill).toBeCloseTo(turn, 12);
+  });
+});
+
+/**
+ * Net cutting power and machine power are two quantities.
+ *
+ * calculations.md section 3 wrote `Pc = ... / (60 x 10^6 x eta)` under the
+ * heading "Net cutting power", and the heading was wrong for the expression:
+ * eta describes losses between the motor and the cut, so a term dividing by it
+ * cannot belong to a quantity measured AT the tool. Sandvik Coromant computes
+ * required machine power in two steps for exactly this reason -- net power at
+ * the cutter, then the efficiency factor.
+ *
+ *   Pc = Q x kc / 60000      net, at the cutting edge
+ *   Pm = Pc / eta            required at the machine
+ *
+ * Source: Sandvik Coromant milling formulas and definitions, which defines net
+ * power Pc as the power at the cutter, and describes required machine power as
+ * a second step through the machine efficiency factor.
+ * https://www.sandvik.coromant.com/en-us/knowledge/machining-formulas-definitions/milling-formulas-definitions
+ *
+ * This mattered because the site showed Pm under the words "Net cutting power"
+ * while the Kotlin app showed Pc under the same words -- 25% apart at eta 0.8.
+ */
+describe('net cutting power versus machine power', () => {
+  // Q 12.7324 cm3/min, kc 2667.4191 N/mm2 -> Pc = 12.7324 x 2667.4191 / 60000
+  const Q = METRIC.qCm3;
+  const KC = 2667.4191;
+
+  it('computes net power at the cutting edge, with no efficiency term', () => {
+    expect(netCuttingPower(Q, KC)).toBeCloseTo((Q * KC) / 60_000, 12);
+    // Independently: 12.7324 x 2667.4191 = 33962.06..., / 60000 = 0.566034...
+    expect(roundHalfEven(netCuttingPower(Q, KC), 4)).toBeCloseTo(0.566, 3);
+  });
+
+  it('is unchanged by efficiency, because efficiency is not in it', () => {
+    // The assertion that would have caught the mislabelling: nothing about the
+    // machine may move the figure describing the cut.
+    const a = netCuttingPower(Q, KC);
+    const b = netCuttingPower(Q, KC);
+    expect(a).toBe(b);
+    expect(machinePower(a, 1)).toBeCloseTo(a, 12);
+  });
+
+  it('derives machine power as Pc / eta, and they differ by 25% at eta 0.8', () => {
+    const pc = netCuttingPower(Q, KC);
+    const pm = machinePower(pc, 0.8);
+    expect(pm).toBeCloseTo(pc / 0.8, 12);
+    expect(pm / pc).toBeCloseTo(1.25, 12);
+    expect(pm).toBeGreaterThan(pc);
+  });
+
+  it('keeps millingPower as the machine figure it always was', () => {
+    // The existing worked example: 0.7076 kW at eta 0.8. It must not have moved
+    // -- this change splits a figure in two, it does not restate an old one.
+    const viaSplit = machinePower(
+      netCuttingPower(millingMrr(mmToNm(5), mmToNm(2), METRIC.vfMm * 1_000_000), KC),
+      0.8,
+    );
+    expect(roundHalfEven(viaSplit, 4)).toBeCloseTo(0.7076, 3);
+    expect(
+      roundHalfEven(
+        millingPower(mmToNm(5), mmToNm(2), METRIC.vfMm * 1_000_000, KC, 0.8),
+        4,
+      ),
+    ).toBeCloseTo(0.7076, 3);
+  });
+
+  it('still refuses an impossible efficiency, now on the function that uses it', () => {
+    expect(() => machinePower(1, 0)).toThrow(RangeError);
+    expect(() => machinePower(1, 1.2)).toThrow(RangeError);
+    expect(() => machinePower(1, -0.5)).toThrow(RangeError);
+    expect(() => netCuttingPower(0, KC)).toThrow(RangeError);
   });
 });
 

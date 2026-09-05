@@ -2682,6 +2682,54 @@ Nobody acted on it for as long as it took an audit to ask.
 Both defects are now asserted by tests that were confirmed to fail when each is
 reintroduced separately. A regression test that has never failed proves nothing.
 
+### D77 — Net cutting power and machine power are two figures, and the spec named one
+
+`calculations.md` §3 wrote
+
+```
+Pc = (ae × ap × vf × kc) / (60 × 10⁶ × η)
+```
+
+under the heading **"Net cutting power"**. The expression is right for what it
+computes and the heading is wrong for it: η describes losses between the motor
+and the cut, so a term dividing by it cannot belong to a quantity measured *at*
+the tool. Sandvik Coromant — the source this page already cites — calculates
+required machine power in exactly two steps for that reason: net power at the
+cutter first, then the efficiency factor.
+
+So there are two quantities and the spec named one:
+
+```
+Pc = Q × kc / 60000     net, at the cutting edge
+Pm = Pc / η             required at the machine
+```
+
+**How it was found is the point.** The Kotlin core hit the same contradiction
+independently, split `netKw` from `atSpindleKw`, and left a comment saying the
+spec's heading could not be right. This page kept the spec's expression and the
+spec's heading. The result: two surfaces of one product printing kilowatt
+figures **25% apart under identical labels**, with no way for a user comparing
+them to tell which was wrong. Gate 7 caught it and nobody read the answer until
+an audit asked.
+
+Neither number was ever wrong. Each was the right value for a different
+question, and the page asked only one of them out loud.
+
+The distinction decides something real: **it is Pm, never Pc, that a spindle
+rating should be compared against.** The panel's "% of your N kW spindle"
+verdict was already using the η-divided figure, so that comparison was correct
+throughout — it was the label above it that was not. Both figures are now shown,
+the verdict is explicitly computed from Pm, and the FAQ says which to use for
+what.
+
+`efficiency` moved off `netCuttingPower` and onto `machinePower`, so the
+function that cannot legitimately take an η no longer accepts one. That is the
+same move as D76's required `units`: put the parameter where the mistake becomes
+a compiler error rather than a wrong number.
+
+The spec was corrected first, in the research repo, because it is the canonical
+home — the same rule as never adjusting an expected value to make a test pass.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
