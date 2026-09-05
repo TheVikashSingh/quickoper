@@ -2682,6 +2682,49 @@ Nobody acted on it for as long as it took an audit to ask.
 Both defects are now asserted by tests that were confirmed to fail when each is
 reintroduced separately. A regression test that has never failed proves nothing.
 
+### D79 — A bot wall is not a dead link, and it is not a live one either
+
+The Trinity Study citation on two finance pages pointed at
+`aaii.com/journal/198802/feature.pdf` and had been failing `npm run sources`
+since the gate was written. The label said **1998**; the path said **1988**.
+
+An earlier investigation ruled the typo out and concluded AAII had pulled the
+PDF. **That conclusion was wrong, and the way it was reached is the lesson.**
+Both URLs were fetched with `curl`, both returned an identical 6,058-byte
+`text/html` body at HTTP 200, and identical responses were read as "neither
+exists". They were identical because both were the same anti-bot interstitial —
+`aaii.com` runs one that answers 200 with "Pardon Our Interruption". Comparing
+two refusals tells you nothing about what is behind them.
+
+Fetched again with Node's `fetch` and a browser User-Agent, the two differ
+completely:
+
+| URL | Response |
+|---|---|
+| `…/198802/feature.pdf` | genuine **HTTP 404**, body says "sorry, the page you" |
+| `…/199802/feature.pdf` | a real **35,460-byte `application/pdf`** |
+
+So it was the decade digit all along.
+
+**What is cited now is AAII's current article page, not the PDF.** Opened in a
+real browser — which passes the bot check where any HTTP client will not — it
+carries the paper's full text under the canonical URL, bylined "February 1998",
+with no paywall. The PDF is behind the same intermittent wall, so a reader
+following it may hit the interstitial; the article page is what a person can
+actually open. The label now carries the full designation — authors, title,
+journal, month, year — so the citation survives the URL changing again.
+
+**The gate learned the distinction.** It already separated "gone" (fail) from
+"the host will not talk to robots" (403 → warn). An interstitial at HTTP 200 is
+the second case wearing the first case's status code, and the gate was scoring
+it `ok` — a **false pass**, which is worse than either: the link would go on
+passing after the publisher deleted the page. `BOT_WALL` markers now produce a
+warn, so the report says "not checkable from here" instead of quietly claiming
+it checked.
+
+Verified that this does not weaken the gate: a genuine 404 on a host that
+answers still fails the build with exit 1.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
