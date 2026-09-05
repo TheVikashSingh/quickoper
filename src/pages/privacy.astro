@@ -22,7 +22,7 @@ const structuredData = [
 
 <BaseLayout
   title="Privacy policy | QuickOper"
-  description="QuickOper is a static site with no backend. Calculator inputs never leave your device, there is no account, and nothing you type is transmitted, logged or stored."
+  description="QuickOper is a static site with no backend, and the Machinist Calculator Android app requests no permissions at all. Calculator inputs never leave your device, there is no account, and nothing you type is transmitted, logged or stored."
   structuredData={structuredData}
 >
   <article class="text-ink-soft space-y-4">
@@ -35,6 +35,12 @@ const structuredData = [
       <p class="mt-2">
         Nothing you type into a calculator ever leaves your device. There is no account,
         no sign-up, and at present no cookies and no analytics of any kind.
+      </p>
+      <p class="mt-2">
+        The same is true of the Android app, which requests no permissions at all — see <a
+          class="text-brand underline"
+          href="#the-android-app">the Android app</a
+        >.
       </p>
     </div>
 
@@ -105,6 +111,58 @@ const structuredData = [
       page, not to anything you enter into a calculator. Cloudflare acts as our hosting
       provider and handles that data under its own terms.
     </p>
+
+    <h2 id="the-android-app" class="text-ink pt-6 text-2xl font-semibold tracking-tight">
+      The Android app
+    </h2>
+
+    <p>
+      Machinist Calculator (<code class="text-ink">com.quickoper.machinist</code>) is
+      distributed on Google Play. This section is the privacy policy for that app as well
+      as for this site.
+    </p>
+
+    <p>
+      <strong class="text-ink">The app requests no Android permissions at all.</strong> Not
+      network access, not storage, not location, not the camera. That is not a promise we are
+      asking you to take on trust: a check runs on every build against the app's{' '}
+      <em>merged</em> manifest — the one that includes anything a third-party library added
+      — and the build fails if a single permission appears. Without network permission the app
+      cannot reach the internet even if some future version tried to.
+    </p>
+
+    <p>
+      Everything you enter stays on the device. There is no account, no sign-in, no sync,
+      no cloud backup of your inputs, no analytics library and no crash-reporting library.{
+        ' '
+      }
+      <strong class="text-ink">We receive nothing from the app</strong> — not a figure, not
+      a usage event, not an identifier.
+    </p>
+
+    <h3 class="text-ink pt-4 text-lg font-semibold">What Google receives</h3>
+
+    <p>
+      This part is outside our control and it would be misleading to leave it out. Google
+      Play, as the distributor, records your download and install under{' '}
+      <a
+        class="text-brand underline"
+        href="https://policies.google.com/privacy"
+        rel="noopener">Google's own privacy policy</a
+      >. In the Play Console we can see aggregate figures — how many people installed or
+      uninstalled, ratings, and crash reports from users who have chosen to share them
+      with developers. None of it is linked to anything you type into the app, because
+      nothing you type into the app ever leaves it.
+    </p>
+
+    <div class="border-line rounded-panel border border-dashed p-4">
+      <p>
+        <strong class="text-ink">Not live today.</strong> The app is intended to be a one-time
+        purchase. When that is introduced, Google processes the payment — we never see your
+        card details, only that an order exists. This page will be updated and this notice removed
+        when it goes live.
+      </p>
+    </div>
 
     <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
       Analytics and advertising — not yet in use
