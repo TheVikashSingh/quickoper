@@ -533,6 +533,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
     feedPerRev,
     meanChipThickness,
     millingMrr,
+    removalRateFor,
     cuttingPower,
     specificCuttingForce,
     spindleSpeed,
@@ -642,21 +643,28 @@ const hint = 'text-ink-mute mt-1 text-xs';
             ? boringDepthOfCut(toNm(num(form, 'd0'), u), dcNm)
             : toNm(num(form, 'ap'), u);
 
-      const mrr =
+      // Every removal rate here is cm³/min whatever the user typed, because
+      // Nanometres carry no unit system and the formulas are metric. `mrrCm3`
+      // is what the power arithmetic needs; `rate` is what the panel shows.
+      const mrrCm3 =
         op === 'milling'
           ? millingMrr(aeNm, apNm, vfNm)
           : op === 'drilling'
-            ? drillingMrr(vc, dcNm, fnNm)
-            : turningMrr(vc, apNm, fnNm);
+            ? drillingMrr(vc, dcNm, fnNm, u)
+            : turningMrr(vc, apNm, fnNm, u);
+
+      // The value and its unit come back together so they cannot disagree.
+      // They did disagree: this page used to pick an `in³/min` label to stand
+      // beside an unconverted cm³/min number, and hand surface feet per minute
+      // to functions that require m/min — 16.387064× too high for milling,
+      // 53.7633× for the other three, with nothing on screen to suggest it.
+      const rate = removalRateFor(mrrCm3, u);
 
       const hmNm = milling ? meanChipThickness(fzNm, aeNm, dcNm) : fnNm;
 
       const L = lenUnit(u);
       const feedMin = u === 'metric' ? 'mm/min' : 'in/min';
       const feedRev = u === 'metric' ? 'mm/rev' : 'in/rev';
-      const mrrUnit = u === 'metric' ? 'cm³/min' : 'in³/min';
-      // Turning MRR is derived in cm³/min from metric inputs; for inch inputs the
-      // same expression yields in³/min because every term is already in inches.
       const stat = (k: string, v: string, s: string) =>
         `<div><p class="font-mono text-xs uppercase tracking-widest text-ink-mute">${k}</p>
          <p class="mt-1 font-numeric text-2xl font-semibold text-ink">${v}</p>
@@ -666,11 +674,15 @@ const hint = 'text-ink-mute mt-1 text-xs';
         ${stat('Spindle speed', `${roundHalfEven(rpm, 0)}`, 'rev/min')}
         ${stat('Feed', `${roundHalfEven(fromNm(vfNm, u), D)}`, feedMin)}
         ${stat('Feed per rev', `${roundHalfEven(fromNm(fnNm, u), D)}`, feedRev)}
-        ${stat('Removal rate', `${roundHalfEven(mrr, D)}`, mrrUnit)}
+        ${stat('Removal rate', `${roundHalfEven(rate.value, D)}`, rate.unit)}
         ${stat(milling ? 'Mean chip (approx)' : 'Chip thickness', `${roundHalfEven(fromNm(hmNm, u), D)}`, L)}
       </div>`;
 
       const show = (v: number) => roundHalfEven(fromNm(v, u), D);
+      const metric = u === 'metric';
+      // The derivation quotes the panel's own rendered figure rather than
+      // rounding a second time, so the two cannot disagree on a decimal.
+      const q = `${roundHalfEven(rate.value, D)} ${rate.unit}`;
       workingEl.textContent =
         `n  = ${u === 'metric' ? 'Vc × 1000' : 'Vc × 12'} / (π × Dc)\n` +
         `   = ${u === 'metric' ? `${vc} × 1000` : `${vc} × 12`} / (π × ${show(dcNm)} ${L})\n` +
@@ -679,20 +691,35 @@ const hint = 'text-ink-mute mt-1 text-xs';
           ? `fn = fz × z = ${show(fzNm)} × ${num(form, 'teeth')} = ${show(fnNm)} ${feedRev}\n`
           : `fn = ${show(fnNm)} ${feedRev}   (entered)\n`) +
         `vf = fn × n = ${show(fnNm)} × ${roundHalfEven(rpm, 2)} = ${show(vfNm)} ${feedMin}\n\n` +
+        // Metric and inch are genuinely different equations here, not one
+        // equation with the numbers swapped: metric divides mm³ down to cm³,
+        // inch multiplies surface FEET per minute up to inches per minute. A
+        // derivation showing the metric form to an inch user teaches arithmetic
+        // that does not reproduce the answer above it — which is what this box
+        // did, printing `0.25 × 0.1 × 24.4462 / 1000 = 10.015 in³/min` where
+        // the left-hand side evaluates to 0.00061.
         (op === 'milling'
-          ? `Q  = ae × ap × vf / 1000 = ${show(aeNm)} × ${show(apNm)} × ${show(vfNm)} / 1000 = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`
+          ? metric
+            ? `Q  = ae × ap × vf / 1000 = ${show(aeNm)} × ${show(apNm)} × ${show(vfNm)} / 1000 = ${q}\n`
+            : `Q  = ae × ap × vf = ${show(aeNm)} × ${show(apNm)} × ${show(vfNm)} = ${q}\n`
           : op === 'drilling'
-            ? `Q  = Dc × fn × Vc / 4 = ${show(dcNm)} × ${show(fnNm)} × ${vc} / 4 = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n` +
+            ? (metric
+                ? `Q  = Dc × fn × Vc / 4 = ${show(dcNm)} × ${show(fnNm)} × ${vc} / 4 = ${q}\n`
+                : `Q  = Dc × fn × Vc × 12 / 4 = ${show(dcNm)} × ${show(fnNm)} × ${vc} × 12 / 4 = ${q}\n`) +
               `     a drill removes the whole cylinder, not a swept slot\n`
-            : op === 'boring'
-              ? `ap = (d₁ − d₀) / 2 = derived, ${show(apNm)} ${L}\n` +
-                `Q  = Vc × ap × fn = ${vc} × ${show(apNm)} × ${show(fnNm)} = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`
-              : `Q  = Vc × ap × fn = ${vc} × ${show(apNm)} × ${show(fnNm)} = ${roundHalfEven(mrr, 4)} ${mrrUnit}\n`) +
+            : (op === 'boring'
+                ? `ap = (d₁ − d₀) / 2 = derived, ${show(apNm)} ${L}\n`
+                : '') +
+              (metric
+                ? `Q  = Vc × ap × fn = ${vc} × ${show(apNm)} × ${show(fnNm)} = ${q}\n`
+                : `Q  = Vc × 12 × ap × fn = ${vc} × 12 × ${show(apNm)} × ${show(fnNm)} = ${q}\n`)) +
         (milling
           ? `\nhm ≈ fz × √(ae/Dc) = ${show(fzNm)} × √(${show(aeNm)}/${show(dcNm)}) = ${show(hmNm)} ${L}   (approximate)\n`
           : '');
 
-      renderPower(mrr, hmNm, u, milling);
+      // Power takes the cm³/min figure, never the displayed one: Kienzle's kc
+      // is N/mm² and the 60000 in Pc is dimensioned for cm³/min.
+      renderPower(mrrCm3, hmNm, u, milling);
     } catch (err) {
       errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
       errorEl.classList.remove('hidden');
