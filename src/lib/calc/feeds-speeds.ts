@@ -361,10 +361,11 @@ export function machinePower(
 }
 
 /**
- * Net cutting power for milling, in kW.
+ * The MACHINE power for milling, in kW — `Pm`, not `Pc`.
  *
- * Kept as the milling-shaped entry point, expressed through [cuttingPower] so
- * the two cannot diverge.
+ * The name predates the split and is kept because callers depend on it, but it
+ * takes an efficiency and therefore returns the machine figure. Expressed
+ * through [netCuttingPower] and [machinePower] so it cannot diverge from them.
  */
 export function millingPower(
   aeNm: Nanometres,

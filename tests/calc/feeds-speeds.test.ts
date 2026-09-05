@@ -562,3 +562,108 @@ describe('net cutting power versus machine power', () => {
     expect(() => netCuttingPower(0, KC)).toThrow(RangeError);
   });
 });
+
+/**
+ * Inch mode, which is where this module was wrong.
+ *
+ * The page displayed a removal rate 16.387064x too high for milling and
+ * 53.7633x too high for turning, boring and drilling, for as long as inch mode
+ * has existed. Two independent errors compounded:
+ *
+ *   1. Every MRR function normalises Nanometres to MILLIMETRES and returns
+ *      cm3/min. The page chose an 'in3/min' LABEL for inch mode and printed the
+ *      unconverted number beside it.
+ *   2. turningMrr and drillingMrr take Vc in m/min. The page handed them the
+ *      surface-feet-per-minute figure the user typed.
+ *
+ * Together: 25.4^2 / 12 = 53.7633. The first alone: 16.387064.
+ *
+ * Nothing caught it because the arithmetic was never wrong -- the CONVERSIONS
+ * were, and they lived in the page rather than in a tested function. Which is
+ * the same shape as D72, and the reason these now live here.
+ *
+ * Expected values are derived from the definitions, not from this module:
+ *   1 in = 25.4 mm and 1 ft = 0.3048 m EXACTLY -- international yard and pound
+ *   agreement, 1959. So 1 in3 = 25.4^3 mm3 = 16.387064 cm3, and one surface
+ *   foot per minute is 0.3048 m/min.
+ */
+describe('inch units', () => {
+  it('holds the two exact 1959 conversion constants', () => {
+    expect(CM3_PER_IN3).toBe(16.387064);
+    expect(CM3_PER_IN3).toBeCloseTo(2.54 ** 3, 12);
+    expect(M_PER_MIN_PER_SFM).toBe(0.3048);
+  });
+
+  it('converts surface feet per minute to metres per minute, and leaves metric alone', () => {
+    expect(cuttingSpeedToMetric(100, 'metric')).toBe(100);
+    // 400 sfm x 0.3048 = 121.92 m/min.
+    expect(cuttingSpeedToMetric(400, 'inch')).toBeCloseTo(121.92, 12);
+  });
+
+  it('never hands back a unit its value is not in', () => {
+    const metric = removalRateFor(100, 'metric');
+    expect(metric).toEqual({ value: 100, unit: 'cm³/min' });
+
+    const inch = removalRateFor(100, 'inch');
+    expect(inch.unit).toBe('in³/min');
+    expect(inch.value).toBeCloseTo(100 / 16.387064, 12);
+    // The defect stated as an assertion: an in3/min label beside an
+    // unconverted cm3/min number.
+    expect(inch.value).not.toBeCloseTo(100, 6);
+  });
+
+  /**
+   * The three end-to-end values, each derived by hand in inch units.
+   *
+   * Turning:  Vc 400 sfm = 4800 in/min; Q = 4800 x 0.100 x 0.010 = 4.8 in3/min
+   * Drilling: Vc 300 sfm = 3600 in/min; Q = 0.375 x 0.006 x 3600 / 4
+   *                                        = 2.025 in3/min
+   * Milling:  Q = ae x ap x vf = 0.25 x 0.100 x 24.4462 = 0.611155 in3/min
+   */
+  it('turning in inch units gives the inch answer, not 53.7633x it', () => {
+    const cm3 = turningMrr(400, inchToNm(0.1), inchToNm(0.01), 'inch');
+    const shown = removalRateFor(cm3, 'inch');
+    expect(shown.value).toBeCloseTo(4.8, 9);
+    expect(shown.unit).toBe('in³/min');
+    // The old behaviour, named so a regression is unmistakable.
+    expect(shown.value).not.toBeCloseTo(4.8 * (25.4 ** 2 / 12), 6);
+  });
+
+  it('drilling in inch units gives the inch answer', () => {
+    const cm3 = drillingMrr(300, inchToNm(0.375), inchToNm(0.006), 'inch');
+    expect(removalRateFor(cm3, 'inch').value).toBeCloseTo(2.025, 9);
+  });
+
+  it('milling in inch units gives the inch answer, not 16.387064x it', () => {
+    // millingMrr takes no cutting speed, so only the display conversion was
+    // ever wrong for milling -- which is why its factor is the smaller one.
+    const cm3 = millingMrr(inchToNm(0.25), inchToNm(0.1), inchToNm(24.4462));
+    const shown = removalRateFor(cm3, 'inch');
+    expect(shown.value).toBeCloseTo(0.611155, 9);
+    expect(cm3).toBeCloseTo(0.611155 * 16.387064, 9);
+  });
+
+  /**
+   * The metric path must not have moved. Every expected value here predates the
+   * change and is asserted elsewhere in this file too.
+   */
+  it('leaves every metric answer exactly where it was', () => {
+    expect(turningMrr(200, mmToNm(2), mmToNm(0.25), 'metric')).toBeCloseTo(100, 9);
+    expect(drillingMrr(80, mmToNm(10), mmToNm(0.2), 'metric')).toBeCloseTo(40, 9);
+    expect(removalRateFor(40, 'metric').value).toBe(40);
+  });
+
+  /**
+   * Turning and drilling agree with each other in inch mode exactly as they do
+   * in metric: a drill IS turning at ap = Dc/4 (D74), and that identity must
+   * not depend on which unit the user typed.
+   */
+  it('keeps the drilling-is-turning-at-Dc/4 identity in inch units', () => {
+    const vc = 250;
+    const dc = inchToNm(0.5);
+    const fn = inchToNm(0.008);
+    const drill = drillingMrr(vc, dc, fn, 'inch');
+    const turn = turningMrr(vc, nm(Math.round(dc / 4)), fn, 'inch');
+    expect(drill).toBeCloseTo(turn, 12);
+  });
+});
