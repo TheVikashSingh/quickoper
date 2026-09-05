@@ -219,3 +219,85 @@ describe('the exact figures D72 got wrong', () => {
     expect(d.minorLength).toBe('6.6468 mm'); // 6.6469 before the √3 constants
   });
 });
+
+/**
+ * A hole at or above the major diameter cuts no thread.
+ *
+ * D73 guarded the top of the drill INDEX -- M30 was being sent to a 13 mm drill
+ * at 373% engagement. This is the top of the THREAD, and it is a different
+ * failure: the target sits comfortably inside the index, so D73's guard never
+ * fires, but the drill nearest that target is as wide as the fastener.
+ *
+ * All three cases below were headlined "Use this drill: 6 mm" in 3xl
+ * brand-coloured type, with the 0% relegated to a stat beside it. The last is a
+ * hole WIDER than the thread it is meant to tap.
+ *
+ * The Kotlin core already refused these ("That leaves no thread"), so the two
+ * implementations disagreed -- the Gate 7 signal. Expected behaviour here is
+ * taken from the standard, not from the Kotlin: engagement is
+ * 100 x (D - d) / (K x P), which is zero at d = D and negative above it, and a
+ * drill diameter that produces a non-positive engagement is not a tap drill.
+ */
+describe('a drill that leaves no thread is refused, not headlined', () => {
+  const metric = { units: 'mm', series: 'metric' } as const;
+
+  it.each([
+    ['M6 x 1 at 1%', 6, 1, 1],
+    ['M6 x 1 at 3%', 6, 1, 3],
+    ['M5.99 x 1 at 1% (engagement would be negative)', 5.99, 1, 1],
+  ])('refuses %s', (_name, major, pitch, engagementPercent) => {
+    expect(() => tapDrillDisplay({ major, pitch, engagementPercent, ...metric })).toThrow(
+      /leaves no thread/i,
+    );
+  });
+
+  it('names the drill, the target and the major diameter in the refusal', () => {
+    // A refusal that does not say WHICH sizes collided is not actionable.
+    try {
+      tapDrillDisplay({ major: 6, pitch: 1, engagementPercent: 3, ...metric });
+      throw new Error('expected a refusal');
+    } catch (e) {
+      const m = (e as Error).message;
+      expect(m).toContain('6 mm'); // the drill, and the major diameter
+      expect(m).toContain('5.961 mm'); // the target it was nearest to
+      expect(m).toMatch(/more engagement/i); // and what to do about it
+    }
+  });
+
+  /**
+   * The guard must not eat legitimately low engagements. A drill genuinely
+   * smaller than the major diameter is an answer however thin the thread, and
+   * the Kotlin core returns these too -- 5.9 mm at 7.7% for M6 at 10%.
+   */
+  it('still answers when the drill is below the major diameter', () => {
+    // NB the label carries its unit on this side ('5.9 mm'); the Kotlin core
+    // labels the same drill '5.9' and puts the unit on drillLength. A
+    // presentation difference, not a disagreement about the drill.
+    const thin = tapDrillDisplay({
+      major: 6,
+      pitch: 1,
+      engagementPercent: 10,
+      ...metric,
+    });
+    expect(thin.drillLabel).toBe('5.9 mm');
+    expect(thin.engagementPercent).toBeCloseTo(7.7, 2);
+    expect(thin.engagementPercent).toBeGreaterThan(0);
+
+    const shop = tapDrillDisplay({
+      major: 6,
+      pitch: 1,
+      engagementPercent: 76.98,
+      ...metric,
+    });
+    expect(shop.drillLabel).toBe('5 mm');
+
+    const m8 = tapDrillDisplay({
+      major: 8,
+      pitch: 1.25,
+      engagementPercent: 75,
+      ...metric,
+    });
+    expect(m8.drillLabel).toBe('6.8 mm');
+    expect(m8.engagementPercent).toBeCloseTo(73.9, 2);
+  });
+});
