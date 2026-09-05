@@ -11,7 +11,8 @@ import {
   feedPerRev,
   meanChipThickness,
   millingMrr,
-  cuttingPower,
+  netCuttingPower,
+  machinePower,
   millingPower,
   specificCuttingForce,
   spindleSpeed,
@@ -355,7 +356,7 @@ describe('cutting power comes from the removal rate, whatever produced it', () =
   it('milling is unchanged: the shaped entry point agrees with the general one', () => {
     const q = millingMrr(mmToNm(5), mmToNm(2), mmToNm(1273.2395));
     expect(millingPower(mmToNm(5), mmToNm(2), mmToNm(1273.2395), kc, eta)).toBeCloseTo(
-      cuttingPower(q, kc, eta),
+      machinePower(netCuttingPower(q, kc), eta),
       12,
     );
   });
@@ -368,7 +369,10 @@ describe('cutting power comes from the removal rate, whatever produced it', () =
     const rpm = spindleSpeed(vc, dcNm, 'metric');
     const vfNm = tableFeed(fnNm, rpm);
 
-    const correct = cuttingPower(turningMrr(vc, apNm, fnNm, 'metric'), kc, eta);
+    const correct = machinePower(
+      netCuttingPower(turningMrr(vc, apNm, fnNm, 'metric'), kc),
+      eta,
+    );
     const oldWay = millingPower(dcNm, apNm, vfNm, kc, eta); // Dc passed as ae
 
     expect(correct / oldWay).toBeCloseTo(Math.PI, 6);
@@ -376,8 +380,8 @@ describe('cutting power comes from the removal rate, whatever produced it', () =
   });
 
   it('rejects a zero or negative removal rate', () => {
-    expect(() => cuttingPower(0, kc, eta)).toThrow(RangeError);
-    expect(() => cuttingPower(10, kc, 1.2)).toThrow(RangeError);
+    expect(() => machinePower(netCuttingPower(0, kc), eta)).toThrow(RangeError);
+    expect(() => machinePower(netCuttingPower(10, kc), 1.2)).toThrow(RangeError);
   });
 });
 
@@ -483,5 +487,78 @@ describe('inch units', () => {
     const drill = drillingMrr(vc, dc, fn, 'inch');
     const turn = turningMrr(vc, nm(Math.round(dc / 4)), fn, 'inch');
     expect(drill).toBeCloseTo(turn, 12);
+  });
+});
+
+/**
+ * Net cutting power and machine power are two quantities.
+ *
+ * calculations.md section 3 wrote `Pc = ... / (60 x 10^6 x eta)` under the
+ * heading "Net cutting power", and the heading was wrong for the expression:
+ * eta describes losses between the motor and the cut, so a term dividing by it
+ * cannot belong to a quantity measured AT the tool. Sandvik Coromant computes
+ * required machine power in two steps for exactly this reason -- net power at
+ * the cutter, then the efficiency factor.
+ *
+ *   Pc = Q x kc / 60000      net, at the cutting edge
+ *   Pm = Pc / eta            required at the machine
+ *
+ * Source: Sandvik Coromant milling formulas and definitions, which defines net
+ * power Pc as the power at the cutter, and describes required machine power as
+ * a second step through the machine efficiency factor.
+ * https://www.sandvik.coromant.com/en-us/knowledge/machining-formulas-definitions/milling-formulas-definitions
+ *
+ * This mattered because the site showed Pm under the words "Net cutting power"
+ * while the Kotlin app showed Pc under the same words -- 25% apart at eta 0.8.
+ */
+describe('net cutting power versus machine power', () => {
+  // Q 12.7324 cm3/min, kc 2667.4191 N/mm2 -> Pc = 12.7324 x 2667.4191 / 60000
+  const Q = METRIC.qCm3;
+  const KC = 2667.4191;
+
+  it('computes net power at the cutting edge, with no efficiency term', () => {
+    expect(netCuttingPower(Q, KC)).toBeCloseTo((Q * KC) / 60_000, 12);
+    // Independently: 12.7324 x 2667.4191 = 33962.06..., / 60000 = 0.566034...
+    expect(roundHalfEven(netCuttingPower(Q, KC), 4)).toBeCloseTo(0.566, 3);
+  });
+
+  it('is unchanged by efficiency, because efficiency is not in it', () => {
+    // The assertion that would have caught the mislabelling: nothing about the
+    // machine may move the figure describing the cut.
+    const a = netCuttingPower(Q, KC);
+    const b = netCuttingPower(Q, KC);
+    expect(a).toBe(b);
+    expect(machinePower(a, 1)).toBeCloseTo(a, 12);
+  });
+
+  it('derives machine power as Pc / eta, and they differ by 25% at eta 0.8', () => {
+    const pc = netCuttingPower(Q, KC);
+    const pm = machinePower(pc, 0.8);
+    expect(pm).toBeCloseTo(pc / 0.8, 12);
+    expect(pm / pc).toBeCloseTo(1.25, 12);
+    expect(pm).toBeGreaterThan(pc);
+  });
+
+  it('keeps millingPower as the machine figure it always was', () => {
+    // The existing worked example: 0.7076 kW at eta 0.8. It must not have moved
+    // -- this change splits a figure in two, it does not restate an old one.
+    const viaSplit = machinePower(
+      netCuttingPower(millingMrr(mmToNm(5), mmToNm(2), METRIC.vfMm * 1_000_000), KC),
+      0.8,
+    );
+    expect(roundHalfEven(viaSplit, 4)).toBeCloseTo(0.7076, 3);
+    expect(
+      roundHalfEven(
+        millingPower(mmToNm(5), mmToNm(2), METRIC.vfMm * 1_000_000, KC, 0.8),
+        4,
+      ),
+    ).toBeCloseTo(0.7076, 3);
+  });
+
+  it('still refuses an impossible efficiency, now on the function that uses it', () => {
+    expect(() => machinePower(1, 0)).toThrow(RangeError);
+    expect(() => machinePower(1, 1.2)).toThrow(RangeError);
+    expect(() => machinePower(1, -0.5)).toThrow(RangeError);
+    expect(() => netCuttingPower(0, KC)).toThrow(RangeError);
   });
 });

@@ -60,8 +60,8 @@ const FAQ = [
     a: 'No, and it is labelled approximate. It uses the standard radial-chip-thinning approximation, fz × √(ae/Dc), which is what the tooling guides themselves publish for sizing a cut. Exact chip thickness depends on cutter geometry your vendor knows and this page does not.',
   },
   {
-    q: 'The power figure looks low compared to my machine rating.',
-    a: 'It is net power at the cut, before drive losses beyond the efficiency you entered, and it is the power the cut itself demands. Compare it against the spindle rating with a margin; a cut that computes at 90% of rated power is not a cut you want to take. Note also that kc1.1 and mc are yours to supply — a wrong kc1.1 gives a confidently wrong wattage.',
+    q: 'Why are there two power figures?',
+    a: 'Because they are two different quantities and only one of them belongs beside a spindle rating. Net cutting power Pc is what the cut itself costs, measured at the cutting edge. Power at the machine Pm is Pc divided by the spindle efficiency you entered — efficiency describes losses between the motor and the cut, so it cannot be part of a figure measured at the tool. Sandvik Coromant calculates required machine power in exactly these two steps. At an efficiency of 0.8 they differ by 25%, which is most of the margin anyone leaves, so compare Pm against your spindle rating and treat Pc as the cost of the cut. Note also that kc1.1 and mc are yours to supply — a wrong kc1.1 gives a confidently wrong wattage either way.',
   },
   {
     q: 'How is drilling different from turning here?',
@@ -534,7 +534,8 @@ const hint = 'text-ink-mute mt-1 text-xs';
     meanChipThickness,
     millingMrr,
     removalRateFor,
-    cuttingPower,
+    netCuttingPower,
+    machinePower,
     specificCuttingForce,
     spindleSpeed,
     tableFeed,
@@ -751,12 +752,21 @@ const hint = 'text-ink-mute mt-1 text-xs';
     try {
       const eta = num(powerForm, 'eta') || DEFAULT_EFFICIENCY;
       const kc = specificCuttingForce(Number(kc11), Number(mc), hmNm);
-      const pc = cuttingPower(mrr, kc, eta);
+
+      // Two quantities, not one. Pc is what the cut costs; Pm is what the
+      // machine must deliver. This panel showed Pm under the words "Net cutting
+      // power" while the Android app showed Pc under the same words — 25% apart
+      // at eta = 0.8. calculations.md §3 now names both.
+      const pc = netCuttingPower(mrr, kc);
+      const pm = machinePower(pc, eta);
+
       const machine = raw(powerForm, 'machine');
       let verdict = '';
       if (machine !== '') {
         const rated = Number(machine);
-        const pct = (pc / rated) * 100;
+        // Pm against the rating, never Pc: a spindle rating is what the machine
+        // can deliver, so the demand is the like-for-like figure.
+        const pct = (pm / rated) * 100;
         const tone =
           pct > 90 ? 'text-negative' : pct > 70 ? 'text-caution' : 'text-positive';
         verdict = `<p class="mt-2 text-sm ${tone}">${roundHalfEven(pct, 1)}% of your ${rated} kW spindle.${
@@ -764,9 +774,19 @@ const hint = 'text-ink-mute mt-1 text-xs';
         }</p>`;
       }
       powerEl.innerHTML = `<div class="border-line bg-surface rounded-panel border p-4">
-        <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Net cutting power</p>
-        <p class="mt-1 font-numeric text-3xl font-semibold text-brand">${roundHalfEven(pc, 3)} kW</p>
-        <p class="text-ink-mute mt-1 text-sm">kc = ${roundHalfEven(kc, 1)} N/mm² at ${roundHalfEven(nmExactToMm(hmNm), 4)} mm chip${
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Net cutting power P<sub>c</sub></p>
+            <p class="mt-1 font-numeric text-3xl font-semibold text-brand">${roundHalfEven(pc, 3)} kW</p>
+            <p class="text-ink-mute mt-1 text-sm">At the cutting edge.</p>
+          </div>
+          <div>
+            <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">At the machine P<sub>m</sub></p>
+            <p class="mt-1 font-numeric text-3xl font-semibold text-ink">${roundHalfEven(pm, 3)} kW</p>
+            <p class="text-ink-mute mt-1 text-sm">P<sub>c</sub> / η, η = ${eta}. Compare this one against your spindle.</p>
+          </div>
+        </div>
+        <p class="text-ink-mute mt-3 text-sm">kc = ${roundHalfEven(kc, 1)} N/mm² at ${roundHalfEven(nmExactToMm(hmNm), 4)} mm chip${
           thinned ? ' (thinned)' : ''
         }</p>${verdict}
       </div>`;

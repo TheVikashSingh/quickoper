@@ -307,31 +307,57 @@ export function specificCuttingForce(
 }
 
 /**
- * Net cutting power for milling, in kW.
+ * Net cutting power, in kW — the power consumed AT THE CUTTING EDGE.
  *
- * Pc = (ae × ap × vf × kc) / (60 × 10⁶ × η)
+ * `Pc = (ae × ap × vf × kc) / (60 × 10⁶)`, and there is no η in it.
  *
- * NET at the cut, before spindle losses beyond η. Compare it against the
- * machine's rated power and warn — never block. Machinists exceed a rating
- * deliberately for a short cut and resent being stopped.
+ * Not milling-specific despite §3 writing the milling form: it takes a removal
+ * rate, so turning, drilling and boring reach it by the same path rather than
+ * through a transcribed second formula. That reuse is the D75 fix.
+ *
+ * To compare against a machine's rating, use [machinePower] — Pc is what the
+ * cut costs, not what the machine must deliver. Warn on exceeding a rating,
+ * never block: machinists exceed a rating deliberately for a short cut and
+ * resent being stopped.
  */
-export function cuttingPower(
-  mrrCm3PerMin: number,
-  kc: number,
-  efficiency: number = DEFAULT_EFFICIENCY,
-): number {
+export function netCuttingPower(mrrCm3PerMin: number, kc: number): number {
   assertPositive('mrrCm3PerMin', mrrCm3PerMin);
   assertPositive('kc', kc);
+  // §3: Pc = (ae × ap × vf × kc) / (60 × 10⁶). The first three terms are the
+  // removal rate in mm³/min, so with Q in cm³/min the same expression is
+  // Q × 1000 × kc / (60 × 10⁶) = Q × kc / 60000. Written this way, every
+  // operation uses one power path instead of one operation's formula being
+  // reused for another's numbers — which is what D75 was.
+  //
+  // η is deliberately absent. See `machinePower`.
+  return (mrrCm3PerMin * kc) / 60_000;
+}
+
+/**
+ * The power the MACHINE must deliver: `Pm = Pc / η`.
+ *
+ * Distinct from [netCuttingPower], and the distinction is not pedantry. η
+ * describes losses between the motor and the cut, so a term dividing by it
+ * cannot belong to a quantity measured at the tool. Sandvik Coromant computes
+ * required machine power in exactly two steps for this reason: net power at the
+ * cutter, then the efficiency factor.
+ *
+ * It is `Pm`, never `Pc`, that a spindle rating should be compared against. At
+ * η = 0.8 the two differ by 25%, which is most of the margin anyone leaves.
+ *
+ * This page previously showed `Pm` under the words "Net cutting power" while
+ * the Kotlin app showed `Pc` under the same words — two surfaces of one product
+ * printing kilowatt figures 25% apart under identical labels.
+ */
+export function machinePower(
+  netKw: number,
+  efficiency: number = DEFAULT_EFFICIENCY,
+): number {
+  assertPositive('netKw', netKw);
   if (!(efficiency > 0 && efficiency <= 1)) {
     throw new RangeError(`efficiency must be in (0, 1], got ${efficiency}`);
   }
-  // §3 writes the milling form as Pc = (ae × ap × vf × kc) / (60 × 10⁶ × η).
-  // The first three terms are the removal rate in mm³/min, so with Q in cm³/min
-  // the same expression is Q × 1000 × kc / (60 × 10⁶ × η) = Q × kc / (60000 × η).
-  // Written this way, every operation uses one power path instead of one
-  // operation's formula being reused for another's numbers — which is what
-  // D75 was.
-  return (mrrCm3PerMin * kc) / (60_000 * efficiency);
+  return netKw / efficiency;
 }
 
 /**
@@ -347,7 +373,10 @@ export function millingPower(
   kc: number,
   efficiency: number = DEFAULT_EFFICIENCY,
 ): number {
-  return cuttingPower(millingMrr(aeNm, apNm, vfNmPerMin), kc, efficiency);
+  return machinePower(
+    netCuttingPower(millingMrr(aeNm, apNm, vfNmPerMin), kc),
+    efficiency,
+  );
 }
 
 /**
