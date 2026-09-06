@@ -94,6 +94,13 @@ jobs:
       - name: Deploy config
         run: npm run deploy-config
 
+      # D77 and D78 were merged and then silently deleted by the two PRs that
+      # merged after them — three branches all appending at the same place in
+      # one file, squash-merged in sequence. Nothing else noticed. Numbering
+      # with no gaps and no duplicates is the cheapest assertion that catches it.
+      - name: Decision records are complete
+        run: npm run decisions
+
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-latest
