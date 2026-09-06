@@ -2682,6 +2682,90 @@ Nobody acted on it for as long as it took an audit to ask.
 Both defects are now asserted by tests that were confirmed to fail when each is
 reintroduced separately. A regression test that has never failed proves nothing.
 
+### D77 — Net cutting power and machine power are two figures, and the spec named one
+
+`calculations.md` §3 wrote
+
+```
+Pc = (ae × ap × vf × kc) / (60 × 10⁶ × η)
+```
+
+under the heading **"Net cutting power"**. The expression is right for what it
+computes and the heading is wrong for it: η describes losses between the motor
+and the cut, so a term dividing by it cannot belong to a quantity measured *at*
+the tool. Sandvik Coromant — the source this page already cites — calculates
+required machine power in exactly two steps for that reason: net power at the
+cutter first, then the efficiency factor.
+
+So there are two quantities and the spec named one:
+
+```
+Pc = Q × kc / 60000     net, at the cutting edge
+Pm = Pc / η             required at the machine
+```
+
+**How it was found is the point.** The Kotlin core hit the same contradiction
+independently, split `netKw` from `atSpindleKw`, and left a comment saying the
+spec's heading could not be right. This page kept the spec's expression and the
+spec's heading. The result: two surfaces of one product printing kilowatt
+figures **25% apart under identical labels**, with no way for a user comparing
+them to tell which was wrong. Gate 7 caught it and nobody read the answer until
+an audit asked.
+
+Neither number was ever wrong. Each was the right value for a different
+question, and the page asked only one of them out loud.
+
+The distinction decides something real: **it is Pm, never Pc, that a spindle
+rating should be compared against.** The panel's "% of your N kW spindle"
+verdict was already using the η-divided figure, so that comparison was correct
+throughout — it was the label above it that was not. Both figures are now shown,
+the verdict is explicitly computed from Pm, and the FAQ says which to use for
+what.
+
+`efficiency` moved off `netCuttingPower` and onto `machinePower`, so the
+function that cannot legitimately take an η no longer accepts one. That is the
+same move as D76's required `units`: put the parameter where the mistake becomes
+a compiler error rather than a wrong number.
+
+The spec was corrected first, in the research repo, because it is the canonical
+home — the same rule as never adjusting an expected value to make a test pass.
+
+### D78 — A hole as wide as the fastener is not a tap drill
+
+D73 guarded the top of the drill **index**: M30 was being sent to a 13 mm drill
+at 373% engagement because `snapToSeries` takes the nearest drill and the
+nearest thing to 26.5 mm in a 1–13 mm set is 13 mm. This is the top of the
+**thread**, and D73's guard cannot see it — the target sits comfortably inside
+the index, so nothing fires, but the drill nearest that target is as wide as the
+fastener:
+
+```
+M6 × 1    at 1%  ->  target 5.9870 mm  ->  nearest drill 6 mm  ->    0%
+M6 × 1    at 3%  ->  target 5.9610 mm  ->  nearest drill 6 mm  ->    0%
+M5.99 × 1 at 1%  ->  target 5.9770 mm  ->  nearest drill 6 mm  ->  −0.77%
+```
+
+The last is a hole **wider than the thread it is meant to tap**. All three were
+headlined `Use this drill: 6 mm` in 3xl brand-coloured type, with the 0%
+relegated to a stat beside it — the shape Gate 9 exists to forbid: a
+plausible-looking drill size that is not an answer.
+
+Engagement is `100 × (D − d) / (K × P)`, which is zero at `d = D` and negative
+above it. A drill diameter producing a non-positive engagement is not a tap
+drill, whatever the arithmetic says about which catalogue size is nearest.
+
+**The Kotlin core already refused these** — "That leaves no thread" — and its
+`noNeighbourIsAtOrAboveTheMajorDiameter` test asserts every listed neighbour has
+a positive engagement. So the two implementations disagreed, which is the Gate 7
+signal. This is the third time in one session that the cross-check had already
+found something and nobody had collected the answer (see D76, D77).
+
+The guard is deliberately placed after the choice rather than on the input.
+Rejecting "engagement below N%" would be inventing a threshold; rejecting a
+chosen drill at or above the major diameter is a statement about geometry that
+needs no constant. A genuinely thin thread is still an answer — M6 at 10% gives
+5.9 mm at 7.7% engagement, and both implementations return it.
+
 ### D79 — A bot wall is not a dead link, and it is not a live one either
 
 The Trinity Study citation on two finance pages pointed at
@@ -2724,6 +2808,47 @@ it checked.
 
 Verified that this does not weaken the gate: a genuine 404 on a host that
 answers still fails the build with exit 1.
+
+### D80 — Two decision records were merged and then silently deleted
+
+D77 and D78 were written, reviewed, merged — and then removed from `main` by the
+two pull requests that merged after them. Nothing failed. Every test passed,
+every gate passed, and two of the most substantive findings in the project
+ended up as code with no recorded reason.
+
+**The mechanism will happen again unless something checks for it.** Every branch
+appends its entry at the same place in this file, just above D28. Three PRs were
+open at once, each branched before the others landed. They were squash-merged in
+sequence, and each conflict resolution took its own branch's copy of the file
+wholesale — which did not contain the entry the previous merge had just added.
+
+The code survived because each PR's code lived in different files. The decisions
+did not, because they all live in one. `git log -S` tells the story plainly: the
+commit for #71 removes D77, and the commit for #72 removes D78.
+
+That is exactly the failure this file exists to prevent, quoting its own
+preamble: *a decision that took an afternoon to reach is not undone in five
+minutes by someone who only sees the rule.*
+
+**`scripts/check-decisions.mjs` asserts the numbers run 1..N with no gaps and no
+duplicates.** It is a stronger claim than it looks. An entry cannot vanish
+without leaving a hole, and two branches cannot both claim the next number
+without colliding — and those are the two failures that occur when several pull
+requests are open at once, which is the normal state of this project.
+
+What it deliberately does not assert is that entries appear in ascending order
+in the file. They do not: the file groups by theme and numbers chronologically
+within groups, so requiring sorted order would fail on a structure that is
+intentional.
+
+The gate is offline and deterministic, so unlike `check-sources.mjs` it runs in
+CI. It was verified against the real failure — deleting D77 and D78 reproduces
+it exactly — and against a duplicate number.
+
+The wider lesson is about where append-only files sit in a branching workflow.
+This one is now guarded. `docs/STATE.md` has the same shape and is already
+guarded by `check-state.mjs` counting against the build, which would catch a
+similar loss by a different route.
 
 ### D28 — Static prose belongs to the page, not to the island
 
