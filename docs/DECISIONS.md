@@ -2682,41 +2682,48 @@ Nobody acted on it for as long as it took an audit to ask.
 Both defects are now asserted by tests that were confirmed to fail when each is
 reintroduced separately. A regression test that has never failed proves nothing.
 
-### D78 — A hole as wide as the fastener is not a tap drill
+### D79 — A bot wall is not a dead link, and it is not a live one either
 
-D73 guarded the top of the drill **index**: M30 was being sent to a 13 mm drill
-at 373% engagement because `snapToSeries` takes the nearest drill and the
-nearest thing to 26.5 mm in a 1–13 mm set is 13 mm. This is the top of the
-**thread**, and D73's guard cannot see it — the target sits comfortably inside
-the index, so nothing fires, but the drill nearest that target is as wide as the
-fastener:
+The Trinity Study citation on two finance pages pointed at
+`aaii.com/journal/198802/feature.pdf` and had been failing `npm run sources`
+since the gate was written. The label said **1998**; the path said **1988**.
 
-```
-M6 × 1    at 1%  ->  target 5.9870 mm  ->  nearest drill 6 mm  ->    0%
-M6 × 1    at 3%  ->  target 5.9610 mm  ->  nearest drill 6 mm  ->    0%
-M5.99 × 1 at 1%  ->  target 5.9770 mm  ->  nearest drill 6 mm  ->  −0.77%
-```
+An earlier investigation ruled the typo out and concluded AAII had pulled the
+PDF. **That conclusion was wrong, and the way it was reached is the lesson.**
+Both URLs were fetched with `curl`, both returned an identical 6,058-byte
+`text/html` body at HTTP 200, and identical responses were read as "neither
+exists". They were identical because both were the same anti-bot interstitial —
+`aaii.com` runs one that answers 200 with "Pardon Our Interruption". Comparing
+two refusals tells you nothing about what is behind them.
 
-The last is a hole **wider than the thread it is meant to tap**. All three were
-headlined `Use this drill: 6 mm` in 3xl brand-coloured type, with the 0%
-relegated to a stat beside it — the shape Gate 9 exists to forbid: a
-plausible-looking drill size that is not an answer.
+Fetched again with Node's `fetch` and a browser User-Agent, the two differ
+completely:
 
-Engagement is `100 × (D − d) / (K × P)`, which is zero at `d = D` and negative
-above it. A drill diameter producing a non-positive engagement is not a tap
-drill, whatever the arithmetic says about which catalogue size is nearest.
+| URL | Response |
+|---|---|
+| `…/198802/feature.pdf` | genuine **HTTP 404**, body says "sorry, the page you" |
+| `…/199802/feature.pdf` | a real **35,460-byte `application/pdf`** |
 
-**The Kotlin core already refused these** — "That leaves no thread" — and its
-`noNeighbourIsAtOrAboveTheMajorDiameter` test asserts every listed neighbour has
-a positive engagement. So the two implementations disagreed, which is the Gate 7
-signal. This is the third time in one session that the cross-check had already
-found something and nobody had collected the answer (see D76, D77).
+So it was the decade digit all along.
 
-The guard is deliberately placed after the choice rather than on the input.
-Rejecting "engagement below N%" would be inventing a threshold; rejecting a
-chosen drill at or above the major diameter is a statement about geometry that
-needs no constant. A genuinely thin thread is still an answer — M6 at 10% gives
-5.9 mm at 7.7% engagement, and both implementations return it.
+**What is cited now is AAII's current article page, not the PDF.** Opened in a
+real browser — which passes the bot check where any HTTP client will not — it
+carries the paper's full text under the canonical URL, bylined "February 1998",
+with no paywall. The PDF is behind the same intermittent wall, so a reader
+following it may hit the interstitial; the article page is what a person can
+actually open. The label now carries the full designation — authors, title,
+journal, month, year — so the citation survives the URL changing again.
+
+**The gate learned the distinction.** It already separated "gone" (fail) from
+"the host will not talk to robots" (403 → warn). An interstitial at HTTP 200 is
+the second case wearing the first case's status code, and the gate was scoring
+it `ok` — a **false pass**, which is worse than either: the link would go on
+passing after the publisher deleted the page. `BOT_WALL` markers now produce a
+warn, so the report says "not checkable from here" instead of quietly claiming
+it checked.
+
+Verified that this does not weaken the gate: a genuine 404 on a host that
+answers still fails the build with exit 1.
 
 ### D28 — Static prose belongs to the page, not to the island
 
