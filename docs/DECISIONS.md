@@ -3118,6 +3118,55 @@ the 76.98 % requested. D63 recorded that only `mortgage.ts` has an external
 anchor; on that test the tap drill engine is in better standing than
 `debt-payoff.ts` or `coast-fire.ts`.
 
+### D84 — A followed link to a URL this site tells crawlers not to fetch
+
+Two small fixes, one of which was a contradictory signal on the page with the
+most inbound equity.
+
+**`QuickCost`'s handoff button was a followed link into `Disallow: /*?*`.** The
+homepage island's "See the month-by-month schedule" anchor points at
+`/finance/debt-payoff-calculator?d=…&b=…&v=avalanche`, and `robots.txt` disallows
+every URL carrying a query string — shared permalinks are canonicalised to the
+clean tool URL and never enter the sitemap (rule 11).
+
+**The part that made it real rather than theoretical is that the island is
+server-rendered.** The anchor is in the static HTML of `/` , not something only a
+hydrated browser constructs, so a crawler was being handed a followed link to a
+URL the same site instructs it not to crawl. The destination is already linked
+cleanly from the tool row directly above, so the followed version bought nothing
+and spent the homepage's link equity on a duplicate. `rel="nofollow"` now.
+
+**The query string stays, and that was the whole risk.** Stripping it would have
+traded a real feature — the visitor's three figures carried into the full tool —
+for a crawl hint. Verified end to end rather than by reading the markup: setting
+the balance to 12345 on the homepage updated the href to
+`?d=12345-22.99-250&b=250&v=avalanche` with `rel` intact, and following it landed
+on the debt payoff calculator with **12345** in the first debt row.
+
+Cost: **12.90 → 12.91 KB** on the homepage. The JSX comment explaining it is
+stripped at compile, as the figure shows — ten bytes gzipped is the attribute
+and nothing else.
+
+**`/apps` had `<title>Apps</title>` and 133 words.** A one-word title is the
+weakest possible signal for the page the masthead links from every route on the
+site. It is now descriptive, and the body went to 442 words while staying a thin
+index: it routes to the per-vertical app page and states what does not exist —
+no money app, no iOS build, no release date — rather than describing features
+that belong on `/machining/app`.
+
+**A false sentence was caught in the draft of that page and is worth recording,
+because it is the D47/D55/D62 class arriving in new prose rather than in an old
+page.** The first version read *"every expected value is anchored to a published
+third-party source"*. That is true of `mortgage.ts` and of the tap drill engine,
+and **false of `debt-payoff.ts` and `coast-fire.ts`**, which D63 recorded as
+anchored to formulas rather than to published schedules. It would have been a
+confident, checkable, wrong claim about verification on a page whose subject is
+verification.
+
+The shipped wording distinguishes the two kinds of source and says which applies
+per engine, on the reasoning that **"verified" means nothing if it covers both
+without distinction.** D63's gap is not closed by describing it more warmly.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
