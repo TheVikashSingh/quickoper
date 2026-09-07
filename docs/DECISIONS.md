@@ -2903,6 +2903,35 @@ down before it happened is how `docs/DNS.md` ended up citing a section that did
 not exist. The result is appended when the deploy has been observed, and the
 probe line is removed in the same change.
 
+**Appended 2026-09-07 — it works.** Verified against the deploy of #74:
+
+| request | result |
+|---|---|
+| `/_redirect-probe` | **301 → `https://quickoper.com/about`** |
+| `/_redirect-probe`, following | 200 after 1 hop |
+| `/_redirect-probe-not-a-rule` | **404** — the control |
+| `/definitely-not-a-page` | 404 |
+| `/about`, `/credit-card-interest`, `/finance/mortgage-overpayment-calculator` | 200, unaffected |
+| `/_redirect-probe?p=250000&r=5.5` | 301 → `/about?p=250000&r=5.5` |
+
+**The control is the line that carries the weight, and it is there because of
+D60.** A `301` on its own would not have proved this file did anything — a
+Cloudflare Redirect Rule answering ahead of the Worker would look identical from
+outside, and D60 established that the Rules engine does exactly that, by
+requesting a path that does not exist. So the same technique settles it here in
+the opposite direction: `/_redirect-probe-not-a-rule` returns **404**, so nothing
+upstream is redirecting broadly and the `301` came from `_redirects`.
+
+That the query string survives the hop was not required by anything, but it is
+worth having written down before the migration: calculator permalinks carry
+`?p=…&r=…` (rule 11), so a shared link to a moved URL keeps its scenario rather
+than dropping the visitor on a default one.
+
+**The mechanism is now proven and the probe is gone.** Nine URLs can be staked on
+it. What remains unproven, and cannot be proven until it happens, is the
+absent-from-`dist/` assertion doing its job on a real `git mv` — that is the
+migration's own risk, and it is the check that exists to catch it.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

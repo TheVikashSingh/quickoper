@@ -35,12 +35,17 @@
 # preference to a redirect rule, so a rule whose source is still built is
 # silently dead and every other gate stays green.
 #
-# THIS BLOCK IS A PROBE, NOT A MIGRATION. Nothing has moved yet. The single line
-# below exists to prove the mechanism serves a live 301 at all before nine real
-# URLs are staked on it. `public/_headers` shipped broken from the first commit
-# for exactly this reason (D45): Cloudflare parses it at deploy time, after CI,
-# so nothing in this repository had ever read it. No rule in this file has ever
-# served in production either.
+# THE MECHANISM IS PROVEN. Verified live on 2026-09-07 against the deploy of
+# #74, which carried a throwaway `/_redirect-probe -> /about 301`:
 #
-# Remove this line once the probe has returned 301 and the result is recorded.
-/_redirect-probe   /about   301
+#   /_redirect-probe                    301 -> https://quickoper.com/about
+#   /_redirect-probe (following)        200 after 1 hop
+#   /_redirect-probe-not-a-rule         404          <- the control
+#   /about, /credit-card-interest       200          <- unaffected
+#   /_redirect-probe?p=250000&r=5.5     301 -> /about?p=250000&r=5.5
+#
+# The control is the line that matters: an unlisted path 404s, so the 301 came
+# from this file rather than from a Cloudflare dashboard rule answering ahead of
+# the Worker (D60). The probe line has been removed; D81 carries the detail.
+#
+# There are no migration rules yet. The nine root URLs move in their own change.
