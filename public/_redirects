@@ -24,3 +24,23 @@
 # THERE ARE NO PARTNERS YET. That is deliberate: the convention exists before
 # the first link does, so nothing has to be retrofitted across a grown site.
 # Adding one means an entry here AND in src/lib/affiliates.ts.
+
+# ── Migration redirects — sources that must no longer be built ───────────────
+#
+# Format:  /old-path   /new-path   301
+#
+# scripts/check-deploy-config.mjs asserts, for every line below: the source is
+# ABSENT from dist/, the destination is PRESENT in it, and the status is 301.
+# The first of those is the one that matters — Cloudflare serves a real asset in
+# preference to a redirect rule, so a rule whose source is still built is
+# silently dead and every other gate stays green.
+#
+# THIS BLOCK IS A PROBE, NOT A MIGRATION. Nothing has moved yet. The single line
+# below exists to prove the mechanism serves a live 301 at all before nine real
+# URLs are staked on it. `public/_headers` shipped broken from the first commit
+# for exactly this reason (D45): Cloudflare parses it at deploy time, after CI,
+# so nothing in this repository had ever read it. No rule in this file has ever
+# served in production either.
+#
+# Remove this line once the probe has returned 301 and the result is recorded.
+/_redirect-probe   /about   301
