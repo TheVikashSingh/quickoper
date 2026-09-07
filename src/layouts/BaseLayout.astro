@@ -76,6 +76,20 @@ const VERTICAL_NAV = {
 const sectionNav = vertical === 'site' ? VERTICAL_NAV.finance : VERTICAL_NAV[vertical];
 
 /**
+ * "How we verify" lands on the part of /methodology that concerns this page.
+ *
+ * /methodology is one page carrying a shared claim plus a section per vertical,
+ * and its only inbound links are these two in the site chrome — no machining
+ * page links it from its own content, so there was nothing else to repoint. A
+ * machinist clicking "How we verify" from the tap drill calculator was landing
+ * on "Money is never a decimal" and a worked amortisation schedule.
+ *
+ * The fragment is the whole fix, and it is only possible because `vertical` is
+ * required: the layout now knows which section to aim at instead of guessing.
+ */
+const methodologyHref = vertical === 'site' ? '/methodology' : `/methodology#${vertical}`;
+
+/**
  * The entity graph — Organization, Person and WebSite, on every page.
  *
  * These are site-wide E-E-A-T signals, not decoration. CLAUDE.md has required
@@ -306,7 +320,7 @@ const graph = [organization, person, website, ...structuredData];
             >
           </li>
           <li>
-            <a class="hover:text-masthead-ink hidden sm:inline" href="/methodology">
+            <a class="hover:text-masthead-ink hidden sm:inline" href={methodologyHref}>
               Methodology
             </a>
           </li>
@@ -385,7 +399,7 @@ const graph = [organization, person, website, ...structuredData];
         </p>
         <ul class="flex flex-wrap gap-x-5 gap-y-1">
           <li>
-            <a class="hover:text-masthead-ink" href="/methodology">How we verify</a>
+            <a class="hover:text-masthead-ink" href={methodologyHref}>How we verify</a>
           </li>
           <li><a class="hover:text-masthead-ink" href="/privacy">Privacy</a></li>
           <li><a class="hover:text-masthead-ink" href="/terms">Terms</a></li>
