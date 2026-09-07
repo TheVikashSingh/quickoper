@@ -2932,6 +2932,102 @@ it. What remains unproven, and cannot be proven until it happens, is the
 absent-from-`dist/` assertion doing its job on a real `git mv` — that is the
 migration's own risk, and it is the check that exists to catch it.
 
+### D82 — One registry, and four gates that could not see half the site
+
+The tool list was written out by hand in four places, and a fifth list of
+derivations in a sixth. None of them agreed.
+
+**The live instance, found by measuring rather than by reading.**
+`/15-year-vs-30-year-mortgage` and `/mortgage-overpayment-timing` had shipped
+weeks earlier (D61, D62) and **neither appeared on `/finance`, the cluster
+hub** — its `DERIVATIONS` array was a hand-maintained six and the site had
+eight. Measured against the built output: those two held 2 and 4 inbound
+internal links, and `/biweekly-mortgage-payments` held exactly **one**
+site-wide, while carrying 114 impressions.
+
+That is the **fifth** time a page has existed without appearing where something
+looks for it: D41 orphaned from the navigation, D50 absent from the homepage's
+own calculator list, D61 absent from `llms.txt`, D69 built the gate for that
+one. The first three were each fixed by hand and the fourth got a gate.
+
+**This one gets a structure instead, and the distinction is the point.** A gate
+catches drift after it happens; a hub rendering from `src/lib/catalogue.ts`
+has nowhere for the drift to occur, because there is no second list to forget.
+Where a gate is still the right tool — `llms.txt`, which is a file rather than
+a render — D69's gate stays and now reads the registry too.
+
+**The homepage carried three copies of the site's contents on its own.** The
+hero button row, the checked list under "Calculators", and a hand-picked two of
+the eight derivations. The hero's comment recorded its own defect and tolerated
+it: *"that count is prose and nothing checks it — it said two for two pull
+requests after the third tool shipped."* Both the row and the count are derived
+now. The derivations list went from two to eight, which is D53's argument
+applied where it was still unapplied: this site was spending its internal link
+equity on `/terms`.
+
+**Generalising the gates found a rule 8 violation that had been live since the
+machining vertical opened.** Four checks were hardcoded to `/finance` —
+`check-schema`'s WebApplication assertion, `check-links`' homepage-list and
+Related-block checks, and `check-llms`' exempt list. Pointing them at the
+registry immediately failed:
+
+```
+/machining/feeds-and-speeds-calculator has no Related block (rule 8)
+/machining/tap-drill-calculator has no Related block (rule 8)
+```
+
+Both shipped without one. Nothing had ever said so, because the gate enforcing
+rule 8 was itself scoped to the folder the rule was written in. `RelatedTools`
+was hardcoded to `/finance` and "All money calculators" as well, so a machining
+page using it would have sent a machinist to the mortgage hub — the component
+was correct only for as long as there was one vertical. The hub is resolved
+from the vertical now, and the gate asserts *that page's* hub rather than
+`/finance` on everything.
+
+**A calculator is not a path shape.** The old checks matched
+`/finance/[^/]+-calculator/`, which quietly made the assertion depend on a
+naming convention: a calculator not ending in `-calculator` would have been
+exempt from the homepage list it is required to appear in — D50's defect
+returning by a new route. The registry also draws a line the regex could not:
+`/machining/drill-size-chart` is listed beside the calculators on its hub but
+ships no island, so asserting `WebApplication` on it would be asserting
+something false. It is `kind: 'reference'`.
+
+**`BaseLayout`'s `vertical` prop is required, and that is a type doing a gate's
+job.** It was `'machining' | undefined`, so "undefined" silently asserted "this
+is a finance page" — wrong on 8 of 27, because `/about` and the rest belong to
+no vertical. A new machining page that forgot the prop would have rendered with
+money navigation and nothing would have failed. `astro check` now names every
+omission; it found all 15 immediately. `'site'` deliberately keeps the finance
+nav link, which is exactly what the old fallback did, so **this change moves
+types and not one rendered pixel.** What a site-level page should show there is
+a real question and it belongs to the change that gives the root its own
+identity, not smuggled in here.
+
+`:root[data-vertical='finance']` is an empty no-op alias. The finance palette
+*is* the bare `:root` block; putting the tokens inside the alias would mean a
+page somehow rendering without the attribute had no palette at all, where today
+it falls back to a complete one.
+
+**Summaries in the registry deliberately quote no computed figures.** Two of
+the inherited ones do — "why 22.99% costs 25.838%", "overstates thirty years by
+$50,424" — and both were typed by hand. D47, D55 and D62 are each the same
+failure: a true number in a false sentence, passing every gate because no
+checker reads English. A catalogue entry describes the finding; the page
+computes it.
+
+**Verified in a browser, and the instrument was wrong again.** The rendered
+homepage was confirmed by reading the DOM: seven tool cards under two dividers,
+eight derivation links, `.section-head` at 23.375px/600 against 17px/400 body —
+D66's hierarchy, achieved with a `<p>` rather than an `<h3>` because
+`check-links` captures the list up to the next heading and an `<h3>` divider
+would truncate it, reporting every tool in the second vertical as missing. The
+screenshot path returned a blank frame for everything below the fold while
+`getBoundingClientRect` put the heading at viewport y=643 and every element
+`visible` at `opacity: 1`. Scrolling back to the top rendered correctly, so the
+capture simply does not follow scroll. **Seventh time** the measurement was
+wrong and the source was right (D29, D36, D50, D54, D59, D61, D65).
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

@@ -161,6 +161,7 @@ const structuredData = [
 ---
 
 <BaseLayout
+  vertical="finance"
   title="How long minimum payments take, and when they never finish | QuickOper"
   description={`A minimum payment clears a card only if it is larger than the month's interest. On ${money(TRAP.balance)} at ${TRAP.aprPercent}% APR the interest is ${money(TRAP.firstInterest)} a month, so a ${money(TRAP.minimum)} minimum never clears the balance at all. Worked out from first principles.`}
   structuredData={structuredData}
@@ -481,6 +482,7 @@ const structuredData = [
     </aside>
 
     <RelatedTools
+      vertical="finance"
       hubNote="every tool here shows the full schedule rather than one figure"
       links={[
         {

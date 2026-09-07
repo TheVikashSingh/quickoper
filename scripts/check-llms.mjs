@@ -36,22 +36,29 @@
 
 import { readFile, stat } from 'node:fs/promises';
 
+import { SITE_LEVEL, VERTICALS } from '../src/lib/catalogue.ts';
+
 const SITEMAP = 'dist/sitemap-0.xml';
 const LLMS = 'public/llms.txt';
 
 /**
- * Paths that need no catalogue entry. Kept as paths rather than full URLs so a
- * domain change cannot silently empty this list.
+ * Paths that need no catalogue entry: the site-level pages, plus every
+ * vertical's hub. Both come from the registry.
+ *
+ * This was a hand-written list that named `/finance` and nothing else. It was
+ * written when finance was the only vertical, so `/machining` was never
+ * exempted — the machining hub was *required* to have an entry while the
+ * finance hub was forbidden from needing one, for no reason anybody chose.
+ * `/apps` was missing from it too. Neither showed as a failure, because both
+ * pages happen to carry entries; the list was simply wrong in a direction that
+ * did not bite yet.
+ *
+ * A hub needs no entry because every tool under it is catalogued individually,
+ * and that reasoning is a property of being a hub — not of being `/finance`.
  */
 const EXEMPT = new Set([
-  '', // the homepage — an entry point, not a computation
-  '/finance', // the cluster hub; every tool under it is listed individually
-  '/about',
-  '/contact',
-  '/privacy',
-  '/terms',
-  '/methodology', // linked from llms.txt as prose, under Verification
-  '/verify', // same
+  ...SITE_LEVEL.map((path) => (path === '/' ? '' : path)),
+  ...VERTICALS.map((v) => v.hub),
 ]);
 
 const exists = async (p) => {

@@ -196,6 +196,7 @@ const structuredData = [
 ---
 
 <BaseLayout
+  vertical="finance"
   title="Biweekly mortgage payments: what the thirteenth payment actually does | QuickOper"
   description={`Twenty-six half-payments a year is thirteen monthly payments, not twelve. On ${loan(MAIN.amount)} at ${MAIN.ratePercent}% that one extra payment removes ${MAIN.monthsSaved} months and ${money(MAIN.interestSaved)} of interest. Computed from first principles, with what is and is not modelled stated.`}
   structuredData={structuredData}
@@ -465,6 +466,7 @@ const structuredData = [
     </aside>
 
     <RelatedTools
+      vertical="finance"
       hubNote="every tool here shows the full schedule rather than one figure"
       links={[
         {

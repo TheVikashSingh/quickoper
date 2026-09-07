@@ -31,7 +31,12 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 
+import { calculators } from '../src/lib/catalogue.ts';
+
 const DIST = 'dist';
+
+/** Every route that ships an island, from the registry rather than a path shape. */
+const CALCULATOR_ROUTES = new Set(calculators().map((entry) => entry.href));
 
 /** Required on every page, without exception. */
 const SITE_WIDE = ['Organization', 'Person', 'WebSite'];
@@ -109,11 +114,23 @@ for (const page of pages) {
     }
   }
 
-  // A calculator is a WebApplication. Anything under /finance/ that is not the
-  // hub is a tool page.
-  const isTool = /^\/finance\/.+\/$/.test(route);
-  if (isTool && !types.includes('WebApplication')) {
-    problems.push(`${route} is a tool page without WebApplication`);
+  // A calculator is a WebApplication.
+  //
+  // This used to be `/^\/finance\/.+\/$/` — anything under /finance/ that is
+  // not the hub. That was true when finance was the only vertical, and it went
+  // quietly wrong the moment /machining/ existed: two machining calculators
+  // shipped entirely outside this assertion. They happen to carry
+  // WebApplication, which is luck rather than enforcement.
+  //
+  // It also could not tell a calculator from a reference page. The drill size
+  // chart is listed beside the calculators on its hub but ships no island, so
+  // asserting WebApplication on it would be asserting something false. The
+  // registry draws that line explicitly (kind: 'calculator' | 'reference').
+  if (
+    CALCULATOR_ROUTES.has(route.replace(/\/$/, '')) &&
+    !types.includes('WebApplication')
+  ) {
+    problems.push(`${route} is a calculator without WebApplication`);
   }
 
   // BreadcrumbList everywhere except the root (which has no trail) and 404.

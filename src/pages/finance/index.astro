@@ -2,82 +2,27 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ToolCard from '../../components/ToolCard.astro';
 import { SITE } from '../../lib/site';
+import { derivationsIn, toolsIn } from '../../lib/catalogue';
 
 // The cluster hub. Hub-and-spoke internal linking is the main mechanism a new
 // site has for concentrating topical relevance: every tool links up to here,
 // and this page links back down to every tool.
 //
-// One entry today. Adding a tool is one line, and the "in progress" list is
-// honest about what is coming rather than shipping empty stub pages for it —
-// empty categories are an explicit AdSense rejection reason.
+// BOTH LISTS COME FROM src/lib/catalogue.ts AND NEITHER IS WRITTEN OUT HERE.
+// The derivations were a hand-maintained array of six, and by the time it was
+// replaced the site had eight — `/15-year-vs-30-year-mortgage` and
+// `/mortgage-overpayment-timing` had shipped weeks earlier and neither ever
+// reached this page. That is the fourth time a page has existed without
+// appearing where something looks for it (D41, D50, D61), and the first three
+// were each fixed by hand. A hub that renders from the registry cannot omit a
+// page, because there is no second list to forget.
+//
+// The "in progress" list is honest about what is coming rather than shipping
+// empty stub pages for it — empty categories are an explicit AdSense rejection
+// reason.
 
-const TOOLS = [
-  {
-    href: '/finance/debt-payoff-calculator',
-    title: 'Debt payoff — avalanche vs snowball',
-    summary:
-      'Compare both methods against paying only the minimums. Full month-by-month schedule, chart, spreadsheet and printable PDF.',
-    detail: 'Works in any currency. No jurisdiction rules involved.',
-  },
-  {
-    href: '/finance/mortgage-overpayment-calculator',
-    title: 'Mortgage overpayment — what paying extra removes',
-    summary:
-      'See exactly what an extra monthly payment takes off a mortgage, in months and in interest. Full schedule, chart, spreadsheet and printable PDF.',
-    detail:
-      'US fixed-rate convention. The required payment matches the published figure to the cent.',
-  },
-  {
-    href: '/finance/uk-early-repayment-charge-calculator',
-    title: 'UK early repayment charge — is the charge worth paying?',
-    summary:
-      'What an overpayment charge costs against the interest the overpayment removes. Full schedule, chart and spreadsheet.',
-    detail:
-      'United Kingdom. Your allowance and charge are inputs — no lender’s terms are assumed.',
-  },
-  {
-    href: '/finance/coast-fire-calculator',
-    title: 'Coast FIRE — when saving becomes optional',
-    summary:
-      'How much you need invested today for it to reach your retirement target on its own. Year-by-year projection, chart, spreadsheet and printable PDF.',
-    detail: 'Everything in today’s money. Works in any currency.',
-  },
-];
-
-const DERIVATIONS = [
-  {
-    href: '/minimum-payments',
-    title: 'How long minimum payments take, and when they never finish',
-    summary:
-      'the one line that decides whether a card ever clears, and the balances where it does not',
-  },
-  {
-    href: '/biweekly-mortgage-payments',
-    title: 'Biweekly mortgage payments: what the thirteenth payment does',
-    summary:
-      'why 26 half-payments is 13 monthly ones, and what that one extra payment removes',
-  },
-  {
-    href: '/credit-card-interest',
-    title: 'How credit card interest is actually calculated',
-    summary: 'the daily periodic rate, and why 22.99% costs 25.838%',
-  },
-  {
-    href: '/monthly-return-rate',
-    title: 'Why a 7% return is not 0.583% a month',
-    summary: 'one division that overstates thirty years by $50,424',
-  },
-  {
-    href: '/withdrawal-rate',
-    title: 'Where the 4% rule comes from',
-    summary: 'what Bengen and the Trinity Study actually tested, and what they did not',
-  },
-  {
-    href: '/coast-number',
-    title: 'What a coast number is, and what it is not',
-    summary: 'the assumption that moves the figure more than any other',
-  },
-];
+const TOOLS = toolsIn('finance');
+const DERIVATIONS = derivationsIn('finance');
 
 const IN_PROGRESS = ['Freelance and contractor rate'];
 
@@ -111,6 +56,7 @@ const structuredData = [
 ---
 
 <BaseLayout
+  vertical="finance"
   title="Money calculators that show their working | QuickOper"
   description="Free money calculators that give you the whole schedule, prove their arithmetic against published figures, and never send anything you type to a server."
   structuredData={structuredData}

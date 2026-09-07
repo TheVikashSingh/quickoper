@@ -554,6 +554,19 @@
    page prop. No component knows which vertical it is rendering in.
    --------------------------------------------------------------------------- */
 
+/* The finance palette IS the bare :root block above — these tokens are the
+   default, not an override. This selector exists only so that the attribute is
+   valid and self-documenting on every page rather than present on some and
+   absent on others, which is what "undefined means finance" used to look like
+   in the rendered HTML. It deliberately sets nothing.
+
+   Do not move the finance tokens into it. A page that somehow rendered without
+   the attribute would then have no palette at all, where today it falls back to
+   a complete and correct one. */
+:root[data-vertical='finance'] {
+  /* intentionally empty */
+}
+
 :root[data-vertical='machining'] {
   /* Surfaces — ground steel, faint blue cast. */
   --color-canvas: oklch(96.8% 0.004 245);

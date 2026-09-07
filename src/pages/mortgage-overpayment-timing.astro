@@ -166,6 +166,7 @@ const structuredData = [
 ---
 
 <BaseLayout
+  vertical="finance"
   title="What an extra payment does in year one versus year twenty | QuickOper"
   description={`On ${loan(AMOUNT)} at ${RATE_PERCENT}%, ${money(LUMP)} paid in month 1 removes ${money(earliest.interestSaved)} of interest. The same ${money(LUMP)} in month 241 removes ${money(latest.interestSaved)}. Identical money, ${ratio} times the effect, computed month by month.`}
   structuredData={structuredData}
@@ -498,6 +499,7 @@ const structuredData = [
     </aside>
 
     <RelatedTools
+      vertical="finance"
       hubNote="every tool here shows the full schedule rather than one figure"
       links={[
         {

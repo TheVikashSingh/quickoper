@@ -10,6 +10,7 @@ import ToolCard from '../components/ToolCard.astro';
 
 import { compareStrategies } from '../lib/calc/debt-payoff';
 import { format, fromMajor } from '../lib/calc/money';
+import { CATALOGUE, VERTICALS, calculators, toolsIn } from '../lib/catalogue';
 
 /**
  * THE HERO FIGURES ARE COMPUTED, NOT WRITTEN.
@@ -59,50 +60,20 @@ const curve = (result: (typeof demo)['avalanche']) => [
 ];
 
 /**
- * The list under the "Calculators" heading, which check-links.mjs requires to
- * contain every /finance/*-calculator route (D50). Data rather than markup so
- * the cards render through the shared ToolCard — the hub had its own
- * hand-written copy of these panels and missed D50's affordance fix entirely
- * (D59).
+ * Everything this page lists comes from src/lib/catalogue.ts.
+ *
+ * There were THREE hand-written copies of the site's contents on this one page:
+ * the hero button row, the list under "Calculators" (which check-links.mjs
+ * requires to hold every calculator route, D50), and a two-item list of
+ * derivations. None of them agreed. The hero's own comment recorded the
+ * symptom — its count "said two for two pull requests after the third tool
+ * shipped" — and treated it as prose nobody checks, which it was.
+ *
+ * A count derived from the registry cannot say two when there are six.
  */
-const CALCULATORS = [
-  {
-    href: '/finance/debt-payoff-calculator',
-    title: 'Debt payoff — avalanche vs snowball',
-    summary:
-      'Compare both methods against paying minimums. Full month-by-month schedule, chart, CSV and printable report.',
-  },
-  {
-    href: '/finance/mortgage-overpayment-calculator',
-    title: 'Mortgage overpayment — what an extra payment removes',
-    summary:
-      'How much interest and how many years an overpayment takes off, against the contractual schedule. Full amortisation table, chart, CSV and printable report.',
-  },
-  {
-    href: '/finance/uk-early-repayment-charge-calculator',
-    title: 'UK early repayment charge — is the charge worth paying?',
-    summary:
-      'What an overpayment charge costs against the interest the overpayment removes, split into the part your fixed rate guarantees and the part that assumes it holds. Full schedule, chart and CSV.',
-  },
-  {
-    href: '/finance/coast-fire-calculator',
-    title: 'Coast FIRE — when saving becomes optional',
-    summary:
-      'How much you need invested today for it to reach your retirement target on its own. Year-by-year projection, chart and export.',
-  },
-  {
-    href: '/machining/tap-drill-calculator',
-    title: 'Tap drill — the drill you actually own',
-    summary:
-      'Enter a thread, get a drill from a real index and the thread engagement that drill genuinely produces. Metric-first, with the surrounding sizes shown.',
-  },
-  {
-    href: '/machining/feeds-and-speeds-calculator',
-    title: 'Feeds and speeds — milling and turning, treated the same',
-    summary:
-      'Spindle speed, feed in mm/rev and mm/min, removal rate, chip thinning and cutting power. Your cutting data comes from your tooling sheet; this does the arithmetic.',
-  },
-];
+const heroTools = calculators();
+const derivations = CATALOGUE.filter((entry) => entry.kind === 'derivation');
+const verticalCount = VERTICALS.length;
 
 const CURRENCY = 'USD';
 
@@ -125,6 +96,7 @@ const slowMonths = demo.minimumsOnly.months;
 ---
 
 <BaseLayout
+  vertical="site"
   title="QuickOper — calculators that show their working"
   description="Money calculators that give you the whole schedule, not just a number: the formula, every period, a chart, and a CSV. Nothing you type is sent anywhere, and every figure can be checked against Excel."
 >
@@ -162,49 +134,24 @@ const slowMonths = demo.minimumsOnly.months;
         list is also honest about its own length: it states the count rather
         than padding the row to look fuller.
 
-        That count is prose and nothing checks it — it said "two" for two pull
-        requests after the third tool shipped. The list under "Calculators"
-        further down IS checked, by check-links.mjs (D50).
+        THE ROW AND THE COUNT BOTH COME FROM THE REGISTRY NOW. This comment
+        used to end "that count is prose and nothing checks it — it said two for
+        two pull requests after the third tool shipped", which is an accurate
+        description of a defect being tolerated. It is derived, so it cannot.
       */
       }
       <nav class="relative mt-4" aria-label="Calculators">
         <div class="flex flex-wrap gap-2">
-          <a
-            href="/finance/debt-payoff-calculator"
-            class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
-          >
-            Debt payoff
-          </a>
-          <a
-            href="/finance/mortgage-overpayment-calculator"
-            class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
-          >
-            Mortgage overpayment
-          </a>
-          <a
-            href="/finance/uk-early-repayment-charge-calculator"
-            class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
-          >
-            UK repayment charge
-          </a>
-          <a
-            href="/finance/coast-fire-calculator"
-            class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
-          >
-            Coast FIRE
-          </a>
-          <a
-            href="/machining/tap-drill-calculator"
-            class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
-          >
-            Tap drill
-          </a>
-          <a
-            href="/machining/feeds-and-speeds-calculator"
-            class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
-          >
-            Feeds and speeds
-          </a>
+          {
+            heroTools.map((tool) => (
+              <a
+                href={tool.href}
+                class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
+              >
+                {tool.short ?? tool.title}
+              </a>
+            ))
+          }
           <a
             href="/verify"
             class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
@@ -213,8 +160,9 @@ const slowMonths = demo.minimumsOnly.months;
           </a>
         </div>
         <p class="text-ink-mute mt-2 text-xs">
-          Six calculators today across two subjects — money, and the shop floor. More are
-          added one at a time, each tested against a published figure before it ships.
+          {heroTools.length} calculators today across {verticalCount} subjects — money, and
+          the shop floor. More are added one at a time, each tested against a published figure
+          before it ships.
         </p>
       </nav>
     </div>
@@ -374,15 +322,23 @@ const slowMonths = demo.minimumsOnly.months;
 
     {
       /*
-        EVERY calculator belongs in this list, in the same order as the hero row
-        above. The mortgage tool was missing here for four pull requests while
-        being present in the hero — so the page contradicted itself, and a
-        visitor who scrolled to the section headed "Calculators" was told there
-        were two (D50).
+        EVERY tool belongs in this list, and none of it is written out here —
+        it renders from src/lib/catalogue.ts. The mortgage tool was missing for
+        four pull requests while being present in the hero, so the page
+        contradicted itself and a visitor who scrolled to the section headed
+        "Calculators" was told there were two (D50). `check-links.mjs` fails the
+        build if a calculator route is absent, because D41's orphan check could
+        not: the route *was* linked from the hero, so every gate was green.
 
-        `check-links.mjs` now fails the build if a calculator route is absent
-        from this list, because D41's orphan check could not: the route *was*
-        linked from the hero, so every gate was green.
+        THE DIVIDERS ARE <p class="section-head">, NOT HEADINGS, AND THAT IS
+        LOAD-BEARING. check-links.mjs captures this list as everything between
+        <h2>Calculators</h2> and the next <h1|2|3>. An <h3> divider would end
+        the capture at the first vertical, and every tool in the second one
+        would report as missing — a gate failing for a reason that has nothing
+        to do with the defect it exists to catch. `.section-head` is a class
+        rather than an element, so it supplies the hierarchy (1.375rem, 600, a
+        hairline rule) without the tag. D66 is the other half of that: a label
+        lighter than the content it introduces reads as no label at all.
 
         On the affordance: these are whole-card links, and a bordered panel does
         not read as one. Hover moves the arrow and underlines the title; the
@@ -390,32 +346,53 @@ const slowMonths = demo.minimumsOnly.months;
         it is deliberately not repeated here.
       */
     }
-    <ul class="mt-4 space-y-3">
-      {
-        CALCULATORS.map((tool) => (
-          <li>
-            <ToolCard href={tool.href} title={tool.title} summary={tool.summary} />
-          </li>
-        ))
-      }
-    </ul>
+    {
+      VERTICALS.map((v) => (
+        <div class="mt-6">
+          <p class="section-head flex items-baseline justify-between gap-3">
+            <span>{v.label}</span>
+            <a class="text-brand text-sm font-normal underline" href={v.hub}>
+              {v.hubLabel}
+            </a>
+          </p>
+          <ul class="mt-4 space-y-3">
+            {toolsIn(v.id).map((tool) => (
+              <li>
+                <ToolCard href={tool.href} title={tool.title} summary={tool.summary} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
 
-    <h3 class="mt-8 text-lg font-semibold">Derivations</h3>
+    <h3 class="mt-10 text-lg font-semibold">Derivations</h3>
     <p class="text-ink-soft mt-1 text-sm">
       The arithmetic behind the tools, worked out with real figures.
     </p>
 
+    {
+      /*
+        All of them, not a sample. This list held two of eight, chosen by hand.
+        D53 measured where this site spends its internal links and found the
+        trust pages taking 16-41 inbound each while the derivations — the entire
+        long-tail surface, and the only part of this site that can realistically
+        win a query — took one or two. Listing them here is the cheapest
+        correction available, and it cannot fall out of date because it is the
+        same registry the hub reads.
+      */
+    }
     <ul class="text-ink-soft mt-3 space-y-1 text-sm">
-      <li>
-        <a class="text-brand underline" href="/credit-card-interest"
-          >How credit card interest is actually calculated</a
-        > — the daily periodic rate, and why 22.99% costs 25.838%.
-      </li>
-      <li>
-        <a class="text-brand underline" href="/monthly-return-rate"
-          >Why a 7% return is not 0.583% a month</a
-        > — one division that overstates thirty years by $50,424.
-      </li>
+      {
+        derivations.map((page) => (
+          <li>
+            <a class="text-brand underline" href={page.href}>
+              {page.title}
+            </a>{' '}
+            — {page.summary}.
+          </li>
+        ))
+      }
     </ul>
   </section>
 

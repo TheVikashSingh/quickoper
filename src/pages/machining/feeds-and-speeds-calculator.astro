@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
 import { sourceRef } from '../../lib/schema';
 import { SITE } from '../../lib/site';
 
@@ -522,6 +523,23 @@ const hint = 'text-ink-mute mt-1 text-xs';
       recommendation. Rigidity, coolant, workholding and tool wear all move the right
       answer. Verify against your tooling supplier's data, and take a test cut.
     </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each generated from its series definitions rather than transcribed"
+      links={[
+        {
+          href: '/machining/tap-drill-calculator',
+          label: 'Tap drill calculator',
+          note: 'the drill you actually own, and the engagement it genuinely produces',
+        },
+        {
+          href: '/machining/drill-size-chart',
+          label: 'Drill size chart',
+          note: 'every metric and fractional inch drill, both units on every row',
+        },
+      ]}
+    />
   </div>
 </BaseLayout>
 
