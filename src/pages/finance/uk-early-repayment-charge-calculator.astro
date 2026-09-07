@@ -135,6 +135,7 @@ const structuredData = [
 ---
 
 <BaseLayout
+  vertical="finance"
   title="UK early repayment charge calculator — is the charge worth paying? | QuickOper"
   description={`Work out what an early repayment charge costs against the interest an overpayment removes. On ${pounds(COMFORTABLE.balance)} at ${COMFORTABLE.ratePercent}% with ${COMFORTABLE.fixedMonths} months fixed, a ${money(good.charge)} charge is outrun by ${money(good.interestSavedOverFixedPeriod)} inside the fixed period. Worked out in your browser.`}
   structuredData={structuredData}
@@ -411,6 +412,7 @@ const structuredData = [
     </aside>
 
     <RelatedTools
+      vertical="finance"
       hubNote="every tool here shows the full schedule rather than one figure"
       links={[
         {

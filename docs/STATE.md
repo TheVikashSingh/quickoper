@@ -10,9 +10,11 @@ changes the answer to "what exists" or "what is next".
 1. `CLAUDE.md` — the rules.
 2. `docs/DECISIONS.md` — why the rules are what they are, and what has already
    been tried and disproven. Read the **Superseded** section before proposing
-   any optimisation. **57 entries; the last fifteen (D43–D59) are the launch and
-   everything it exposed** — read those before touching deploy config, contrast,
-   or any page that states a computed figure in prose.
+   any optimisation. **82 entries. D43–D59 are the launch and everything it exposed;
+   D60–D69 are the first live data and the tools built on it; D70–D82 are the
+   machining vertical and the restructure.** Read the last block before touching
+   deploy config, the catalogue, or any page that states a computed figure in
+   prose.
 3. This file — what exists, what is next, what is blocked on the operator.
 4. `docs/LOCAL.md` — how to run and check the site, **and this machine's tooling
    constraints**: `gh` is not on PATH, PowerShell 5.1 has no `&&`, never prefix
@@ -45,6 +47,9 @@ changes the answer to "what exists" or "what is next".
   Debt entry, chart, full schedule, CSV, printable PDF, shareable URL.
 - `/finance/coast-fire-calculator` — coast number, year-by-year projection,
   three-series chart, CSV, printable PDF, shareable URL.
+- `/finance/uk-early-repayment-charge-calculator` — what a UK early repayment
+  charge costs against the interest an overpayment removes, on two horizons:
+  the contractually fixed months, and the whole term (D64).
 - `/finance/mortgage-overpayment-calculator` — what an extra monthly payment
   removes, baseline vs overpaid chart, full schedule, CSV, printable PDF,
   shareable URL. Payment anchored to calculator.net's published figure (D39).
@@ -53,7 +58,7 @@ Plus **`QuickCost`** on the homepage — a three-input teaser using the real deb
 engine, handing off to the full tool with the figures pre-filled (D34). It is
 the only reason the homepage ships JavaScript.
 
-All three complete under rule 8, and all carry an optional name for the printed
+All four complete under rule 8, and all carry an optional name for the printed
 report (local-only — never in the URL, never persisted).
 
 **Content and trust**
@@ -324,7 +329,9 @@ places the site made the claim now **quote** the regulation rather than
 paraphrasing it. eCFR was the intended second source and bot-blocks automated
 fetches; that is a gap in the check, not a disagreement between sources.
 
-**Tools 4 and 5 are unassigned.** Three calculators exist. The original plan's
+**Tool 5 is unassigned.** Tool 4 shipped: the UK early repayment charge
+calculator (D64), which is also the site’s first jurisdiction variant. Six
+calculators exist across two verticals. The original plan's
 tool #5 (equity comp) was killed by rule B — neither operator nor agent can
 verify its output. Any candidate must pass the same test: can someone with
 high-school mathematics check our figure against a published third-party result?

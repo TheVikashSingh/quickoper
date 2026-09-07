@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ToolCard from '../../components/ToolCard.astro';
 import { SITE } from '../../lib/site';
+import { toolsIn } from '../../lib/catalogue';
 
 /**
  * The machining hub.
@@ -15,29 +16,7 @@ import { SITE } from '../../lib/site';
  * relevance: every tool links up to here, and this links back down.
  */
 
-const TOOLS = [
-  {
-    href: '/machining/tap-drill-calculator',
-    title: 'Tap drill — the drill you actually own',
-    summary:
-      'Enter a thread, get the drill from a real index and the thread engagement that drill genuinely produces. Metric-first, with the whole neighbourhood shown rather than one rounded number.',
-    detail: 'Metric and fractional inch. Works offline once loaded.',
-  },
-  {
-    href: '/machining/feeds-and-speeds-calculator',
-    title: 'Feeds and speeds — milling and turning, treated the same',
-    summary:
-      'Spindle speed, feed in both mm/rev and mm/min, removal rate, chip thinning and cutting power, with every substituted value shown.',
-    detail: 'No material dropdown. Your cutting data comes from your tooling sheet.',
-  },
-  {
-    href: '/machining/drill-size-chart',
-    title: 'Drill size chart — the whole index, on one sheet',
-    summary:
-      'Every metric drill from 0.5 to 13.0 mm and every fractional inch drill from 1/64 to 1/2, with both units on every row. Generated from the series definitions, so no diameter on it is a value anyone transcribed.',
-    detail: 'No JavaScript, prints on A4, and says which series it does not carry.',
-  },
-];
+const TOOLS = toolsIn('machining');
 
 const COMING = [
   'Thread engagement and tolerance classes — 6H/6g and the Unified equivalents',

@@ -20,6 +20,8 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 
+import * as catalogue from '../src/lib/catalogue.ts';
+
 const DIST = 'dist';
 
 async function walk(dir, predicate, found = []) {
@@ -228,12 +230,14 @@ if (orphans.length > 0) {
 const homepage = join(DIST, 'index.html');
 const homeHtml = (await exists(homepage)) ? await readFile(homepage, 'utf8') : '';
 
-const calculators = pages
-  .map((page) =>
-    ('/' + relative(DIST, page).split(sep).join('/')).replace(/index\.html$/, ''),
-  )
-  .filter((route) => /^\/finance\/[^/]+-calculator\/$/.test(route))
-  .map((route) => route.replace(/\/$/, ''));
+// From the registry, not from a path shape.
+//
+// This was `/^\/finance\/[^/]+-calculator\/$/` over the built routes, which
+// asserted nothing at all about /machining — two calculators shipped outside
+// it. It also depended on a naming convention: a calculator that did not end
+// in "-calculator" would have been silently exempt from the homepage list it
+// is required to appear in, which is D50's defect returning by a new route.
+const calculators = catalogue.calculators().map((entry) => entry.href);
 
 // Everything after the "Calculators" heading, up to the next heading of the
 // same or higher level. That is the list a reader sees under that word.
@@ -289,9 +293,17 @@ if (missingFromList.length > 0) {
 // page already, and using it to satisfy a *related content* requirement is how
 // the debt payoff page ended up with a Related block containing nothing related.
 
-const calculatorPages = pages.filter((page) =>
-  /finance[\\/][^\\/]+-calculator[\\/]index\.html$/.test(page),
-);
+// Same generalisation as the homepage-list check above: the registry decides
+// what a calculator is, so rule 8's Related requirement reaches every vertical
+// rather than only the one whose folder name was hardcoded here.
+const calculatorRoutes = new Set(catalogue.calculators().map((entry) => entry.href));
+const calculatorPages = pages.filter((page) => {
+  const route = ('/' + relative(DIST, page).split(sep).join('/')).replace(
+    /\/index\.html$/,
+    '',
+  );
+  return calculatorRoutes.has(route);
+});
 
 const relatedProblems = [];
 
@@ -316,11 +328,22 @@ for (const page of calculatorPages) {
     ([, href]) => (href ?? '').replace(/\/$/, ''),
   );
 
-  if (!hrefs.includes('/finance')) {
-    relatedProblems.push(`${route} Related block omits the cluster hub /finance`);
+  // The hub is the one belonging to THIS page's vertical. Asserting /finance
+  // on every calculator would have demanded a machining page link into the
+  // money hub, which is the opposite of what verticals are for.
+  const entry = catalogue.CATALOGUE.find((item) => item.href === route);
+  const hub = catalogue.VERTICALS.find((v) => v.id === entry?.vertical)?.hub;
+
+  if (hub === undefined) {
+    relatedProblems.push(`${route} is a calculator with no vertical in the registry`);
+    continue;
   }
 
-  const genuine = hrefs.filter((href) => href !== '' && href !== '/finance');
+  if (!hrefs.includes(hub)) {
+    relatedProblems.push(`${route} Related block omits its cluster hub ${hub}`);
+  }
+
+  const genuine = hrefs.filter((href) => href !== '' && href !== hub);
   if (genuine.length < 2) {
     relatedProblems.push(
       `${route} Related block has ${genuine.length} genuine link(s); rule 8 wants 2-3 plus the hub`,

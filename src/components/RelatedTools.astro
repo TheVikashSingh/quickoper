@@ -28,7 +28,16 @@
  *
  * The hub link is not a prop. It is always rendered, because "and the cluster
  * hub" is the part of rule 8 that every hand-written version forgot.
+ *
+ * WHICH hub is resolved from the vertical, not hardcoded. This component said
+ * `/finance` and "All money calculators" unconditionally, which was correct
+ * while finance was the only vertical and would have sent a machinist to the
+ * mortgage hub the moment one used it. Neither machining calculator had a
+ * Related block at all — they shipped outside rule 8 entirely, because the gate
+ * enforcing it was itself hardcoded to /finance and could not see them.
  */
+
+import { VERTICALS, type Vertical } from '../lib/catalogue';
 
 interface RelatedLink {
   href: string;
@@ -42,9 +51,17 @@ interface Props {
   links: RelatedLink[];
   /** What the cluster hub link should say on this page. */
   hubNote: string;
+  /** Which vertical's hub to link to. */
+  vertical: Vertical;
 }
 
-const { links, hubNote } = Astro.props;
+const { links, hubNote, vertical } = Astro.props;
+
+const hub = VERTICALS.find((v) => v.id === vertical);
+
+if (hub === undefined) {
+  throw new Error(`RelatedTools: no vertical registered as "${vertical}".`);
+}
 
 if (links.length < 2) {
   throw new Error(
@@ -69,7 +86,7 @@ if (links.length < 2) {
       ))
     }
     <li>
-      <a class="text-brand underline" href="/finance">All money calculators</a>
+      <a class="text-brand underline" href={hub.hub}>{hub.hubLabel}</a>
       <span class="text-ink-soft text-sm"> — {hubNote}</span>
     </li>
   </ul>

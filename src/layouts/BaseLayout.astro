@@ -4,6 +4,7 @@ import '../styles/global.css';
 import LatheBand from '../components/ornament/LatheBand.astro';
 import Rosette from '../components/ornament/Rosette.astro';
 import { SITE } from '../lib/site';
+import type { Vertical } from '../lib/catalogue';
 
 interface Props {
   title: string;
@@ -15,14 +16,24 @@ interface Props {
   /** Extra JSON-LD nodes for the page (WebApplication, BreadcrumbList, ...). */
   structuredData?: Record<string, unknown>[] | undefined;
   /**
-   * Which vertical this page belongs to.
+   * Which vertical this page belongs to. REQUIRED — there is no default.
    *
-   * Sets `data-vertical` on the root element, which re-points the design
-   * tokens in global.css. Omit for the finance side and the shared trust pages,
-   * which keep the default palette. No component reads this — they all go on
-   * consuming the same token names.
+   * Sets `data-vertical` on the root element, which re-points the design tokens
+   * in global.css. No component reads it; they all go on consuming the same
+   * token names.
+   *
+   * It used to be optional, `'machining' | undefined`, with everything else
+   * falling back to finance. That meant "undefined" silently asserted "this is
+   * a finance page" — and it was wrong on 8 of the 27, because `/about`,
+   * `/privacy` and the rest are site-level and belong to no vertical at all.
+   * A new machining page that forgot the prop would have rendered with money
+   * navigation across the top and nothing would have failed.
+   *
+   * Required means `astro check` catches an omission at the type level, which
+   * is cheaper and more immediate than an eighth CI script doing the same job
+   * against the built output.
    */
-  vertical?: 'machining' | undefined;
+  vertical: Vertical | 'site';
 }
 
 const {
@@ -53,7 +64,16 @@ const VERTICAL_NAV = {
   machining: { label: 'Machining', href: '/machining' },
   finance: { label: 'Calculators', href: '/finance' },
 } as const;
-const sectionNav = vertical ? VERTICAL_NAV[vertical] : VERTICAL_NAV.finance;
+
+/**
+ * `site` keeps the finance link for now, which is exactly what the old
+ * `undefined` fallback did — so making the prop required changes the types and
+ * not a single rendered pixel. What a site-level page should show in that slot
+ * is a real question (it currently pushes one vertical over the other from
+ * pages belonging to neither), and it is deliberately left to the change that
+ * gives the root its own identity rather than smuggled in here.
+ */
+const sectionNav = vertical === 'site' ? VERTICAL_NAV.finance : VERTICAL_NAV[vertical];
 
 /**
  * The entity graph — Organization, Person and WebSite, on every page.

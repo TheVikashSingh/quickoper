@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
 import { sourceRef } from '../../lib/schema';
 import { SITE } from '../../lib/site';
 import { PENDING_SERIES } from '../../lib/calc/drill-series';
@@ -508,6 +509,23 @@ const label = 'block text-sm font-semibold text-ink-soft';
       right answer. Verify against your tooling supplier's data before cutting anything
       you cannot scrap.
     </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each generated from its series definitions rather than transcribed"
+      links={[
+        {
+          href: '/machining/drill-size-chart',
+          label: 'Drill size chart',
+          note: 'every drill this calculator can pick from, on one printable sheet',
+        },
+        {
+          href: '/machining/feeds-and-speeds-calculator',
+          label: 'Feeds and speeds calculator',
+          note: 'once the hole is sized, what to run the cutter at',
+        },
+      ]}
+    />
   </div>
 </BaseLayout>
 
