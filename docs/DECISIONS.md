@@ -3028,6 +3028,96 @@ screenshot path returned a blank frame for everything below the fold while
 capture simply does not follow scroll. **Seventh time** the measurement was
 wrong and the source was right (D29, D36, D50, D54, D59, D61, D65).
 
+### D83 — A wrong-jurisdiction signal, and the note that pushed the tool off the screen
+
+Two changes to where a link lives, and one regression that only a measurement
+caught.
+
+**The Related block on the mortgage calculator was already outside rule 8, and
+nobody had counted.** It carried four links — debt payoff, the timing
+derivation, the 15-vs-30 comparison and `/verify` — against the rule's "2-3
+genuine internal links plus the cluster hub". `check-links.mjs` only fails
+*below* two, so it passed CI the whole time. Two additions were proposed on top
+of it; the honest answer was to count first.
+
+**`/15-year-vs-30-year-mortgage` gave way to `/biweekly-mortgage-payments`,
+which is a swap and not an addition.** Same-decision beats adjacent-decision:
+the thirteenth payment is the thing *this* calculator models, while choosing a
+term is a decision made before the loan exists. The evidence agrees with the
+reasoning — biweekly carries 114 impressions against 15-vs-30's zero — and
+nothing is orphaned, because D82's registry now renders 15-vs-30 on both the hub
+and the homepage.
+
+**`/verify` came out because it was this page's third link to `/verify`.** The
+trust strip above the fold carries one and the body prose carries another,
+beside the figure it is about. A related-content block is not where a link earns
+a third appearance. That brings the block to exactly three.
+
+**The UK cross-link went in the page body, not the Related block, and the
+distinction is the whole point.** A quarter of this site's impressions are
+British and the vocabulary arriving here is unmistakably so. But it is not a
+*related tool* — it is a signal that the reader is on the wrong jurisdiction, and
+that has to arrive before they read a US amortisation schedule, not in a footer
+list afterwards. It states what is modelled and what differs, and stops (rule A).
+
+Putting a £ on this engine was refused again on D64's reasoning: a UK fixed deal
+is a different **contract**, not a different symbol, and this page's payment is
+anchored to calculator.net's published *dollar* figure (D39) with 33 external
+checks behind it (D63). Relabelling the currency would have made a verified page
+unverifiable.
+
+**And then the note broke D38, which every gate passed.** Measured at a 375px
+layout width, the offset of the first input:
+
+| | first input | vs an 812px fold |
+|---|---|---|
+| no note | 681px | 131px clear |
+| first draft, four clauses | **888px** | **76px BELOW** |
+| second draft | 797px | 15px clear |
+| shipped | **752px** | **60px clear** |
+
+CLAUDE.md requires the calculator usable without scrolling at 375px, and the
+entire argument for this note is that a UK reader meets it *before* the
+schedule. A note that pushes the calculator off the screen fails both jobs at
+once. The second draft passed at 15px and was still rejected: that is D68's
+shape on a different axis — a margin that leaves the next person a failure they
+did not cause.
+
+**The viewport lied, again.** The browser pane was told 375x812 twice and
+reported `innerWidth` 465 both times. Every figure above comes from reflowing
+the document to 375px and comparing offsets against 812 by hand. **Eighth time**
+the instrument was wrong (D29, D36, D50, D54, D59, D61, D65, D82) — and this
+time believing it would have shipped the regression, because at 465px the input
+sat comfortably above the fold.
+
+**`/methodology` now carries a shared claim plus a section per vertical**
+(`#finance`, `#machining`), and stays at the root. The split is deliberate:
+this page is a **claim** — why the numbers can be trusted — and that is
+genuinely site-wide. `/verify` is a **procedure**, and its procedure is five
+spreadsheet formulas and one SEC calculator, every one financial. A claim
+belongs to the site; a procedure belongs to its subject.
+
+The defect was real: the page opened on "Money is never a decimal", "The
+rounding policy" and a worked amortisation schedule, so a machinist clicking
+"How we verify" landed on a mortgage example.
+
+**The route in was not what it looked like, and that changed the fix.** The
+brief said all four machining pages link here. They do not — the string
+"methodology" appears nowhere under `src/pages/machining/`. The only inbound
+links are the masthead and footer in `BaseLayout`, which every page carries, so
+there was no per-page link to repoint. The layout's two links are vertical-aware
+instead, which is **only possible because D82 made `vertical` a required prop** —
+a type change made for one reason paying for something else a day later.
+
+**The machining section is anchored to a published third-party table, which is
+more than two of the three finance engines manage.** ISO 2306 / DIN 336 as
+printed in the Emuge, Guhring and OSG catalogues — three independent publishers.
+M8 x 1.25 asks for 6.75 mm, no such drill exists, the published tap drill is
+6.8 mm, and the engagement that drill actually produces is 73.90 % rather than
+the 76.98 % requested. D63 recorded that only `mortgage.ts` has an external
+anchor; on that test the tap drill engine is in better standing than
+`debt-payoff.ts` or `coast-fire.ts`.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

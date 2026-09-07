@@ -110,6 +110,59 @@ const structuredData = [
       interest?
     </p>
 
+    {
+      /*
+        A WRONG-JURISDICTION SIGNAL, NOT A RELATED LINK, WHICH IS WHY IT IS HERE
+        AND NOT IN THE RELATED BLOCK.
+
+        A quarter of this site's search impressions are British, and the query
+        vocabulary arriving at this page is unmistakably so — "overpayment"
+        rather than "extra payment", and named UK lenders. This tool computes a
+        US fixed-rate note: annualRate ÷ 12, no penalty for overpaying. A UK
+        fixed deal is a different CONTRACT, not a different currency symbol,
+        which is exactly why D64 built a separate tool rather than putting a £
+        on this engine.
+
+        Someone who needs the other tool needs to know before they read a
+        schedule, not after. A footer list of related reading is the wrong place
+        for that, and it is the reason this did not go where it was originally
+        proposed.
+
+        It states what is modelled and what differs. It does not tell anyone
+        what to do about it (rule A).
+
+        IT IS THIS SHORT BECAUSE D38's CONSTRAINT WAS MEASURED, AND THE FIRST
+        DRAFT BROKE IT. Measured at a 375px layout width, first input offset:
+
+          no note at all          681px   baseline
+          first draft, 4 clauses  888px   +207 — 76px BELOW an 812px fold
+          second draft            797px   +116 — above, by 15px
+          this one                752px    +71 — above, by 60px
+
+        Every gate passed all three. D38 requires the tool usable without
+        scrolling at 375px, and the entire argument for this note is that a UK
+        reader meets it before the schedule — a note that pushes the calculator
+        off the screen fails both jobs at once. The second draft technically
+        passed at 15px, which is the shape D68 refused on the byte budget: a
+        margin that leaves the next person a failure they did not cause.
+
+        MEASURE, DO NOT EYEBALL, AND DISTRUST THE VIEWPORT. The browser pane
+        would not honour a 375x812 viewport — it reported innerWidth 465 after
+        being told 375, twice. The figures above come from reflowing the
+        document to 375px and comparing offsets against 812 by hand.
+      */
+    }
+    <p
+      class="border-line-strong text-ink-soft mt-4 border-l-2 py-1 pl-3 text-sm"
+      data-jurisdiction-note
+    >
+      <strong class="text-ink">US fixed-rate.</strong> A UK deal with an early repayment charge
+      needs{' '}
+      <a class="text-brand underline" href="/finance/uk-early-repayment-charge-calculator"
+        >the UK calculator</a
+      >.
+    </p>
+
     <TrustStrip
       class="mt-5"
       items={[
@@ -364,6 +417,26 @@ const structuredData = [
       </p>
     </aside>
 
+    {
+      /*
+        THREE LINKS, WHICH IS INSIDE RULE 8 AGAIN. This block carried four —
+        debt payoff, the timing derivation, the 15-vs-30 comparison and
+        /verify — so it was outside the rule's "2-3 genuine internal links plus
+        the cluster hub" before anything was added to it. The gate only fails
+        below two, so it passed CI the whole time.
+
+        /15-year-vs-30-year-mortgage gave way to /biweekly-mortgage-payments
+        because same-decision beats adjacent-decision: the thirteenth payment is
+        the thing THIS calculator models, while choosing a term is a decision
+        made before the loan exists. Nothing is orphaned — 15-vs-30 keeps its
+        other inbound links now the catalogue renders the hub and the homepage.
+
+        /verify came out because it was the page's THIRD link to /verify: the
+        trust strip above the fold carries one, and the body prose carries
+        another beside the figure it is about. A related-content block is not
+        where a link earns its third appearance.
+      */
+    }
     <RelatedTools
       vertical="finance"
       hubNote="the other calculators, each anchored to a published figure before it shipped"
@@ -379,14 +452,9 @@ const structuredData = [
           note: 'the same lump sum is worth several times more early than late, on this same loan',
         },
         {
-          href: '/15-year-vs-30-year-mortgage',
-          label: 'What a 15-year mortgage costs against a 30-year',
-          note: 'the same loan over half the term, and why both are charged the same interest in month one',
-        },
-        {
-          href: '/verify',
-          label: 'Check our arithmetic yourself',
-          note: 'reproduce this payment against calculator.net and a spreadsheet',
+          href: '/biweekly-mortgage-payments',
+          label: 'Biweekly mortgage payments: what the thirteenth payment does',
+          note: 'the same overpayment arriving as one extra payment a year rather than a monthly top-up',
         },
       ]}
     />

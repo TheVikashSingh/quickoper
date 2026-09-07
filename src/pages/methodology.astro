@@ -7,6 +7,31 @@ import { SITE } from '../lib/site';
 // The differentiator, written as a public artefact rather than a trust-page
 // formality. No competitor in this space publishes their verification, and
 // "here are our tests, read them" is a stronger claim than any adjective.
+//
+// ─── Why this page has per-vertical sections ────────────────────────────────
+//
+// It stays at the ROOT while /verify moves under /finance, and the split is
+// deliberate: this page is a CLAIM — why the numbers can be trusted — and that
+// claim is genuinely site-wide. /verify is a PROCEDURE, and its procedure is
+// five spreadsheet formulas and one SEC calculator, every one of them financial.
+// A claim belongs to the site; a procedure belongs to its subject.
+//
+// The restructure was forced by a real defect: the page opened on "Money is
+// never a decimal", "The rounding policy" and a worked verification that is an
+// amortisation schedule, so a machinist clicking "How we verify" from the tap
+// drill calculator landed on a mortgage example and had no reason to read on.
+//
+// The route in was NOT what it looked like, and the difference changed the fix.
+// No machining page links here from its own content — checked, and the string
+// "methodology" does not appear anywhere under src/pages/machining/. The only
+// inbound links are the masthead and footer in BaseLayout, which every page on
+// the site carries. So there was no per-page link to repoint; the layout's two
+// links are now vertical-aware instead, which is only possible because
+// `vertical` became a required prop.
+//
+// The shared claim now comes first, then each vertical gets its own section
+// under a STABLE id (#finance, #machining) so the pages in that vertical can
+// link straight to the part that concerns them.
 
 const structuredData = [
   {
@@ -47,6 +72,12 @@ const structuredData = [
       publishing one will show you how they checked. This page shows you.
     </p>
 
+    <p class="text-ink-mute text-sm">
+      What follows applies to everything here. For the specifics of one subject:{' '}
+      <a class="text-brand underline" href="#finance">money</a> or{' '}
+      <a class="text-brand underline" href="#machining">the shop floor</a>.
+    </p>
+
     <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
       The calculation is separate from the interface
     </h2>
@@ -66,102 +97,6 @@ const structuredData = [
       expectations proves the code is self-consistent, not that it is correct. The tests
       that matter check us against something external.
     </p>
-
-    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
-      A worked verification you can repeat
-    </h2>
-
-    <p>
-      The debt payoff engine is checked against the standard loan payment formula, which
-      every lender, textbook and amortisation table produces the same answer from:
-    </p>
-
-    <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
-      P = B × i ÷ (1 − (1 + i)<sup>−n</sup>)
-    </p>
-
-    <p>
-      For a $10,000 balance at 6.00% annual interest over 60 months, i = 0.005 and the
-      formula gives a monthly payment of $193.3280 — the $193.33 that every amortisation
-      table quotes. Feed that payment back into our engine and it must clear the balance
-      in exactly 60 months.
-    </p>
-
-    <div class="not-prose overflow-x-auto">
-      <table class="border-line w-full border-collapse border text-sm">
-        <tbody>
-          <tr>
-            <td class="border-line border p-2">Months to clear, from our engine</td>
-            <td class="numeric border-line border p-2 text-right">60</td>
-          </tr>
-          <tr>
-            <td class="border-line border p-2">Total interest, from our engine</td>
-            <td class="numeric border-line border p-2 text-right">$1,599.68</td>
-          </tr>
-          <tr>
-            <td class="border-line border p-2">Total interest, from the closed formula</td
-            >
-            <td class="numeric border-line border p-2 text-right">$1,599.68</td>
-          </tr>
-          <tr>
-            <td class="border-line border p-2"><strong>Difference</strong></td>
-            <td class="numeric border-line border p-2 text-right"
-              ><strong>$0.00</strong></td
-            >
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p>
-      That test asserts <em>exact</em> equality, not "close enough". An earlier draft allowed
-      fifty cents of tolerance; measuring the real figure showed the tolerance was fifty times
-      wider than reality and would have quietly absorbed a genuine regression in the rounding
-      policy. It was tightened.
-    </p>
-
-    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
-      Money is never a decimal
-    </h2>
-
-    <p>
-      Computers store decimal fractions approximately. In JavaScript,{' '}
-      <code class="numeric">0.1 + 0.2</code> is{' '}
-      <code class="numeric">0.30000000000000004</code>, and{' '}
-      <code class="numeric">1.005 × 100</code> is{' '}
-      <code class="numeric">100.49999999999999</code> — so the obvious way to round $1.005 to
-      the cent gives $1.00 instead of $1.01. That single defect is responsible for a large share
-      of the one-cent discrepancies people notice in financial software.
-    </p>
-
-    <p>
-      Every amount here is stored as a whole number of cents or pence, never as a decimal.
-      Where a fraction is unavoidable — interest is{' '}
-      <code class="numeric">balance × rate ÷ 12</code>, which rarely lands on a whole cent
-      — the rounding is explicit and tested at the boundary in both directions.
-    </p>
-
-    <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
-      The rounding policy
-    </h2>
-
-    <ul class="list-disc space-y-1 pl-5">
-      <li>
-        <strong class="text-ink">Rounded every period, not at the end.</strong> A statement
-        rounds to the cent each month and then carries that figure forward. Computing at full
-        precision and rounding once at the end produces a schedule that drifts from the one
-        your lender sends.
-      </li>
-      <li>
-        <strong class="text-ink">Half away from zero</strong> on the smallest unit, the convention
-        in retail lending, unless a cited source specifies otherwise.
-      </li>
-      <li>
-        <strong class="text-ink">The final payment absorbs the difference.</strong> It is reduced
-        to exactly what remains rather than taking the full amount, so a schedule never overshoots
-        and its rows always sum to its total.
-      </li>
-    </ul>
 
     <h2 class="text-ink pt-6 text-2xl font-semibold tracking-tight">
       What we will not build
@@ -216,6 +151,202 @@ const structuredData = [
       does not tell you what to do about them. See{' '}
       <a class="text-brand underline" href="/about">about</a> for what that means in practice.
     </p>
+
+    <Rule class="pt-6" />
+
+    <section id="finance" class="scroll-mt-6 space-y-4">
+      <h2 class="text-ink pt-2 text-2xl font-semibold tracking-tight">
+        Money — how the finance figures are checked
+      </h2>
+
+      <p>
+        Every calculation below is checked against something that was not written here: a
+        spreadsheet function, a published schedule, or a regulator's own worked example.{
+          ' '
+        }
+        <a class="text-brand underline" href="/verify">Check our arithmetic yourself</a> is
+        the step-by-step version — five formulas you can paste into Excel or Google Sheets,
+        and one calculator run by the SEC.
+      </p>
+
+      <h3 class="text-ink pt-4 text-xl font-semibold tracking-tight">
+        A worked verification you can repeat
+      </h3>
+
+      <p>
+        The debt payoff engine is checked against the standard loan payment formula, which
+        every lender, textbook and amortisation table produces the same answer from:
+      </p>
+
+      <p class="numeric text-ink bg-sunken border-line rounded-control border p-3">
+        P = B × i ÷ (1 − (1 + i)<sup>−n</sup>)
+      </p>
+
+      <p>
+        For a $10,000 balance at 6.00% annual interest over 60 months, i = 0.005 and the
+        formula gives a monthly payment of $193.3280 — the $193.33 that every amortisation
+        table quotes. Feed that payment back into our engine and it must clear the balance
+        in exactly 60 months.
+      </p>
+
+      <div class="not-prose overflow-x-auto">
+        <table class="border-line w-full border-collapse border text-sm">
+          <tbody>
+            <tr>
+              <td class="border-line border p-2">Months to clear, from our engine</td>
+              <td class="numeric border-line border p-2 text-right">60</td>
+            </tr>
+            <tr>
+              <td class="border-line border p-2">Total interest, from our engine</td>
+              <td class="numeric border-line border p-2 text-right">$1,599.68</td>
+            </tr>
+            <tr>
+              <td class="border-line border p-2"
+                >Total interest, from the closed formula</td
+              >
+              <td class="numeric border-line border p-2 text-right">$1,599.68</td>
+            </tr>
+            <tr>
+              <td class="border-line border p-2"><strong>Difference</strong></td>
+              <td class="numeric border-line border p-2 text-right"
+                ><strong>$0.00</strong></td
+              >
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        That test asserts <em>exact</em> equality, not "close enough". An earlier draft allowed
+        fifty cents of tolerance; measuring the real figure showed the tolerance was fifty times
+        wider than reality and would have quietly absorbed a genuine regression in the rounding
+        policy. It was tightened.
+      </p>
+
+      <h3 class="text-ink pt-4 text-xl font-semibold tracking-tight">
+        Money is never a decimal
+      </h3>
+
+      <p>
+        Computers store decimal fractions approximately. In JavaScript,{' '}
+        <code class="numeric">0.1 + 0.2</code> is{' '}
+        <code class="numeric">0.30000000000000004</code>, and{' '}
+        <code class="numeric">1.005 × 100</code> is{' '}
+        <code class="numeric">100.49999999999999</code> — so the obvious way to round $1.005
+        to the cent gives $1.00 instead of $1.01. That single defect is responsible for a large
+        share of the one-cent discrepancies people notice in financial software.
+      </p>
+
+      <p>
+        Every amount here is stored as a whole number of cents or pence, never as a
+        decimal. Where a fraction is unavoidable — interest is{' '}
+        <code class="numeric">balance × rate ÷ 12</code>, which rarely lands on a whole
+        cent — the rounding is explicit and tested at the boundary in both directions.
+      </p>
+
+      <h3 class="text-ink pt-4 text-xl font-semibold tracking-tight">
+        The rounding policy
+      </h3>
+
+      <ul class="list-disc space-y-1 pl-5">
+        <li>
+          <strong class="text-ink">Rounded every period, not at the end.</strong> A statement
+          rounds to the cent each month and then carries that figure forward. Computing at full
+          precision and rounding once at the end produces a schedule that drifts from the one
+          your lender sends.
+        </li>
+        <li>
+          <strong class="text-ink">Half away from zero</strong> on the smallest unit, the convention
+          in retail lending, unless a cited source specifies otherwise.
+        </li>
+        <li>
+          <strong class="text-ink">The final payment absorbs the difference.</strong> It is
+          reduced to exactly what remains rather than taking the full amount, so a schedule
+          never overshoots and its rows always sum to its total.
+        </li>
+      </ul>
+    </section>
+
+    <Rule class="pt-6" />
+
+    <section id="machining" class="scroll-mt-6 space-y-4">
+      <h2 class="text-ink pt-2 text-2xl font-semibold tracking-tight">
+        Shop floor — how the machining figures are checked
+      </h2>
+
+      <p>
+        Same discipline, different failure. A wrong money figure costs someone a decision;
+        a wrong tap drill scraps the part, or holds through assembly and lets go in
+        service. So the anchor here is a <strong class="text-ink"
+          >published tap drill table</strong
+        > — ISO 2306 / DIN 336, reproduced identically in the free catalogues of the Emuge,
+        Guhring and OSG tap manufacturers. Three independent publishers of the same table, none
+        of them us.
+      </p>
+
+      <h3 class="text-ink pt-4 text-xl font-semibold tracking-tight">
+        A worked verification you can repeat
+      </h3>
+
+      <p>
+        Take M8 × 1.25, the row that catches everyone. The shop rule targets 76.98 %
+        thread engagement, which asks for a drill of 6.75 mm. No such drill exists in the
+        standard series; the published tap drill is <strong class="text-ink"
+          >6.8 mm</strong
+        >, in every catalogue. Open any of the three and check that.
+      </p>
+
+      <p>
+        The consequence is the figure this tool exists to report: a 6.8 mm drill in an M8
+        × 1.25 hole gives <strong class="text-ink">73.90 %</strong> engagement, not the 76.98
+        % that was asked for and not the round 75 % people assume. Both numbers are shown, because
+        the difference between the engagement you requested and the engagement your drill actually
+        produces is the whole point.
+      </p>
+
+      <p>
+        6.750 mm is also an <em>exact tie</em> between the 6.7 and 6.8 drills, and half-even
+        resolves it upward. Rounding to a convenient 0.5 mm step instead — which every shipping
+        competitor examined during research does — returns 7.0 mm here, and turns M4 × 0.7 from
+        the correct 3.30 mm into 3.50 mm, dropping engagement from 76.98 % to 55.0 %.
+      </p>
+
+      <h3 class="text-ink pt-4 text-xl font-semibold tracking-tight">
+        Length is never a decimal either
+      </h3>
+
+      <p>
+        The money rule applied to geometry: every dimension is stored as a whole number of
+        nanometres, never as a decimal millimetre. A drill is 3 300 000 nm, not 3.3 mm.
+      </p>
+
+      <p>
+        This matters because choosing a drill is an equality-and-ordering problem over a
+        fixed catalogue, and <code class="numeric">3.3 === 3.3</code> is not reliable in floating
+        point once a value has been converted from inches and back. One inch is{' '}
+        <strong class="text-ink">exactly 25 400 000 nm</strong> — a definition from the 1959
+        international yard and pound agreement, not a measurement — so inch drills land on exact
+        integers too and a mm → inch → mm round trip loses nothing.
+      </p>
+
+      <h3 class="text-ink pt-4 text-xl font-semibold tracking-tight">
+        The constants are derived, not typed
+      </h3>
+
+      <p>
+        ISO 68-1 gives the thread's fundamental triangle height as{' '}
+        <code class="numeric">H = (√3 ÷ 2) × P</code>. The engagement constant that
+        follows is 3√3⁄4 = 1.2990381…, and <code class="numeric">100 ÷ K</code> is 76.9800 %
+        — which is why the shop rule "drill = major − pitch" lands just under 77 %.
+      </p>
+
+      <p>
+        It is computed from √3 in the code rather than typed as the trade's four-figure
+        1.299. That rounding moves the second decimal of the engagement published for
+        #8-32, #10-24 and 5/16-18, and it destroys the exact ties that let the drill
+        choice reproduce the published chart at all.
+      </p>
+    </section>
 
     <p class="text-ink-mute pt-4 text-sm">Last updated {SITE.legalLastUpdated}.</p>
   </article>
