@@ -271,16 +271,36 @@ if (required && htmlHandling !== required) {
   process.exit(1);
 }
 
-// ── public/_redirects agrees with the affiliate registry ─────────────────────
+// ── public/_redirects: two rule classes, checked differently ─────────────────
 //
-// Two files have to say the same thing: src/lib/affiliates.ts is what the site
-// renders links from, public/_redirects is what Cloudflare actually serves. A
-// partner in one and not the other is either a dead /go/ link on a live page,
-// or a redirect pointing somewhere nothing links to.
+// AFFILIATE (`/go/<slug>`, 302). Two files have to say the same thing:
+// src/lib/affiliates.ts is what the site renders links from, public/_redirects
+// is what Cloudflare actually serves. A partner in one and not the other is
+// either a dead /go/ link on a live page, or a redirect pointing somewhere
+// nothing links to.
 //
 // This is D46's shape exactly — configuration split across two files that no
 // single tool reads, where each file is individually valid and the defect
 // exists only in the relationship. That one shipped every page as a 307.
+//
+// MIGRATION (any other path, 301). A URL that used to exist here and now lives
+// somewhere else. Three properties, and the first is the one that bites:
+//
+//   1. THE SOURCE MUST BE ABSENT FROM dist/. Cloudflare serves a real static
+//      asset in preference to a redirect rule, so a redirect whose source is
+//      still built is *silently dead*: green CI, green deploy, and the old URL
+//      still serving a 200. Nothing downstream would notice, because every
+//      other gate in this project reads dist/ and would find the page present
+//      and correct. This is the check that makes a `git mv` provably complete.
+//   2. The destination must be present in dist/, or the redirect lands on a 404
+//      carrying this site's name.
+//   3. 301, not 302. A migration is permanent — that is the whole claim being
+//      made to a crawler. (Affiliate destinations are the opposite case, which
+//      is why the two classes disagree about the status code.)
+//
+// Wildcards are rejected outright. `/* /finance/:splat 301` reads as a tidy
+// one-liner and swallows /about, /apps and every asset on the site; because its
+// source is not a literal path, check 1 could never catch it.
 
 const REDIRECTS = 'public/_redirects';
 
@@ -290,6 +310,7 @@ if (await exists(REDIRECTS)) {
   const declared = new Map(AFFILIATES.map((partner) => [partner.slug, partner.url]));
   const routed = new Map();
   const redirectProblems = [];
+  let migrations = 0;
 
   const redirectLines = (await readFile(REDIRECTS, 'utf8')).split(/\r?\n/);
 
@@ -299,9 +320,9 @@ if (await exists(REDIRECTS)) {
 
     const [from, to, code] = line.split(/\s+/);
 
-    if (!from?.startsWith('/go/')) {
+    if (!from?.startsWith('/')) {
       redirectProblems.push(
-        `line ${i + 1}: "${from}" is not a /go/ path — this file is for affiliate redirects only`,
+        `line ${i + 1}: "${from}" is not a path — every rule must start with "/"`,
       );
       return;
     }
@@ -309,14 +330,54 @@ if (await exists(REDIRECTS)) {
       redirectProblems.push(`line ${i + 1}: "${from}" has no destination`);
       return;
     }
-    // 301 is cached by browsers indefinitely, and affiliate destinations are
-    // the least permanent URLs there are.
-    if (code !== '302') {
+
+    // ── Affiliate class ──────────────────────────────────────────────────────
+    if (from.startsWith('/go/')) {
+      // 301 is cached by browsers indefinitely, and affiliate destinations are
+      // the least permanent URLs there are.
+      if (code !== '302') {
+        redirectProblems.push(
+          `line ${i + 1}: "${from}" uses ${code ?? '(no status)'} — affiliate redirects must be 302`,
+        );
+      }
+      routed.set(from.replace(/^\/go\//, ''), to);
+      return;
+    }
+
+    // ── Migration class ──────────────────────────────────────────────────────
+    migrations += 1;
+
+    if (from.includes('*') || to.includes(':splat') || to.includes('*')) {
       redirectProblems.push(
-        `line ${i + 1}: "${from}" uses ${code ?? '(no status)'} — affiliate redirects must be 302`,
+        `line ${i + 1}: "${from} ${to}" uses a wildcard — migration rules must name\n` +
+          `                   one literal path each, so that every source can be checked\n` +
+          `                   against dist/. A splat rule swallows routes it was never\n` +
+          `                   meant to touch and no gate can see which.`,
+      );
+      return;
+    }
+
+    if (code !== '301') {
+      redirectProblems.push(
+        `line ${i + 1}: "${from}" uses ${code ?? '(no status)'} — a migration is permanent, so 301`,
       );
     }
-    routed.set(from.replace(/^\/go\//, ''), to);
+
+    if (served.has(from)) {
+      redirectProblems.push(
+        `line ${i + 1}: "${from}" is STILL BUILT — dist/ serves it, so this rule is dead.\n` +
+          `                   Cloudflare prefers a real asset over a redirect. The old URL\n` +
+          `                   would keep returning 200 and CI would stay green. Move or\n` +
+          `                   delete the page, or drop the rule.`,
+      );
+    }
+
+    if (!served.has(to)) {
+      redirectProblems.push(
+        `line ${i + 1}: "${from}" points at "${to}", which the build does not produce —\n` +
+          `                   the redirect would land on a 404.`,
+      );
+    }
   });
 
   for (const [slug, url] of declared) {
@@ -340,16 +401,30 @@ if (await exists(REDIRECTS)) {
   }
 
   if (redirectProblems.length > 0) {
-    console.error(`FAIL: ${REDIRECTS} and the affiliate registry disagree:\n`);
+    console.error(`FAIL: ${REDIRECTS} does not describe what this build serves:\n`);
     for (const problem of redirectProblems) console.error(`    ${problem}`);
     console.error('');
-    console.error('  A partner in one file and not the other is a dead /go/ link on a');
-    console.error('  live page, or a redirect nothing points at. Both files, always.');
+    console.error(
+      '  Affiliate rules (/go/, 302): a partner in one file and not the other',
+    );
+    console.error(
+      '  is a dead /go/ link on a live page, or a redirect nothing points at.',
+    );
+    console.error('  Both files, always.');
+    console.error('');
+    console.error(
+      '  Migration rules (any other path, 301): the source must be gone from',
+    );
+    console.error(
+      '  dist/ and the destination must be in it. A redirect whose source is',
+    );
+    console.error('  still built never runs, and nothing else in CI can tell you that.');
     process.exit(1);
   }
 
   console.log(
-    `PASS: ${REDIRECTS} agrees with the affiliate registry — ${declared.size} partner(s).`,
+    `PASS: ${REDIRECTS} — ${declared.size} affiliate rule(s) agree with the registry, ` +
+      `${migrations} migration rule(s) resolve against the build.`,
   );
 }
 

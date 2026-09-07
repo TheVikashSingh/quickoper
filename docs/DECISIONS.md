@@ -2850,6 +2850,59 @@ This one is now guarded. `docs/STATE.md` has the same shape and is already
 guarded by `check-state.mjs` counting against the build, which would catch a
 similar loss by a different route.
 
+### D81 — No rule in `_redirects` has ever served, so nine URLs are not staked on it yet
+
+Nine root URLs are moving under `/finance/` (the URL structure is now decided in
+`TheVikashSingh/quickoper-architecture`). The mechanism that will carry them is
+`public/_redirects`, and **every line in that file is a comment.** It has existed
+since the affiliate plumbing landed in D52 and has never served a single live
+redirect, because there are still no partners. `/go/test` returns 404.
+
+**That is D45's shape exactly, and D45 is the reason this pull request exists
+separately from the migration.** `public/_headers` shipped broken from the first
+commit and stayed broken, because Cloudflare parses it at *deploy* time — after
+CI — so nothing in this repository had ever read it. `_redirects` sits in the
+same blind spot. Staking nine URLs on an untested mechanism and discovering at
+deploy that the format, the file name or the ordering is wrong would mean nine
+live 404s found by a crawler rather than by us.
+
+So: one throwaway rule, `/_redirect-probe → /about`, merged and deployed on its
+own. If it returns 301 the mechanism is proven and the migration can proceed. If
+it does not, we have learned that for the price of one meaningless URL.
+
+**The gate now understands two rule classes, and they disagree about the status
+code on purpose.** Affiliate rules are `302`, because an affiliate destination is
+the least permanent URL on the internet and a browser caches a `301` indefinitely
+(D52). Migration rules are `301`, because permanence is the entire claim being
+made to a crawler. One file, two contracts, and the check reads the path to know
+which applies.
+
+**The check that matters is that the source is ABSENT from `dist/`.** Cloudflare
+serves a real static asset in preference to a redirect rule. So a redirect whose
+source is still built is *silently dead*: CI green, deploy green, and the old URL
+still returning 200 — and no other gate could ever notice, because every one of
+them reads `dist/` and would find that page present and correct. When the nine
+pages move, this assertion is what proves the `git mv` actually happened rather
+than a copy. It converts "I updated the links" into something the build can
+verify.
+
+Wildcards are rejected outright. `/* /finance/:splat 301` reads as the tidy
+version of eight lines and swallows `/about`, `/apps` and every asset on the
+site. Because its source is not a literal path, the absent-from-`dist/` check
+could never catch it — so the rule has to be refused rather than examined.
+
+**Proven to fail, five ways** (D18: a gate that has never failed is not a gate).
+Source still built → exit 1. Destination not in `dist/` → exit 1. `302` on a
+migration rule → exit 1. A splat rule → exit 1. And the affiliate class, which
+was refactored rather than left alone, still catches a `/go/` line using `301`
+and one absent from `affiliates.ts` → exit 1. Exit 0 restored after each.
+
+**What this entry does not yet record: whether the probe worked.** That is a
+live-domain fact, it cannot be known from inside the repository, and writing it
+down before it happened is how `docs/DNS.md` ended up citing a section that did
+not exist. The result is appended when the deploy has been observed, and the
+probe line is removed in the same change.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
