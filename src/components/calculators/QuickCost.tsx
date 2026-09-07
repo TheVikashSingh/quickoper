@@ -148,8 +148,25 @@ export function QuickCost(prose: Prose): JSX.Element {
       </div>
 
       <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+        {/*
+          rel="nofollow" because this href always carries a query string, and
+          robots.txt disallows `/*?*` — shared permalinks are canonicalised to
+          the clean tool URL and never enter the sitemap (rule 11).
+
+          The island is server-rendered, so this anchor is in the static HTML of
+          the homepage rather than something only a hydrated browser sees. A
+          crawler was therefore being handed a FOLLOWED link to a URL the same
+          site tells it not to crawl. That is a contradictory signal on the one
+          page with the most inbound equity, spent on a duplicate of a page
+          already linked cleanly from the row above.
+
+          The query string stays. It is the handoff — the visitor's three
+          figures carried into the full tool — and stripping it would trade a
+          real feature for a crawl hint.
+        */}
         <a
           href={handoff}
+          rel="nofollow"
           class="rounded-control border-brand bg-brand hover:bg-brand-hover text-canvas border px-4 py-2 text-sm font-medium"
         >
           See the month-by-month schedule
