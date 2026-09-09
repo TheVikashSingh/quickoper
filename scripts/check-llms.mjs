@@ -36,7 +36,7 @@
 
 import { readFile, stat } from 'node:fs/promises';
 
-import { SITE_LEVEL, VERTICALS } from '../src/lib/catalogue.ts';
+import { SITE_LEVEL, VERTICAL_TRUST, VERTICALS } from '../src/lib/catalogue.ts';
 
 const SITEMAP = 'dist/sitemap-0.xml';
 const LLMS = 'public/llms.txt';
@@ -59,6 +59,7 @@ const LLMS = 'public/llms.txt';
 const EXEMPT = new Set([
   ...SITE_LEVEL.map((path) => (path === '/' ? '' : path)),
   ...VERTICALS.map((v) => v.hub),
+  ...VERTICAL_TRUST,
 ]);
 
 const exists = async (p) => {

@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-08-17, after PR #48.
+**Updated:** 2026-09-09, after the URL migration.
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -10,9 +10,9 @@ changes the answer to "what exists" or "what is next".
 1. `CLAUDE.md` — the rules.
 2. `docs/DECISIONS.md` — why the rules are what they are, and what has already
    been tried and disproven. Read the **Superseded** section before proposing
-   any optimisation. **82 entries. D43–D59 are the launch and everything it exposed;
-   D60–D69 are the first live data and the tools built on it; D70–D82 are the
-   machining vertical and the restructure.** Read the last block before touching
+   any optimisation. **86 entries. D43–D59 are the launch and everything it exposed;
+   D60–D69 are the first live data and the tools built on it; D70–D86 are the
+   machining vertical, the catalogue and the URL migration.** Read the last block before touching
    deploy config, the catalogue, or any page that states a computed figure in
    prose.
 3. This file — what exists, what is next, what is blocked on the operator.
@@ -32,10 +32,10 @@ changes the answer to "what exists" or "what is next".
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
 | Pages built | 27 (26 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 404 passing |
+| Tests | 430 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.68 KB of 19.5 KB (0.82 KB spare) — `/finance/uk-early-repayment-charge-calculator` |
-| Content pages JS | 0.53 KB (inline theme script only); homepage 12.90 KB — it carries an island (D34) |
+| Content pages JS | 0.53 KB (inline theme script only); homepage 12.91 KB — it carries an island (D34) |
 
 ---
 
@@ -63,13 +63,19 @@ report (local-only — never in the URL, never persisted).
 
 **Content and trust**
 
-`/` · `/finance` (cluster hub) · `/methodology` · `/verify` · `/about` ·
+`/` · `/finance` (cluster hub) · `/methodology` · `/finance/verify` · `/about` ·
 `/privacy` · `/terms` · `/contact` · `/404`
 
-**Derivations** — six pages, each tied to a tool that exists and each carrying
+**Derivations** — eight pages, each tied to a tool that exists and each carrying
 figures computed here rather than transcribed:
-`/minimum-payments` · `/biweekly-mortgage-payments` · `/credit-card-interest` ·
-`/monthly-return-rate` · `/withdrawal-rate` · `/coast-number`
+`/finance/minimum-payments` · `/finance/biweekly-mortgage-payments` ·
+`/finance/credit-card-interest` · `/finance/monthly-return-rate` ·
+`/finance/withdrawal-rate` · `/finance/coast-number` ·
+`/finance/mortgage-overpayment-timing` · `/finance/15-year-vs-30-year-mortgage`
+
+They are not listed by hand anywhere that renders: `src/lib/catalogue.ts` is the
+registry, and the hub and homepage both read it (D82). This list is prose and
+therefore drifts — it said six while eight existed.
 
 **Engines** (`src/lib/calc/`) — `money.ts`, `debt-payoff.ts`, `coast-fire.ts`,
 `mortgage.ts`. Pure, no DOM, no framework. Fixtures anchored to published
@@ -178,7 +184,7 @@ the finance side and should not be maintained as one.
 
 **Why a subfolder and not a subdomain.** Authority consolidates on one host, and
 the "calculators that show their working" promise — with `/methodology` and
-`/verify` behind it — is exactly the argument a machinist needs. A subdomain
+`/finance/verify` behind it — is exactly the argument a machinist needs. A subdomain
 would restart both. Adding folders cannot disturb existing indexing; only
 changing or removing URLs does.
 
@@ -461,7 +467,7 @@ calculator. Five pages indexed of seventeen.
 | Page | Clicks | Impressions |
 |---|---|---|
 | `/finance/mortgage-overpayment-calculator` | 0 | **25** |
-| `/credit-card-interest` | 0 | **17** |
+| `/finance/credit-card-interest` | 0 | **17** |
 
 Top queries, all 8 of them: `overpayment mortgage calculator` (8),
 `mortgage overpayment calculator` (6), then single impressions on
@@ -471,10 +477,10 @@ Top queries, all 8 of them: `overpayment mortgage calculator` (8),
 
 **What changed, and it is the only real signal so far: a second cluster started
 ranking.** D60 recorded one page producing 100% of impressions. That is no longer
-true — `/credit-card-interest` is now within a third of the mortgage page and
+true — `/finance/credit-card-interest` is now within a third of the mortgage page and
 picking up queries of its own. It is a *derivation* page, not a calculator, which
 is worth remembering when choosing what to build next. The daily-rate query was
-checked against the page and lands correctly: `/credit-card-interest` already
+checked against the page and lands correctly: `/finance/credit-card-interest` already
 covers the daily periodic rate and the average daily balance method.
 
 **Still 0 clicks, and that is expected.** At position ~67 almost nobody scrolls
@@ -499,19 +505,19 @@ and this becomes unrecoverable.
 
 | Page | Clicks | Impressions | Position |
 |---|---|---|---|
-| `/credit-card-interest` | 0 | **719** | 76.17 |
+| `/finance/credit-card-interest` | 0 | **719** | 76.17 |
 | `/finance/mortgage-overpayment-calculator` | 0 | 552 | 65.53 |
 | `/finance/uk-early-repayment-charge-calculator` | 0 | 384 | 88.10 |
 | **`/machining/feeds-and-speeds-calculator`** | 0 | **121** | 86.66 |
-| `/biweekly-mortgage-payments` | 0 | 117 | 75.82 |
+| `/finance/biweekly-mortgage-payments` | 0 | 117 | 75.82 |
 | `/finance/debt-payoff-calculator` | 0 | 38 | 63.26 |
-| `/monthly-return-rate` | 0 | 32 | **12.50** |
-| `/minimum-payments` | 0 | 31 | 75.74 |
+| `/finance/monthly-return-rate` | 0 | 32 | **12.50** |
+| `/finance/minimum-payments` | 0 | 31 | 75.74 |
 | `/finance/coast-fire-calculator` | 0 | 15 | 62.73 |
 | `/` | 0 | 13 | 31.69 |
 | `/methodology` | 0 | 12 | **16.42** |
 | `/machining/app` | 0 | 7 | **19.00** |
-| **`/verify`** | 0 | **4** | **3.75** |
+| **`/finance/verify`** | 0 | **4** | **3.75** |
 | `/finance` | 0 | 2 | 73.50 |
 | `/apps` | 0 | 1 | **8.00** |
 
@@ -523,8 +529,8 @@ match the site: `www.quickoper.com/` (1 click, 5 imp, pos 29), `/pricing`,
 the old application, from India.** The current site has never had one.
 
 **Four pages have still never registered a single impression**, now across three
-months: `/coast-number`, `/withdrawal-rate`, `/15-year-vs-30-year-mortgage`,
-`/mortgage-overpayment-timing`. The last two were built *from* search evidence
+months: `/finance/coast-number`, `/finance/withdrawal-rate`, `/finance/15-year-vs-30-year-mortgage`,
+`/finance/mortgage-overpayment-timing`. The last two were built *from* search evidence
 (D61, D62). That is the strongest counter-evidence this project has to the
 "write a page for the query" approach, and it should be read before writing
 another one.
@@ -536,8 +542,8 @@ reading. `feeds and speeds calculator` pulls 21 impressions on its own. Neither
 registered anything yet.
 
 **The position/breadth relationship held for a third reading.** Everything broad
-sits at 63–96; everything narrow sits in the top 20 — `/verify` 3.75,
-`/apps` 8.00, `/monthly-return-rate` 12.50, `/methodology` 16.42,
+sits at 63–96; everything narrow sits in the top 20 — `/finance/verify` 3.75,
+`/apps` 8.00, `/finance/monthly-return-rate` 12.50, `/methodology` 16.42,
 `/machining/app` 19.00. Between them those five pages account for **56 of the
 2,048 impressions this site drew — 2.73%**. It wins the queries nobody competes
 for and loses everything else, which is an authority problem no on-page change

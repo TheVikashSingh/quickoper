@@ -1,10 +1,10 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Guilloche from '../components/ornament/Guilloche.astro';
-import NoteFrame from '../components/ornament/NoteFrame.astro';
-import Rule from '../components/ornament/Rule.astro';
-import { SITE } from '../lib/site';
-import { sourceRef } from '../lib/schema';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Guilloche from '../../components/ornament/Guilloche.astro';
+import NoteFrame from '../../components/ornament/NoteFrame.astro';
+import Rule from '../../components/ornament/Rule.astro';
+import { SITE } from '../../lib/site';
+import { sourceRef } from '../../lib/schema';
 
 const LAST_VERIFIED = '2026-08-08';
 
@@ -23,7 +23,7 @@ const SOURCES = [
 
 /**
  * Every figure is target ÷ (1 + r)^years on a $1,000,000 target. The 30-year,
- * 5% row — $231,377.45 — is the same figure /verify asks readers to reproduce
+ * 5% row — $231,377.45 — is the same figure /finance/verify asks readers to reproduce
  * with `=1000000/1.05^30`, so this page and that one cannot disagree.
  */
 const BY_YEARS = [
@@ -75,7 +75,7 @@ const structuredData = [
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: 'What a coast number is, and what it is not',
-    url: `${SITE.url}/coast-number`,
+    url: `${SITE.url}/finance/coast-number`,
     description:
       'A coast number is target ÷ (1 + real return)^years — the amount that grows to a retirement target with no further contributions. What it means, how fast it falls, and how much the return assumption moves it.',
     author: { '@id': `${SITE.url}/about#person` },
@@ -90,8 +90,14 @@ const structuredData = [
       {
         '@type': 'ListItem',
         position: 2,
+        name: 'Money calculators',
+        item: `${SITE.url}/finance`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
         name: 'Coast numbers',
-        item: `${SITE.url}/coast-number`,
+        item: `${SITE.url}/finance/coast-number`,
       },
     ],
   },
@@ -168,8 +174,8 @@ const money = (n: number) =>
         <span class="numeric">1,000,000 ÷ 1.05<sup>30</sup> = $231,377.45</span>. You can
         check it in a spreadsheet in ten seconds with{' '}
         <code class="numeric">=1000000/1.05^30</code>, which is exactly what our{' '}
-        <a class="text-brand underline" href="/verify">verification page</a> asks readers to
-        do.
+        <a class="text-brand underline" href="/finance/verify">verification page</a> asks readers
+        to do.
       </p>
 
       <h2 class="text-ink section-head">How fast it falls with time</h2>
@@ -259,7 +265,7 @@ const money = (n: number) =>
         <em>real</em> return. If you enter a nominal 8% while thinking about spending in today's
         prices, the number you get back is optimistic twice over — once for the rate and once
         for the inflation you forgot to remove. That distinction is worked through in{' '}
-        <a class="text-brand underline" href="/monthly-return-rate"
+        <a class="text-brand underline" href="/finance/monthly-return-rate"
           >why a 7% return is not 0.583% a month</a
         >.
       </p>
@@ -278,7 +284,7 @@ const money = (n: number) =>
         <strong class="text-ink">It does not mean the target is right.</strong> The target itself
         usually comes from a withdrawal rate applied to expected spending, and both of those
         are guesses about a life you have not lived yet.{' '}
-        <a class="text-brand underline" href="/withdrawal-rate"
+        <a class="text-brand underline" href="/finance/withdrawal-rate"
           >Where the 4% rule comes from</a
         > covers how much weight that conversion can actually bear.
       </p>
@@ -363,9 +369,9 @@ const money = (n: number) =>
           a $1,000,000 target. The 30-year, 5% row — $231,377.45 — is the same figure the{
             ' '
           }
-          <a class="text-brand underline" href="/verify">verification page</a> asks readers
-          to reproduce with <code class="numeric">=1000000/1.05^30</code>, and the same
-          one our calculator returns.
+          <a class="text-brand underline" href="/finance/verify">verification page</a> asks
+          readers to reproduce with <code class="numeric">=1000000/1.05^30</code>, and the
+          same one our calculator returns.
         </li>
       </ul>
       <p class="text-ink-mute mt-4 text-sm">
@@ -394,13 +400,13 @@ const money = (n: number) =>
           > — computes this year by year, with the full projection.
         </li>
         <li>
-          <a class="text-brand underline" href="/withdrawal-rate"
+          <a class="text-brand underline" href="/finance/withdrawal-rate"
             >Where the 4% rule comes from</a
           > — how the target itself is derived, and what that rests on.
         </li>
         <li>
-          <a class="text-brand underline" href="/verify">Check our arithmetic</a> — reproduce
-          $231,377.45 in a spreadsheet.
+          <a class="text-brand underline" href="/finance/verify">Check our arithmetic</a> —
+          reproduce $231,377.45 in a spreadsheet.
         </li>
       </ul>
     </nav>

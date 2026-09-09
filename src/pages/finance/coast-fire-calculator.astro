@@ -66,7 +66,7 @@ const structuredData = [
       {
         '@type': 'ListItem',
         position: 2,
-        name: 'Calculators',
+        name: 'Money calculators',
         item: `${SITE.url}/finance`,
       },
       {
@@ -111,7 +111,7 @@ const structuredData = [
       class="mt-5"
       items={[
         { label: 'Nothing you type is sent anywhere' },
-        { label: "Matches the SEC's own calculator", href: '/verify' },
+        { label: "Matches the SEC's own calculator", href: '/finance/verify' },
         { label: 'Year-by-year projection, chart, CSV and print' },
       ]}
     />
@@ -380,17 +380,17 @@ const structuredData = [
       hubNote="the other calculators, each showing its full schedule rather than one figure"
       links={[
         {
-          href: '/coast-number',
+          href: '/finance/coast-number',
           label: 'What a coast number is, and what it is not',
           note: 'the one assumption that moves this figure more than any other',
         },
         {
-          href: '/withdrawal-rate',
+          href: '/finance/withdrawal-rate',
           label: 'Where the 4% rule comes from',
           note: 'what the target on this page is actually derived from, and what it does not promise',
         },
         {
-          href: '/monthly-return-rate',
+          href: '/finance/monthly-return-rate',
           label: 'Why a 7% return is not 0.583% a month',
           note: 'the compounding convention this projection uses, and the $50,424 it changes',
         },

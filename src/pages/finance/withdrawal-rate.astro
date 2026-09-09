@@ -1,10 +1,10 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Guilloche from '../components/ornament/Guilloche.astro';
-import NoteFrame from '../components/ornament/NoteFrame.astro';
-import Rule from '../components/ornament/Rule.astro';
-import { SITE } from '../lib/site';
-import { sourceRef } from '../lib/schema';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Guilloche from '../../components/ornament/Guilloche.astro';
+import NoteFrame from '../../components/ornament/NoteFrame.astro';
+import Rule from '../../components/ornament/Rule.astro';
+import { SITE } from '../../lib/site';
+import { sourceRef } from '../../lib/schema';
 
 const LAST_VERIFIED = '2026-08-08';
 
@@ -69,7 +69,7 @@ const structuredData = [
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: 'Where the 4% rule comes from, and what it does not say',
-    url: `${SITE.url}/withdrawal-rate`,
+    url: `${SITE.url}/finance/withdrawal-rate`,
     description:
       'A withdrawal rate converts spending into a savings target by dividing 100 by the rate. Where the 4% figure came from, why 3% costs 33% more capital, and the sequence risk a constant rate hides.',
     author: { '@id': `${SITE.url}/about#person` },
@@ -84,8 +84,14 @@ const structuredData = [
       {
         '@type': 'ListItem',
         position: 2,
+        name: 'Money calculators',
+        item: `${SITE.url}/finance`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
         name: 'Withdrawal rates',
-        item: `${SITE.url}/withdrawal-rate`,
+        item: `${SITE.url}/finance/withdrawal-rate`,
       },
     ],
   },
@@ -333,8 +339,8 @@ const money = (n: number) =>
 
       <p>
         Every figure on this page can be reproduced with a calculator, and the{' '}
-        <a class="text-brand underline" href="/verify">verification page</a> shows how we check
-        the ones the tool produces.
+        <a class="text-brand underline" href="/finance/verify">verification page</a> shows how
+        we check the ones the tool produces.
       </p>
     </section>
 
@@ -398,8 +404,9 @@ const money = (n: number) =>
       <h2 class="section-head">Related</h2>
       <ul class="text-ink-soft mt-3 space-y-1 text-sm">
         <li>
-          <a class="text-brand underline" href="/coast-number">What a coast number is</a> —
-          and what it is not.
+          <a class="text-brand underline" href="/finance/coast-number"
+            >What a coast number is</a
+          > — and what it is not.
         </li>
         <li>
           <a class="text-brand underline" href="/finance/coast-fire-calculator"
@@ -407,7 +414,7 @@ const money = (n: number) =>
           > — the rate is your input.
         </li>
         <li>
-          <a class="text-brand underline" href="/monthly-return-rate"
+          <a class="text-brand underline" href="/finance/monthly-return-rate"
             >Why a 7% return is not 0.583% a month</a
           > — the conversion most projections get wrong.
         </li>

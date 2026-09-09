@@ -10,11 +10,11 @@ import { SITE } from '../lib/site';
 //
 // ─── Why this page has per-vertical sections ────────────────────────────────
 //
-// It stays at the ROOT while /verify moves under /finance, and the split is
+// It stayed at the ROOT when /verify moved to /finance/verify, and the split is
 // deliberate: this page is a CLAIM — why the numbers can be trusted — and that
-// claim is genuinely site-wide. /verify is a PROCEDURE, and its procedure is
-// five spreadsheet formulas and one SEC calculator, every one of them financial.
-// A claim belongs to the site; a procedure belongs to its subject.
+// claim is genuinely site-wide. /finance/verify is a PROCEDURE, and its procedure
+// is five spreadsheet formulas and one SEC calculator, every one of them
+// financial. A claim belongs to the site; a procedure belongs to its subject.
 //
 // The restructure was forced by a real defect: the page opened on "Money is
 // never a decimal", "The rounding policy" and a worked verification that is an
@@ -164,8 +164,9 @@ const structuredData = [
         spreadsheet function, a published schedule, or a regulator's own worked example.{
           ' '
         }
-        <a class="text-brand underline" href="/verify">Check our arithmetic yourself</a> is
-        the step-by-step version — five formulas you can paste into Excel or Google Sheets,
+        <a class="text-brand underline" href="/finance/verify"
+          >Check our arithmetic yourself</a
+        > is the step-by-step version — five formulas you can paste into Excel or Google Sheets,
         and one calculator run by the SEC.
       </p>
 

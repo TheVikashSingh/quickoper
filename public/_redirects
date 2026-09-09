@@ -48,4 +48,28 @@
 # from this file rather than from a Cloudflare dashboard rule answering ahead of
 # the Worker (D60). The probe line has been removed; D81 carries the detail.
 #
-# There are no migration rules yet. The nine root URLs move in their own change.
+# The nine migration rules below were added in that change.
+
+# ── The 2026-09 migration: nine root URLs moved under /finance ────────────────
+#
+# The root namespace is reserved for site-level pages; all vertical content
+# lives under its vertical. These nine were finance content sitting at the root
+# because finance was the only vertical when they shipped.
+#
+# 301, not 302: the move is permanent, and permanence is the entire claim being
+# made to a crawler. Each source is asserted ABSENT from dist/ and each
+# destination PRESENT in it by scripts/check-deploy-config.mjs — which is what
+# proves the git mv actually happened rather than a copy.
+#
+# NEVER collapse these into `/* /finance/:splat 301`. It swallows /about,
+# /apps, /methodology and every asset, and because its source is not a literal
+# path no gate could catch it.
+/15-year-vs-30-year-mortgage   /finance/15-year-vs-30-year-mortgage   301
+/biweekly-mortgage-payments    /finance/biweekly-mortgage-payments    301
+/coast-number                  /finance/coast-number                  301
+/credit-card-interest          /finance/credit-card-interest          301
+/minimum-payments              /finance/minimum-payments              301
+/monthly-return-rate           /finance/monthly-return-rate           301
+/mortgage-overpayment-timing   /finance/mortgage-overpayment-timing   301
+/withdrawal-rate               /finance/withdrawal-rate               301
+/verify                        /finance/verify                        301

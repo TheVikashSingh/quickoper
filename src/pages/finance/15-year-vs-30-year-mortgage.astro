@@ -1,13 +1,13 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import NoteFrame from '../components/ornament/NoteFrame.astro';
-import Rule from '../components/ornament/Rule.astro';
-import RelatedTools from '../components/RelatedTools.astro';
-import { SITE } from '../lib/site';
-import { sourceRef } from '../lib/schema';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NoteFrame from '../../components/ornament/NoteFrame.astro';
+import Rule from '../../components/ornament/Rule.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { SITE } from '../../lib/site';
+import { sourceRef } from '../../lib/schema';
 
-import { calculateMortgage, compareOverpayment } from '../lib/calc/mortgage';
-import { format, fromMajor, subtract, sum, type Minor } from '../lib/calc/money';
+import { calculateMortgage, compareOverpayment } from '../../lib/calc/mortgage';
+import { format, fromMajor, subtract, sum, type Minor } from '../../lib/calc/money';
 
 const LAST_VERIFIED = '2026-08-17';
 const CURRENCY = 'USD';
@@ -161,8 +161,14 @@ const structuredData = [
       {
         '@type': 'ListItem',
         position: 2,
+        name: 'Money calculators',
+        item: `${SITE.url}/finance`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
         name: '15-year versus 30-year mortgage',
-        item: `${SITE.url}/15-year-vs-30-year-mortgage`,
+        item: `${SITE.url}/finance/15-year-vs-30-year-mortgage`,
       },
     ],
   },
@@ -383,8 +389,8 @@ const structuredData = [
         {money(fifteen.payment)}. Multiply each by its number of payments, subtract{' '}
         {loan(AMOUNT)}, and you have the interest columns above to within the final
         payment's rounding.{' '}
-        <a class="text-brand underline" href="/verify">Our verification page</a> walks through
-        the same checks in more detail.
+        <a class="text-brand underline" href="/finance/verify">Our verification page</a> walks
+        through the same checks in more detail.
       </p>
     </section>
 
@@ -490,12 +496,12 @@ const structuredData = [
           note: 'put your own loan in and see what any extra amount removes, month by month',
         },
         {
-          href: '/mortgage-overpayment-timing',
+          href: '/finance/mortgage-overpayment-timing',
           label: 'What an extra payment does in year one versus year twenty',
           note: 'why the same money is worth several times more early than late',
         },
         {
-          href: '/verify',
+          href: '/finance/verify',
           label: 'Check our arithmetic yourself',
           note: 'reproduce both payments against a spreadsheet in about a minute',
         },
