@@ -3167,6 +3167,67 @@ The shipped wording distinguishes the two kinds of source and says which applies
 per engine, on the reasoning that **"verified" means nothing if it covers both
 without distinction.** D63's gap is not closed by describing it more warmly.
 
+### D85 — The pre-migration baseline, and three months of evidence against building pages for queries
+
+A 93-day Search Console export (2026-06-07 to 2026-09-06), recorded because the
+URL migration makes it unrecoverable: the moment nine root URLs move, every one
+of them reads *Page with redirect*. The table is in `docs/STATE.md`.
+
+**2,048 impressions to this site, 0 clicks.** The only click this property has
+ever recorded is 2026-07-02 — pre-launch, to the previous application, from
+India. The current site has never had one, in three months.
+
+**Four pages have never registered a single impression, and two of them were
+built from search evidence.** `/coast-number`, `/withdrawal-rate`,
+`/15-year-vs-30-year-mortgage`, `/mortgage-overpayment-timing`. The last two were
+D61 and D62 — the first pages this project chose from what Search Console
+returned rather than from first principles, written specifically to rank.
+
+**That is the strongest counter-evidence this project has to its own most recent
+content strategy, and it should be read before another page is written for a
+query.** The comparison that makes it sharp: the UK early repayment charge
+calculator shipped the same week as those two pages and has drawn **384
+impressions**. A tool ranked; two pages written for queries did not. One trial is
+not a finding, but it is the only direct comparison available and it points the
+opposite way from the plan that produced them.
+
+**Machining ranked from a standing start, and it is a calculator.**
+`/machining/feeds-and-speeds-calculator` is now the site's fourth page by
+impressions at 121, having not existed at the previous reading, with `feeds and
+speeds calculator` pulling 21 on its own. Neither `/machining/tap-drill-calculator`
+nor `/machining/drill-size-chart` has registered anything. That is two verticals
+now showing the same shape: the thing that computes gets found.
+
+**The breadth relationship held for a third consecutive reading.** Everything
+broad sits at position 63–96; everything narrow sits in the top 20 — `/verify`
+3.75, `/apps` 8.00, `/monthly-return-rate` 12.50, `/methodology` 16.42,
+`/machining/app` 19.00. Those five pages are **56 of 2,048 impressions, 2.73%**.
+
+The site ranks where nobody competes and loses everywhere else. It is not a
+content-quality problem — `/credit-card-interest` answers its arriving queries
+better than most page-one results and sits at 76.17 with 719 impressions. It is
+an authority problem, and **no change in this repository fixes it.** Recording
+that plainly matters more than any individual figure above, because every
+instinct on reading a table like this is to go and edit something.
+
+**0 clicks remains arithmetic, not a defect.** At the observed positions the
+expected click count on 2,048 impressions is well under one. Nothing is wrong,
+and no title should be rewritten to chase CTR on this data.
+
+**What the export cannot contain, and why it is still blocking.** It is
+Performance data only. The *URL Inspection* status of the four zero-impression
+pages — *Discovered – currently not indexed* versus *Crawled – currently not
+indexed* — is not exportable. Those mean opposite things: the first is a
+crawl-scheduling outcome, the second a content verdict, and only the second would
+justify deleting the FIRE pages. It remains an operator action, and it remains
+one-way once the migration deploys.
+
+**A caveat on the window.** It starts two months before launch, so it still
+carries the previous application's URLs — `www.quickoper.com/`, `/pricing`,
+`/app/dashboard`, `/pdf-generator`, 14 impressions between them. Those predate
+D60's `www` redirect and are not evidence that the duplicate is back; anyone
+re-reading this table later should not mistake them for current.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

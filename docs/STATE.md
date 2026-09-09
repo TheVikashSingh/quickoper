@@ -485,3 +485,68 @@ what can be proved from first principles, not by search demand. That is
 defensible and it is not the same as keyword targeting. Two clusters showing
 impressions is a signal about *direction*, not yet evidence for a content plan —
 40-odd impressions a day is still a rumour.
+
+---
+
+### 2026-09-09 — the pre-migration baseline (D85)
+
+Exported 2026-09-09, covering **2026-06-07 to 2026-09-06** — 93 days, so it
+straddles launch and still contains the previous application's URLs.
+
+**This is the reading the URL migration must be measured against**, because the
+moment those nine root URLs move, every one of them reads *Page with redirect*
+and this becomes unrecoverable.
+
+| Page | Clicks | Impressions | Position |
+|---|---|---|---|
+| `/credit-card-interest` | 0 | **719** | 76.17 |
+| `/finance/mortgage-overpayment-calculator` | 0 | 552 | 65.53 |
+| `/finance/uk-early-repayment-charge-calculator` | 0 | 384 | 88.10 |
+| **`/machining/feeds-and-speeds-calculator`** | 0 | **121** | 86.66 |
+| `/biweekly-mortgage-payments` | 0 | 117 | 75.82 |
+| `/finance/debt-payoff-calculator` | 0 | 38 | 63.26 |
+| `/monthly-return-rate` | 0 | 32 | **12.50** |
+| `/minimum-payments` | 0 | 31 | 75.74 |
+| `/finance/coast-fire-calculator` | 0 | 15 | 62.73 |
+| `/` | 0 | 13 | 31.69 |
+| `/methodology` | 0 | 12 | **16.42** |
+| `/machining/app` | 0 | 7 | **19.00** |
+| **`/verify`** | 0 | **4** | **3.75** |
+| `/finance` | 0 | 2 | 73.50 |
+| `/apps` | 0 | 1 | **8.00** |
+
+Plus four URLs from the previous application, which is why the total does not
+match the site: `www.quickoper.com/` (1 click, 5 imp, pos 29), `/pricing`,
+`/app/dashboard`, `/pdf-generator`.
+
+**The only click this property has ever recorded is 2026-07-02, pre-launch, to
+the old application, from India.** The current site has never had one.
+
+**Four pages have still never registered a single impression**, now across three
+months: `/coast-number`, `/withdrawal-rate`, `/15-year-vs-30-year-mortgage`,
+`/mortgage-overpayment-timing`. The last two were built *from* search evidence
+(D61, D62). That is the strongest counter-evidence this project has to the
+"write a page for the query" approach, and it should be read before writing
+another one.
+
+**Machining ranked from a standing start.** `/machining/feeds-and-speeds-calculator`
+is the site's fourth page by impressions and did not exist at the previous
+reading. `feeds and speeds calculator` pulls 21 impressions on its own. Neither
+`/machining/tap-drill-calculator` nor `/machining/drill-size-chart` has
+registered anything yet.
+
+**The position/breadth relationship held for a third reading.** Everything broad
+sits at 63–96; everything narrow sits in the top 20 — `/verify` 3.75,
+`/apps` 8.00, `/monthly-return-rate` 12.50, `/methodology` 16.42,
+`/machining/app` 19.00. Between them those five pages account for **56 of the
+2,048 impressions this site drew — 2.73%**. It wins the queries nobody competes
+for and loses everything else, which is an authority problem no on-page change
+fixes.
+
+**What this export does NOT contain, and cannot.** It is Performance data only.
+The *URL Inspection* status for the four zero-impression pages —
+*Discovered – currently not indexed* versus *Crawled – currently not indexed* —
+is not exportable and is still outstanding. Those mean opposite things: the first
+is a crawl-scheduling outcome, the second is a content verdict, and only the
+second would justify deleting the FIRE pages. **Still blocked on the operator,
+and still one-way.**
