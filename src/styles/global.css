@@ -609,6 +609,191 @@
   /* intentionally empty */
 }
 
+/* ── Vertical colour keys ────────────────────────────────────────────────────
+   The homepage is the ONLY page where both children's accents appear, and they
+   appear as wayfinding rather than decoration: a visitor can see that there are
+   two subjects before reading a word. Everywhere else, one vertical owns the
+   page and `--color-brand` already is that vertical's colour.
+
+   `--key` is set by an attribute rather than by the token swap, because the
+   homepage's own vertical is `site` — the root cannot be finance and machining
+   at once. It defaults to --color-brand, so a group with no key, or a key naming
+   a vertical that does not exist, renders in the page's own accent rather than
+   in nothing.
+
+   These are the SAME values as each vertical's --color-brand, duplicated here
+   because a custom property cannot read another selector's scope. If a vertical
+   accent ever changes, it changes in two places, and that is the cost of the
+   homepage being able to show both at once. */
+[data-vertical-key] {
+  --key: var(--color-brand);
+}
+[data-vertical-key='finance'] {
+  --key: oklch(42% 0.105 158);
+}
+[data-vertical-key='machining'] {
+  --key: oklch(45% 0.145 255);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) [data-vertical-key='finance'] {
+    --key: oklch(74% 0.135 158);
+  }
+  :root:not([data-theme='light']) [data-vertical-key='machining'] {
+    --key: oklch(72% 0.13 255);
+  }
+}
+
+:root[data-theme='dark'] [data-vertical-key='finance'] {
+  --key: oklch(74% 0.135 158);
+}
+:root[data-theme='dark'] [data-vertical-key='machining'] {
+  --key: oklch(72% 0.13 255);
+}
+
+/* The key is spent on the rule under the group heading and on a short bar
+   before it — the two places where it reads as a label for what follows rather
+   than as an ornament sitting near it. */
+.section-head--key {
+  border-bottom-color: var(--key);
+}
+.section-head--key > span:first-child::before {
+  content: '';
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.5rem;
+  border-radius: 2px;
+  background-color: var(--key);
+  vertical-align: middle;
+}
+
+/* ── The root: burnished brass ──────────────────────────────────────────────
+   The root belonged to finance by accident. `vertical` was optional and
+   `undefined` meant finance, so the homepage, /about, /apps and every trust
+   page wore one of their children's clothes. D82 made the prop required and
+   left `site` pointing at the finance palette deliberately, so that change
+   moved types and not pixels. This fills in the third value.
+
+   WHY BRASS. A banknote plate and a vernier scale are the same kind of object:
+   something whose credibility comes from fine ruled lines cut into metal. Brass
+   is the material of drawing instruments and micrometers, and it earns the root
+   three ways — it is chromatically distinct from both children (hue 80, against
+   green at 158 and blue at 255), so neither vertical owns the root; it reads
+   sophisticated without reading corporate; and it is the one thing an engraved
+   note and a scribed steel plate genuinely share.
+
+   Georgia stays. The serif is the house voice; machining is the exception that
+   earns a sans, not the other way round — so --font-display is NOT overridden
+   here and inherits the root serif.
+
+   HOW THE VALUES WERE DERIVED, because the technique matters more than the
+   numbers: every L is carried over from the finance palette and only the HUE
+   moves. Lightness carries the contrast, so holding L means the ratios measured
+   for --color-ink-mute (52%, not 57%) and --color-line-strong (60%, not 77%)
+   still hold at a new hue without re-deriving them.
+
+   The one value that could not be carried over is the accent itself, because
+   brass is not green at another hue — it is lighter. Measured through a canvas,
+   both themes, against the floors: see D88. */
+:root[data-vertical='site'] {
+  /* Surfaces — paper, very slightly warmer than finance's. */
+  --color-canvas: oklch(97.6% 0.008 85);
+  --color-surface: oklch(99.4% 0.004 85);
+  --color-sunken: oklch(94.6% 0.012 85);
+
+  /* Ink — graphite with a warm cast, not green-black. */
+  --color-ink: oklch(23% 0.014 85);
+  --color-ink-soft: oklch(43% 0.016 85);
+  --color-ink-mute: oklch(52% 0.016 85);
+
+  --color-line: oklch(88.5% 0.012 85);
+  --color-line-strong: oklch(60% 0.03 85);
+
+  /* Burnished brass. One accent. */
+  --color-brand: oklch(47% 0.085 80);
+  --color-brand-hover: oklch(40% 0.09 80);
+  --color-brand-soft: oklch(93% 0.028 80);
+
+  /* Semantic keeps its meaning across every vertical. */
+  --color-positive: oklch(45% 0.115 155);
+  --color-caution: oklch(56% 0.13 75);
+  --color-negative: oklch(50% 0.17 25);
+
+  /* Ruling, where finance has engraving and machining has scribe marks. */
+  --color-engrave: oklch(47% 0.085 80 / 0.065);
+  --color-engrave-strong: oklch(47% 0.085 80 / 0.22);
+
+  /* The instrument case: graphite, faint warm cast. */
+  --color-masthead: oklch(24% 0.02 80);
+  --color-masthead-ink: oklch(95% 0.008 85);
+  --color-masthead-mute: oklch(80% 0.016 85);
+  --color-masthead-line: oklch(38% 0.03 80);
+  --color-masthead-accent: oklch(78% 0.1 80);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-vertical='site'] {
+    --color-canvas: oklch(17% 0.012 85);
+    --color-surface: oklch(20.5% 0.014 85);
+    --color-sunken: oklch(14% 0.012 85);
+
+    --color-ink: oklch(94% 0.008 85);
+    --color-ink-soft: oklch(78% 0.014 85);
+    --color-ink-mute: oklch(62% 0.014 85);
+
+    --color-line: oklch(28.5% 0.018 85);
+    --color-line-strong: oklch(55% 0.03 85);
+
+    --color-brand: oklch(78% 0.1 80);
+    --color-brand-hover: oklch(85% 0.09 80);
+    --color-brand-soft: oklch(27% 0.045 80);
+
+    --color-positive: oklch(74% 0.14 155);
+    --color-caution: oklch(78% 0.13 75);
+    --color-negative: oklch(70% 0.16 25);
+
+    --color-engrave: oklch(78% 0.1 80 / 0.08);
+    --color-engrave-strong: oklch(78% 0.1 80 / 0.24);
+
+    --color-masthead: oklch(11.5% 0.014 85);
+    --color-masthead-ink: oklch(93% 0.008 85);
+    --color-masthead-mute: oklch(74% 0.014 85);
+    --color-masthead-line: oklch(26% 0.022 85);
+    --color-masthead-accent: oklch(80% 0.1 80);
+  }
+}
+
+:root[data-theme='dark'][data-vertical='site'] {
+  --color-canvas: oklch(17% 0.012 85);
+  --color-surface: oklch(20.5% 0.014 85);
+  --color-sunken: oklch(14% 0.012 85);
+
+  --color-ink: oklch(94% 0.008 85);
+  --color-ink-soft: oklch(78% 0.014 85);
+  --color-ink-mute: oklch(62% 0.014 85);
+
+  --color-line: oklch(28.5% 0.018 85);
+  --color-line-strong: oklch(55% 0.03 85);
+
+  --color-brand: oklch(78% 0.1 80);
+  --color-brand-hover: oklch(85% 0.09 80);
+  --color-brand-soft: oklch(27% 0.045 80);
+
+  --color-positive: oklch(74% 0.14 155);
+  --color-caution: oklch(78% 0.13 75);
+  --color-negative: oklch(70% 0.16 25);
+
+  --color-engrave: oklch(78% 0.1 80 / 0.08);
+  --color-engrave-strong: oklch(78% 0.1 80 / 0.24);
+
+  --color-masthead: oklch(11.5% 0.014 85);
+  --color-masthead-ink: oklch(93% 0.008 85);
+  --color-masthead-mute: oklch(74% 0.014 85);
+  --color-masthead-line: oklch(26% 0.022 85);
+  --color-masthead-accent: oklch(80% 0.1 80);
+}
+
 :root[data-vertical='machining'] {
   /* Surfaces — ground steel, faint blue cast. */
   --color-canvas: oklch(96.8% 0.004 245);
