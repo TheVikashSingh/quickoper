@@ -279,8 +279,37 @@ const graph = [organization, person, website, ...structuredData];
     <header class="bg-masthead text-masthead-ink border-brand border-b-2">
       <LatheBand height={10} class="text-masthead-line" />
 
+      {
+        /*
+          THE NAV WRAPS, AND IT HAD TO — TWO CONTROLS WERE OFF-SCREEN AT 375px.
+
+          Measured on the live site at a 360px client width (a 375px viewport
+          less the scrollbar): "About" sat at 373-416 and the theme toggle at
+          433-465, both past the right edge. `overflow` was `visible` and the
+          document does not scroll sideways, so they were not merely awkward to
+          reach — they were unreachable. A theme toggle that cannot be operated
+          on a phone is a control that does not exist there.
+
+          It reported as a horizontal overflow, which D61 recorded as a
+          measurement artefact: scrollWidth exceeding clientWidth is usually the
+          scrollbar, and the test is whether scrollX actually moves. It did not
+          move here either — the difference is that this time elements really
+          were past the edge, and the page simply clipped them instead of
+          scrolling. The artefact and the defect look identical until you ask
+          which elements, and where.
+
+          Pre-existing rather than introduced: this nav dates to #16 and gained
+          the Apps link with the machining vertical. It surfaced now because the
+          hub was being measured at 375px for something else.
+
+          flex-wrap rather than hiding anything. "About" has no footer link to
+          fall back to, and the toggle has no alternative at all, so neither can
+          be dropped below a breakpoint the way Methodology is. Wrapping costs a
+          second line on a phone and nothing at all above it.
+        */
+      }
       <nav
-        class="mx-auto flex max-w-4xl items-center gap-4 px-4 py-3.5"
+        class="mx-auto flex max-w-4xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5"
         aria-label="Primary"
       >
         <a href="/" class="group flex items-center gap-2.5" aria-label="QuickOper home">
@@ -313,7 +342,7 @@ const graph = [organization, person, website, ...structuredData];
           href="/apps">Apps</a
         >
 
-        <ul class="text-masthead-mute ml-auto flex items-center gap-5 text-sm">
+        <ul class="text-masthead-mute ml-auto flex items-center gap-4 text-sm sm:gap-5">
           <li>
             <a class="hover:text-masthead-ink" href={sectionNav.href}
               >{sectionNav.label}</a

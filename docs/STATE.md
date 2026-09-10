@@ -10,8 +10,8 @@ changes the answer to "what exists" or "what is next".
 1. `CLAUDE.md` — the rules.
 2. `docs/DECISIONS.md` — why the rules are what they are, and what has already
    been tried and disproven. Read the **Superseded** section before proposing
-   any optimisation. **92 entries. D43–D59 are the launch and everything it exposed;
-   D60–D69 are the first live data and the tools built on it; D70–D92 are the
+   any optimisation. **94 entries. D43–D59 are the launch and everything it exposed;
+   D60–D69 are the first live data and the tools built on it; D70–D94 are the
    machining vertical, the catalogue, the URL migration and the visual pass.** Read the last block before touching
    deploy config, the catalogue, or any page that states a computed figure in
    prose.
@@ -152,17 +152,29 @@ Nothing in code depends on these, but launch does.
    file exists rather than asserted, so the declaration cannot go back to
    claiming an image it does not have.
 
-5. **Run `docs/VERIFICATION.md`** — five spreadsheet checks and one at
-   investor.gov, ten minutes. It was written as a pre-launch task and launch
-   happened without it, so it is now overdue rather than pending: the site is
-   publicly claiming figures nobody outside this repository has checked.
+5. ~~**Run `docs/VERIFICATION.md`.**~~ **Run 2026-09-10 (D93). Everything
+   passed**, and the results are recorded in that document rather than here,
+   because it is where anyone worried about an AI-written codebase is pointed.
 
-   **It is now load-bearing, not just reassuring (D63).** Only `mortgage.ts` is
-   anchored to a published third-party schedule; `debt-payoff.ts` and
-   `coast-fire.ts` are anchored to formulas, which cannot adjudicate a rounding
-   or compounding convention. The investor.gov step in this document is the
-   natural third-party anchor for `coast-fire.ts` — running it and recording the
-   output is what would close that gap.
+   **The investor.gov check closed D63's gap for one module.** The SEC's own
+   compound interest calculator returned *"In 30 years, you will have
+   $761,225.50"* for the documented inputs, and printed a year ladder that
+   confirms the compounding **convention** rather than only the total — which is
+   the thing a formula could not adjudicate. `coastOnly` lands 42 cents under
+   it, from 360 successive roundings, and the fixture in
+   `tests/calc/coast-fire.test.ts` now cites that run as its source instead of
+   citing a formula.
+
+   **Two of three engines are externally anchored. `debt-payoff.ts` is still
+   not**, and that is the whole of the remaining rule 3 gap. Do not read "the
+   verification was run" as "rule 3 is satisfied everywhere".
+
+   **Still outstanding, and only a human can close it:** the five spreadsheet
+   checks were *re-derived* in a clean-room script, not typed into Excel or
+   Sheets. That is a second independent implementation, not the third-party
+   check — the point of Excel's `PMT` is that other people wrote it decades ago.
+   Ten minutes with a spreadsheet open still converts those five from
+   "re-derived" to "verified".
 
 6. ~~**Canonical hostname and scheme.**~~ **Done, 2026-08-17.** Both the apex and
    `www` were serving `200`, as was plain `http://` on each — four addresses for
