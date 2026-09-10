@@ -3848,6 +3848,64 @@ calculator is a government web page. What could not be delegated is the
 judgement about what the result licenses — and that judgement is written above
 rather than assumed: the SEC check anchors one module, and it anchors no other.
 
+### D94 — Two masthead controls were off the right edge of a phone, and had been for weeks
+
+Found during a routine live check of the finance hub at 375px, looking for
+something else entirely.
+
+At a 360px client width — a 375px viewport less the scrollbar — the primary
+navigation measured:
+
+| item | right edge | reachable |
+|---|---|---|
+| wordmark | 155 | yes |
+| Apps | 236 | yes |
+| Calculators | 330 | yes |
+| Methodology | — | correctly hidden below `sm` |
+| **About** | **416** | **no** |
+| **theme toggle** | **465** | **no** |
+
+`overflow-x` was `visible` on both the header and the nav, and the document does
+not scroll sideways. So those two were not awkward to reach — they were
+**unreachable**. A theme toggle that cannot be operated on a phone is a control
+that does not exist there, and `/about` has no footer link to fall back on.
+
+**It reported as a horizontal overflow, which D61 recorded as an artefact.** That
+entry measured `scrollWidth 384` against `clientWidth 375`, found `scrollX`
+stayed at 0 after scrolling right, and concluded correctly that it was the
+scrollbar. The same two symptoms appeared here — `scrollWidth` exceeded
+`clientWidth`, and `scrollX` still would not move.
+
+**The difference is which elements, and where.** D61 had nothing past the edge;
+this had five, at 416 to 465. The page was not scrolling because it was
+*clipping*, not because there was nothing to scroll to. **An artefact and a real
+defect present identically until you ask the follow-up question**, and the
+follow-up is to enumerate the elements whose right edge exceeds `clientWidth`
+rather than to trust the aggregate.
+
+That is the eleventh instrument problem in this project's history, and the first
+where the instrument was *right* and the earlier precedent was what nearly
+dismissed it. D59's rule — suspect the measurement — has to survive its own
+success: a known artefact is a reason to look closer, not a reason to stop.
+
+**Pre-existing, not introduced.** The nav dates to #16 and gained the `Apps`
+link with the machining vertical. Nothing in the URL migration, the brass
+palette or the router touched its layout. It surfaced now only because the hub
+was being measured at 375px for an unrelated reason.
+
+**Fixed with `flex-wrap`, not by hiding anything.** `Methodology` can drop below
+`sm` because it is duplicated in the footer; `About` and the theme toggle have no
+such fallback, so neither can be dropped behind a breakpoint. Wrapping costs a
+second line on a phone and nothing at all above it. Measured after: **0 elements
+past the viewport**, every control reachable, and on desktop the wordmark, the
+link group and the toggle still share one row — all three vertical centres at
+y=50.
+
+**And the desktop check needed its own correction.** The first version asserted
+"single line" as `navHeight < 60`, which fails on a nav whose wordmark is two
+lines of type regardless of wrapping. Height was never the question; whether the
+items share a row is. Comparing their vertical centres answers it directly.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
