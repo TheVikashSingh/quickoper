@@ -3636,6 +3636,97 @@ paper does not fly.
 transition and clip-path is CSS, which is not what rule 9 caps — the only
 JavaScript added is the key expression.
 
+### D91 — The root was still a finance page, and the operator saw it before any gate did
+
+The operator opened `quickoper.com`, looked at it, and asked: *"where is the
+/finance or /machining? the landing page had to be generic."*
+
+He was right, and the diagnosis is worse than the screenshot shows. The live
+order of the root was:
+
+| # | Section | Belonged to |
+|---|---|---|
+| 1 | hero + a flat row of all six calculators | mixed, ungrouped |
+| 2 | **"What is a debt actually costing you?"** — the QuickCost island | **finance** |
+| 3 | "What the debt payoff calculator produces" — a payoff curve | **finance** |
+| 4 | "What the big comparison sites will not give you" | **finance framing** |
+| 5–7 | privacy · arithmetic · the document | site |
+| **8** | **"Calculators"** — the Money / Shop floor split | *finally* |
+| 9 | "Derivations" — eight finance pages | **finance** |
+
+**A visitor read an entire debt-payoff pitch before learning the site had two
+subjects.** The word "machining" appeared eighth.
+
+**Every part of that was correct when it was decided.** D34 put an island on the
+homepage because a visitor who types a number into a box has engaged and one who
+reads a value proposition has not. D32 put a computed payoff curve beside it so
+the page proved rather than claimed. Both were decided when finance was the only
+vertical — so "the landing page" and "the money landing page" were the same
+page.
+
+**They stopped being the same page on 2026-09-01, and nothing revisited them.**
+The URL migration then enforced "the root is site-level" for **routes** (D86),
+and D88 gave the root its own palette. So the root stopped *looking* like finance
+while still *being* finance. D88's own comment says the root "wore one of its
+children's clothes" — the palette was fixed and the substance was not, in the
+same change, by the same author, without noticing.
+
+**Neither decision is reversed. Both are re-pointed at the page they were always
+about.** The island and the proof chart now live on `/finance`, which is where a
+visitor who wants money tools arrives. D34's engagement argument and D32's
+proof-over-claims argument are untouched and now land on the right page.
+
+**The root does the one job a page with two children can honestly do:** say what
+the site is, and send you to the right half. Hero, two vertical cards carrying
+their own accent as a key, the site-level claim, and the author.
+
+**It is the only page whose JavaScript went DOWN when it got better:**
+**12.91 KB → 0.53 KB.** The homepage was the single exception to rule 9's
+"content pages ship zero", justified by D34's island. With the island on
+`/finance`, the exception is gone and the rule has no exceptions left.
+`/finance` picks up the 12.91 KB, which it can afford — it was at 0.53.
+
+**Nothing on the new root is written out by hand.** The verticals, their blurbs,
+their tool counts and their derivation counts come from the registry (D82), so a
+third vertical is one entry and no edit to `index.astro`.
+
+**D50's gate moved rather than weakened, and this is the part worth keeping.**
+`check-links.mjs` required every calculator to appear under a "Calculators"
+heading *on the homepage* — right while the homepage listed calculators, and
+impossible once it does not. Deleting the check was not an option: its own error
+message says *"do not delete the check, or the list can silently go stale
+again."*
+
+The invariant D50 actually protects is **"the page a visitor lands on must not
+lie about what exists."** With a router that is two claims, and the gate now
+asserts both:
+
+1. every vertical hub lists every calculator in that vertical;
+2. the homepage links to every vertical hub.
+
+Together they still guarantee what D50 protected — every calculator reachable
+from the root, no page under-reporting its own contents — and they cover a third
+vertical for free. **Proven in both directions** (D18): removing a calculator
+link from `/finance` fails naming it, and repointing the homepage's `/machining`
+link fails naming that. Exit 0 restored.
+
+**The honest cost, recorded rather than glossed.** Internal links fell from 451
+to 429. The homepage used to link all eight derivations, and D53 was written
+about exactly that kind of equity — the derivations were starved at one or two
+inbound links each. They now lose the homepage link and keep the hub link plus
+their Related blocks.
+
+That is accepted rather than ignored: linking eight *finance* derivations from a
+page that belongs to no vertical is the problem this entry exists to fix, and
+`/finance` is one click from the root and carries the equity instead. If those
+pages lose ground in Search Console over the next quarter, this is the change to
+look at first.
+
+**Found by looking, not by a gate — the sixth defect this session in that
+category.** Every check was green on a homepage that spent seven sections talking
+about debt before mentioning the other half of the site. No gate can ask "is this
+page about what it claims to be about".
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
