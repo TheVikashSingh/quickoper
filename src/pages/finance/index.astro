@@ -1,8 +1,84 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ToolCard from '../../components/ToolCard.astro';
+import { QuickCost } from '../../components/calculators/QuickCost';
+import ProofChart from '../../components/ornament/ProofChart.astro';
 import { SITE } from '../../lib/site';
+import { compareStrategies } from '../../lib/calc/debt-payoff';
+import { format, fromMajor } from '../../lib/calc/money';
 import { derivationsIn, toolsIn } from '../../lib/catalogue';
+
+/**
+ * THE TEASER AND THE PROOF LIVE HERE NOW, NOT ON THE ROOT (D91).
+ *
+ * D34 put an island on the homepage and D32 put a computed payoff curve beside
+ * it, both on sound reasoning: a visitor who types a number into a box has
+ * engaged, and a page that proves beats a page that claims. Both were decided
+ * when finance was the only vertical, so "the landing page" and "the money
+ * landing page" were the same page. They stopped being the same page on
+ * 2026-09-01 and nobody moved these.
+ *
+ * The reasoning is untouched — it is simply applied to the right page. This is
+ * where a visitor who wants money tools arrives, so this is where the box to
+ * type in and the curve that proves the engine belong.
+ *
+ * THE FIGURES ARE COMPUTED, NOT WRITTEN. This runs the real engine at build
+ * time on the calculator's own default scenario, so the hub cannot claim a
+ * saving the product does not produce and cannot go stale when the engine
+ * changes. It is zero client JavaScript — .astro frontmatter never reaches the
+ * browser.
+ */
+const DEMO_DEBTS = [
+  {
+    id: 'd1',
+    name: 'Store card',
+    balance: fromMajor(900),
+    annualRate: 0.2999,
+    minimumPayment: fromMajor(30),
+  },
+  {
+    id: 'd2',
+    name: 'Credit card',
+    balance: fromMajor(6000),
+    annualRate: 0.2299,
+    minimumPayment: fromMajor(150),
+  },
+  {
+    id: 'd3',
+    name: 'Personal loan',
+    balance: fromMajor(2500),
+    annualRate: 0.0699,
+    minimumPayment: fromMajor(120),
+  },
+];
+
+const DEMO_BUDGET = fromMajor(600);
+const demo = compareStrategies(DEMO_DEBTS, DEMO_BUDGET);
+
+const opening = DEMO_DEBTS.reduce((sum, d) => sum + d.balance, 0);
+const curve = (result: (typeof demo)['avalanche']) => [
+  opening,
+  ...result.schedule.map((m) => m.totalRemaining),
+];
+
+const CURRENCY = 'USD';
+
+/**
+ * THE SCENARIO DESCRIBES ITSELF (D55).
+ *
+ * "$9,400 of debt, $600 a month" was typed into two places on this page while
+ * the actual balances lived in DEMO_DEBTS above. Editing a demo balance would
+ * have left the caption stating a total the chart beside it no longer showed —
+ * the same failure as "paying $150 instead of $250 removes 44 months": a true
+ * number, a false sentence, and nothing able to tell.
+ */
+const totalOwed = format(opening as typeof DEMO_BUDGET, CURRENCY);
+const monthlyBudget = format(DEMO_BUDGET, CURRENCY);
+
+const saved = format(demo.interestSavedVsMinimums, CURRENCY);
+const monthsSaved = demo.monthsSavedVsMinimums;
+const fastMonths = demo.avalanche.months;
+const slowMonths = demo.minimumsOnly.months;
 
 // The cluster hub. Hub-and-spoke internal linking is the main mechanism a new
 // site has for concentrating topical relevance: every tool links up to here,
@@ -68,7 +144,90 @@ const structuredData = [
     export or print. Every calculation runs in your browser.
   </p>
 
-  <ul class="mt-8 space-y-4">
+  <section class="mt-8" aria-labelledby="quick-heading">
+    <div class="rounded-panel border-line-strong bg-surface border p-1.5">
+      <div class="border-engrave-strong rounded-control border p-4 sm:p-6">
+        <p class="engraved-fine text-ink-mute">Try it now</p>
+        <h2 id="quick-heading" class="text-ink mt-1 text-xl font-semibold sm:text-2xl">
+          What is a debt actually costing you?
+        </h2>
+
+        <div class="mt-5">
+          <QuickCost client:load>
+            <Fragment slot="privacy">
+              Worked out in your browser. Nothing you type is sent anywhere, and nothing
+              is saved.
+            </Fragment>
+          </QuickCost>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {
+    /* Proof, computed at build time by the real engine on the calculator`s own
+      default scenario — see the frontmatter (D32). */
+  }
+  <section class="mt-10" aria-labelledby="proof-heading">
+    <h2 id="proof-heading" class="sr-only">What the debt payoff calculator produces</h2>
+
+    <div class="rounded-panel border-line-strong bg-surface border p-1.5">
+      <div class="border-engrave-strong rounded-control border p-4 sm:p-5">
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <p class="engraved text-ink text-xs">
+            {totalOwed} of debt, {monthlyBudget} a month
+          </p>
+          <p class="text-ink-mute text-xs">
+            Worked out in your browser · nothing transmitted
+          </p>
+        </div>
+
+        <ProofChart
+          class="mt-4"
+          caption={`Total balance by month. Paying ${monthlyBudget} a month with the avalanche method clears ${totalOwed} of debt in ${fastMonths} months. Paying only the minimums takes ${slowMonths} months and costs ${saved} more in interest.`}
+          series={[
+            { label: 'Minimum payments only', points: curve(demo.minimumsOnly) },
+            { label: 'Avalanche', points: curve(demo.avalanche), emphasis: true },
+          ]}
+        />
+
+        <dl class="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <dt class="engraved text-ink-mute text-[0.65rem]">Debt-free in</dt>
+            <dd class="numeric text-ink mt-0.5 text-xl font-semibold">
+              {fastMonths} months
+            </dd>
+            <dd class="text-ink-mute text-xs">instead of {slowMonths}</dd>
+          </div>
+          <div>
+            <dt class="engraved text-ink-mute text-[0.65rem]">Interest saved</dt>
+            <dd class="numeric text-positive mt-0.5 text-xl font-semibold">{saved}</dd>
+            <dd class="text-ink-mute text-xs">against paying minimums</dd>
+          </div>
+          <div>
+            <dt class="engraved text-ink-mute text-[0.65rem]">Sooner by</dt>
+            <dd class="numeric text-ink mt-0.5 text-xl font-semibold">
+              {monthsSaved} months
+            </dd>
+            <dd class="text-ink-mute text-xs">
+              <a class="text-brand underline" href="/finance/debt-payoff-calculator">
+                run your own figures
+              </a>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <p class="text-ink-mute mt-2 text-xs">
+      Every figure above is produced by the calculator itself when this page is built —
+      not written by hand.
+    </p>
+  </section>
+
+  <h2 class="section-head mt-12">Every money tool</h2>
+
+  <ul class="mt-6 space-y-4">
     {
       TOOLS.map((tool) => (
         <li>

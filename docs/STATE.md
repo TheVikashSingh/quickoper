@@ -10,8 +10,8 @@ changes the answer to "what exists" or "what is next".
 1. `CLAUDE.md` — the rules.
 2. `docs/DECISIONS.md` — why the rules are what they are, and what has already
    been tried and disproven. Read the **Superseded** section before proposing
-   any optimisation. **90 entries. D43–D59 are the launch and everything it exposed;
-   D60–D69 are the first live data and the tools built on it; D70–D90 are the
+   any optimisation. **91 entries. D43–D59 are the launch and everything it exposed;
+   D60–D69 are the first live data and the tools built on it; D70–D91 are the
    machining vertical, the catalogue, the URL migration and the visual pass.** Read the last block before touching
    deploy config, the catalogue, or any page that states a computed figure in
    prose.
@@ -35,7 +35,7 @@ changes the answer to "what exists" or "what is next".
 | Tests | 430 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.68 KB of 19.5 KB (0.82 KB spare) — `/finance/uk-early-repayment-charge-calculator` |
-| Content pages JS | 0.53 KB (inline theme script only); homepage 12.91 KB — it carries an island (D34) |
+| Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
 
 ---
 

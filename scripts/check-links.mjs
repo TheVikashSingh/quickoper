@@ -209,7 +209,7 @@ if (orphans.length > 0) {
   process.exit(1);
 }
 
-// ── The homepage's own list of calculators ───────────────────────────────────
+// ── Every calculator is listed on its own vertical's hub ─────────────────────
 //
 // D41 made every page prove it is linked from somewhere. That is not enough.
 //
@@ -217,60 +217,72 @@ if (orphans.length > 0) {
 // homepage and absent from the section further down headed "Calculators" — so
 // the orphan check above passed, the page linked to it, and a visitor who
 // scrolled to the list of calculators was told there were two. The page
-// contradicted itself, and the operator found it by reading the page.
+// contradicted itself, and the operator found it by reading the page (D50).
 //
-// Second time this exact tool has gone missing from a listing (D41, D50). Twice
-// is a pattern, so it gets a check.
+// WHAT THIS USED TO CHECK, AND WHY IT MOVED. It read a "Calculators" heading on
+// the HOMEPAGE and required every calculator under it. That was right while the
+// homepage listed calculators. It stopped being right when the root became a
+// router (D91): the root now names the two verticals and nothing else, so
+// asserting a flat list of six tools on it would force the exact page the
+// restructure removed.
 //
-// Anchored on the heading text rather than a class or position, and a missing
-// heading is a FAILURE rather than a silent pass — otherwise renaming the
-// section quietly retires the check, which is how check-js-budget once reported
-// an island page at 1.09 KB.
+// The requirement did not weaken, it moved to where it is true. D50's real
+// invariant is "the page a visitor lands on must not lie about what exists",
+// and with a router that is TWO claims:
+//
+//   1. every vertical hub lists every calculator in that vertical, and
+//   2. the homepage links to every vertical hub.
+//
+// Together they still guarantee what D50 protected — every calculator reachable
+// from the root, with no page under-reporting its own contents — and they cover
+// a third vertical for free.
 
 const homepage = join(DIST, 'index.html');
 const homeHtml = (await exists(homepage)) ? await readFile(homepage, 'utf8') : '';
 
-// From the registry, not from a path shape.
-//
-// This was `/^\/finance\/[^/]+-calculator\/$/` over the built routes, which
-// asserted nothing at all about /machining — two calculators shipped outside
-// it. It also depended on a naming convention: a calculator that did not end
-// in "-calculator" would have been silently exempt from the homepage list it
-// is required to appear in, which is D50's defect returning by a new route.
-const calculators = catalogue.calculators().map((entry) => entry.href);
-
-// Everything after the "Calculators" heading, up to the next heading of the
-// same or higher level. That is the list a reader sees under that word.
-const section = homeHtml.match(/<h2[^>]*>\s*Calculators\s*<\/h2>([\s\S]*?)<h[123][\s>]/i);
-
 if (homeHtml === '') {
-  console.error('FAIL: dist/index.html not found — cannot check the calculator list.');
+  console.error('FAIL: dist/index.html not found — cannot check the hub links.');
   process.exit(1);
 }
 
-if (!section) {
-  console.error('FAIL: no "Calculators" section found on the homepage.\n');
-  console.error('  This check reads the list under that heading. If the section was');
-  console.error('  renamed, update the pattern in scripts/check-links.mjs — do not');
-  console.error('  delete the check, or the list can silently go stale again.');
-  process.exit(1);
+const listingProblems = [];
+
+for (const vertical of catalogue.VERTICALS) {
+  // 1. The homepage must route to this vertical.
+  if (!new RegExp(`href="${vertical.hub}"`).test(homeHtml)) {
+    listingProblems.push(
+      `the homepage does not link to ${vertical.hub} — a vertical nobody can reach from the root`,
+    );
+  }
+
+  // 2. The hub must list every calculator in its own vertical.
+  const hubFile = join(DIST, vertical.hub.replace(/^\//, ''), 'index.html');
+  if (!(await exists(hubFile))) {
+    listingProblems.push(
+      `${vertical.hub} is in the registry but the build produces no page for it`,
+    );
+    continue;
+  }
+  const hubHtml = await readFile(hubFile, 'utf8');
+  for (const entry of catalogue.calculatorsIn(vertical.id)) {
+    if (!hubHtml.includes(`href="${entry.href}"`)) {
+      listingProblems.push(`${entry.href} is missing from its hub, ${vertical.hub}`);
+    }
+  }
 }
 
-const missingFromList = calculators.filter(
-  (route) => !(section[1] ?? '').includes(route),
-);
-
-if (missingFromList.length > 0) {
-  console.error(
-    `FAIL: ${missingFromList.length} calculator(s) missing from the homepage list:\n`,
-  );
-  for (const route of missingFromList) console.error(`    ${route}`);
+if (listingProblems.length > 0) {
+  console.error(`FAIL: ${listingProblems.length} listing problem(s):\n`);
+  for (const problem of listingProblems) console.error(`    ${problem}`);
   console.error('');
-  console.error('  Being linked from the hero is not the same as being listed under');
-  console.error('  "Calculators". A page that lists some of them and not others tells');
-  console.error('  the visitor there are fewer tools than there are.');
+  console.error('  Being linked from somewhere is not the same as being listed where a');
+  console.error('  visitor looks for it. A hub that lists some of its tools and not');
+  console.error('  others tells the visitor there are fewer than there are, and a root');
+  console.error('  that omits a vertical hides half the site.');
   process.exit(1);
 }
+
+const listedCalculators = catalogue.calculators().length;
 
 // ── Rule 8: every calculator ends with a real Related block ──────────────────
 //
@@ -450,4 +462,7 @@ console.log(
   `PASS: ${total} internal link(s) across ${pages.length} page(s), ` +
     `${checked.size} distinct, all resolve.`,
 );
-console.log(`PASS: all ${calculators.length} calculator(s) appear in the homepage list.`);
+console.log(
+  `PASS: all ${listedCalculators} calculator(s) appear on their vertical's hub, ` +
+    `and the homepage links to all ${catalogue.VERTICALS.length} hub(s).`,
+);
