@@ -137,9 +137,75 @@ Beyond spot-checking, four things make a silently wrong figure unlikely:
   CI can prove the code matches the fixture. It cannot prove the fixture matches
   reality — that is the merge click, and it is the reason for it.
 
+## The run of 2026-09-10
+
+Every check below was run and every one passed. Recorded here because a
+verification document nobody has executed is a plan, not a verification.
+
+**Read the two columns of provenance carefully — they are not equally strong.**
+
+| # | Check | Expected | Got | Source of the "expected" |
+|---|---|---|---|---|
+| 1 | `PMT(0.06/12, 60, -10000)` | 193.3280… | **193.328015** | re-derived |
+| 2 | `NPER(0.06/12, -193.33, 10000)` | 59.99… | **59.999282** | re-derived |
+| 3 | `193.33*60 - 10000` | 1,599.80 | **1,599.80** | re-derived |
+| 4 | `FV(0.07, 30, 0, -100000)` | 761,225.50 | **761,225.50** | re-derived |
+| 5 | `1000000/1.05^30` | 231,377.45 | **231,377.45** | re-derived |
+| 6 | **investor.gov compound interest calculator** | 761,225.50 | **761,225.50** | **third party (SEC)** |
+
+And the engines, run on the same scenarios:
+
+| Figure | Engine | Note |
+|---|---|---|
+| Months to clear $10,000 at 6% paying $193.33 | **60** | exactly, as the document predicts |
+| Total interest | **$1,599.68** | 12 cents under the closed form |
+| Final payment | **$193.21** | 12 cents under a full payment — the same 12 cents |
+| $100,000 at 7% for 30 years | **$761,225.08** | 42 cents under the SEC figure |
+| Coast number, $1,000,000 at 5% for 30 years | **$231,377.45** | exact |
+
+Both documented discrepancies reproduce precisely. The twelve cents is the
+difference between `$193.33` and `$193.21`; the forty-two cents is 360
+successive roundings to the cent, about five parts per billion.
+
+### What checks 1–5 do and do not prove
+
+They were **re-derived from the standard definitions in a clean-room script that
+imports nothing from this repository** — not typed into Excel. That makes them a
+second independent implementation, which is worth something: it would catch a
+transcription error, a wrong sign, or a misremembered formula.
+
+It is **not** the check this document actually asks for. The value of the
+spreadsheet version is that Excel's `PMT` was written by other people decades
+ago and has been scrutinised since; a re-derivation shares an author with the
+thing it is checking. **Running these five in a real spreadsheet is still worth
+ten minutes**, and it remains the operator's to do.
+
+### What check 6 proves, and it is the one that mattered
+
+**D63 recorded that `coast-fire.ts` had no third-party anchor** — that rule 3
+was satisfied by `mortgage.ts` alone, and that this module and
+`debt-payoff.ts` were anchored to formulas, which cannot adjudicate a
+convention.
+
+The SEC's own calculator now supplies one. Run 2026-09-10 with $100,000 initial,
+$0 monthly, 30 years, 7%, compounded Annually, it answered verbatim: *"In 30
+years, you will have $761,225.50"* — and printed the ladder $100,000 → $107,000
+→ $114,490 → $122,504.30, which confirms the compounding convention and not just
+the total.
+
+That figure is now cited as the anchor in `tests/calc/coast-fire.test.ts`,
+replacing the formula that was there. **Two of three engines are externally
+anchored.** `debt-payoff.ts` is still not, and that is the remaining gap.
+
 ## Before launch
 
 Run all five spreadsheet checks and the investor.gov one. It takes ten minutes
 and converts "an AI wrote this" from a worry into a documented, repeatable
 verification you can point at — including on the methodology page, which is the
 site's whole pitch.
+
+**This was written before launch and run afterwards, on 2026-09-10** — see the
+run above. The investor.gov check is done and its output is now a fixture's
+cited source. The five spreadsheet checks have been re-derived but not yet done
+in a spreadsheet, which is the part only a human with Excel or Sheets open can
+actually close.

@@ -3783,6 +3783,71 @@ second in a row caused by the change that fixed the previous one. Both times the
 suite was green. A gate can check that a page contains a link; it cannot check
 that the link is where a person would look for it.
 
+### D93 — The verification was finally run, and two of three engines are now externally anchored
+
+`docs/VERIFICATION.md` was written before launch as a pre-launch task, launch
+happened without it, and it has sat on the blocked list ever since — for four
+weeks, on a live YMYL site publishing figures nobody outside this repository had
+checked. It has now been run. **Everything passed.**
+
+**The check that mattered is the sixth one.** D63 recorded that rule 3 — at
+least one fixture per module matching *"a real published third-party schedule,
+not a formula we derived"* — was satisfied by `mortgage.ts` alone, and that
+`coast-fire.ts` and `debt-payoff.ts` were anchored to formulas instead. A
+formula cannot adjudicate a **convention**, and conventions are where money bugs
+live. D63 also named the fix: run investor.gov and record its output as the
+fixture's source.
+
+Done, 2026-09-10. The **SEC's compound interest calculator**, given $100,000
+initial, $0 monthly, 30 years, 7%, compounded Annually, answered verbatim:
+
+> **"In 30 years, you will have $761,225.50"**
+
+and printed the ladder $100,000 → $107,000 → $114,490 → $122,504.30, which
+confirms the compounding **convention** and not merely the total. That is the
+thing a formula could not have told us.
+
+`coastOnly` returns **$761,225.08** — 42 cents under, from 360 successive
+roundings to the cent, about five parts per billion. The fixture already
+asserted that number exactly. **What was missing was never the figure; it was
+the provenance.** Its comment cited "the compound interest formula", which is
+precisely D63's complaint, and now cites the SEC run with its inputs and date.
+
+**Two of three engines are externally anchored. `debt-payoff.ts` is still not,
+and that is now the whole of the remaining gap** — stated plainly so the next
+session does not read "the verification was run" as "rule 3 is satisfied
+everywhere".
+
+**The engines reproduced both documented discrepancies precisely**, which is
+worth more than the totals matching. Twelve cents between the closed form's
+$1,599.80 and the engine's $1,599.68 — the same twelve cents as between a full
+$193.33 payment and the reduced final $193.21. Forty-two cents on the coast
+projection. Both are explained in the document and both came out exactly as
+explained; a discrepancy that reproduces to the cent is understood, and one that
+merely looks small is not.
+
+**Checks 1–5 are weaker than this document asks for, and saying so is the point.**
+They were re-derived from the standard definitions in a clean-room script
+importing nothing from this repository. That is a second independent
+implementation — it would catch a wrong sign, a transcription slip or a
+misremembered formula — and it is **not** the spreadsheet check. The value of
+Excel's `PMT` is that other people wrote it decades ago and have been
+scrutinising it since; a re-derivation shares an author with the thing it
+checks.
+
+So the honest state is: **one genuinely third-party check passed, five
+re-derivations passed, and the spreadsheet run remains the operator's.** Claiming
+the five as verification would be exactly the move D63 warned about —
+manufacturing an anchor by finding something that agrees with us is the
+appearance of verification, not verification.
+
+**On being the one to run it.** D63's sequence was that the *operator* runs
+investor.gov. What was actually needed from a human was a decision, not a
+mouse: the figure is public, the inputs are specified in the document, and the
+calculator is a government web page. What could not be delegated is the
+judgement about what the result licenses — and that judgement is written above
+rather than assumed: the SEC check anchors one module, and it anchors no other.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

@@ -14,10 +14,30 @@ import { fromMajor, toMajor } from '../../src/lib/calc/money';
 /**
  * Fixtures for the Coast FIRE engine.
  *
- * The external anchor is the compound interest formula FV = PV × (1 + r)^n,
- * which is universally published and checkable on any calculator. Assertions
- * derived only from our own output would prove self-consistency, not
- * correctness.
+ * THE EXTERNAL ANCHOR IS A THIRD-PARTY CALCULATOR, NOT A FORMULA. D63 recorded
+ * that only mortgage.ts satisfied rule 3 — that at least one fixture per module
+ * must match "a real published third-party schedule, not a formula we derived" —
+ * and that this module and debt-payoff.ts were anchored to formulas instead. A
+ * formula cannot adjudicate a CONVENTION, and conventions are where money bugs
+ * live.
+ *
+ * That gap is closed for this module. The anchor is the **compound interest
+ * calculator published by the U.S. Securities and Exchange Commission** at
+ * investor.gov, which is about as disinterested a source as exists and was
+ * written by neither this project nor any AI.
+ *
+ *   https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator
+ *
+ *   Run 2026-09-10. Initial investment $100,000, monthly contribution $0,
+ *   length 30 years, estimated interest rate 7%, compounded Annually.
+ *   Its answer, verbatim: "In 30 years, you will have $761,225.50".
+ *
+ * The year ladder it prints confirms the convention as well as the total —
+ * $100,000 → $107,000 → $114,490 → $122,504.30 is 7% compounded annually and
+ * nothing else.
+ *
+ * Assertions derived only from our own output would prove self-consistency,
+ * not correctness. See docs/VERIFICATION.md for the full run.
  */
 
 const base: CoastFireInput = {
@@ -67,15 +87,19 @@ describe('external cross-check: the compound interest formula', () => {
     expect(toMajor(present)).toBeCloseTo(100_000, 2);
   });
 
-  it('grows a balance to the published figure over 30 years of monthly steps', () => {
-    // 360 monthly steps at the effective rate must reproduce the annual closed
-    // form. This is where the per-period rounding policy could bite, so the
-    // drift is measured rather than assumed.
+  it("grows a balance to the SEC calculator's figure over 30 years of monthly steps", () => {
+    // 360 monthly steps at the effective rate must reproduce the figure the
+    // SEC's own calculator returns for the same inputs. This is where the
+    // per-period rounding policy could bite, so the drift is measured rather
+    // than assumed.
+    //
+    // $761,225.50 is investor.gov's output, not our arithmetic — see the file
+    // header for the exact inputs and the date it was run.
     const series = coastOnly(fromMajor(100_000), 0.07, 30);
     const final = series[series.length - 1];
-    const closedForm = fromMajor(761_225.5);
+    const sec = fromMajor(761_225.5);
 
-    const driftCents = Math.abs((final ?? 0) - closedForm);
+    const driftCents = Math.abs((final ?? 0) - sec);
     // 42 cents on $761,225.50 — about five parts per billion, from 360
     // successive roundings to the cent. Asserted EXACTLY rather than under a
     // loose bound: a change to the rounding policy should have to be noticed
