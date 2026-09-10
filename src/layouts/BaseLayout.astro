@@ -66,14 +66,29 @@ const VERTICAL_NAV = {
 } as const;
 
 /**
- * `site` keeps the finance link for now, which is exactly what the old
- * `undefined` fallback did — so making the prop required changes the types and
- * not a single rendered pixel. What a site-level page should show in that slot
- * is a real question (it currently pushes one vertical over the other from
- * pages belonging to neither), and it is deliberately left to the change that
- * gives the root its own identity rather than smuggled in here.
+ * A SITE-LEVEL PAGE SHOWS NO VERTICAL LINK, AND A HUB DOES NOT LINK TO ITSELF.
+ *
+ * D82 made `vertical` required and left `site` pointing at finance, on the
+ * reasoning that the change should move types and not pixels. D88 named the
+ * consequence and deferred it: the slot "currently pushes one vertical over the
+ * other from pages belonging to neither". This is that deferred change, and the
+ * operator called it in — the root is a router now (D91), so a masthead that
+ * routes to finance from `/`, `/about` or `/privacy` contradicts the page
+ * underneath it. **The root must not send anyone into a vertical they have not
+ * chosen.**
+ *
+ * The second half is the same defect from the other end. On `/finance` the link
+ * read "Calculators" and pointed at `/finance` — the page already open. The
+ * operator's report was exact: it does not do anything. A link to the current
+ * page is not a navigation affordance, it is a dead control that costs a click
+ * to discover.
+ *
+ * So the slot holds the vertical's hub only when there is somewhere to go: on a
+ * TOOL page, where "back to the hub" is genuinely useful. On the hub itself, and
+ * on every site-level page, it renders nothing.
  */
-const sectionNav = vertical === 'site' ? VERTICAL_NAV.finance : VERTICAL_NAV[vertical];
+const currentPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const verticalHub = vertical === 'site' ? null : VERTICAL_NAV[vertical];
 
 /**
  * "How we verify" lands on the part of /methodology that concerns this page.
@@ -88,6 +103,42 @@ const sectionNav = vertical === 'site' ? VERTICAL_NAV.finance : VERTICAL_NAV[ver
  * required: the layout now knows which section to aim at instead of guessing.
  */
 const methodologyHref = vertical === 'site' ? '/methodology' : `/methodology#${vertical}`;
+
+/**
+ * THE MASTHEAD NEVER LINKS TO THE PAGE YOU ARE ON.
+ *
+ * The vertical slot was the reported case — on /finance it read "Calculators"
+ * and pointed at /finance, the page already open, so clicking it did nothing.
+ * It was not the only one: on /methodology "Methodology" pointed at
+ * /methodology, and on /about "About" pointed at /about. Fixing only the
+ * noticed instance would have left two more of exactly the same dead control,
+ * which is D59 and D66's defect — a fix applied to one page and not its
+ * siblings.
+ *
+ * So it is a rule rather than three special cases: build the list, drop any
+ * entry whose destination is the current path. A fragment is not a different
+ * page, so /methodology#finance is suppressed on /methodology — and survives on
+ * /finance, where the path genuinely differs.
+ *
+ * SITE-LEVEL PAGES SHOW NO VERTICAL LINK AT ALL. D82 left `site` pointing at
+ * finance so that change would move types and not pixels; D88 named the
+ * consequence — the slot "pushes one vertical over the other from pages
+ * belonging to neither" — and deferred it. The root is a router now (D91), so a
+ * masthead routing to finance from `/` contradicts the page underneath it. The
+ * root must not send anyone into a vertical they have not chosen.
+ *
+ * Hidden rather than marked aria-current: these are a handful of items in a
+ * masthead that already wraps to two lines on a phone (D94), and a
+ * disabled-looking entry costs the same space as a working one.
+ */
+const navLinks = [
+  verticalHub,
+  { href: methodologyHref, label: 'Methodology', smOnly: true },
+  { href: '/about', label: 'About', smOnly: false },
+].filter(
+  (item): item is { href: string; label: string; smOnly: boolean } =>
+    item !== null && (item.href.split('#')[0] || '/') !== currentPath,
+);
 
 /**
  * The entity graph — Organization, Person and WebSite, on every page.
@@ -337,23 +388,38 @@ const graph = [organization, person, website, ...structuredData];
           </span>
         </a>
 
-        <a
-          class="border-masthead-line text-masthead-accent hover:border-masthead-accent hover:text-masthead-ink rounded-control ml-1 border px-2.5 py-1 text-sm font-semibold sm:ml-3"
-          href="/apps">Apps</a
-        >
+        {
+          /* Same rule as the list below: not rendered on /apps itself. It sits
+            outside the <ul> because it is the destination the site exists to
+            feed rather than a utility link, so it needs its own guard. */
+        }
+        {
+          currentPath !== '/apps' && (
+            <a
+              class="border-masthead-line text-masthead-accent hover:border-masthead-accent hover:text-masthead-ink rounded-control ml-1 border px-2.5 py-1 text-sm font-semibold sm:ml-3"
+              href="/apps"
+            >
+              Apps
+            </a>
+          )
+        }
 
         <ul class="text-masthead-mute ml-auto flex items-center gap-4 text-sm sm:gap-5">
-          <li>
-            <a class="hover:text-masthead-ink" href={sectionNav.href}
-              >{sectionNav.label}</a
-            >
-          </li>
-          <li>
-            <a class="hover:text-masthead-ink hidden sm:inline" href={methodologyHref}>
-              Methodology
-            </a>
-          </li>
-          <li><a class="hover:text-masthead-ink" href="/about">About</a></li>
+          {
+            navLinks.map((item) => (
+              <li>
+                <a
+                  class:list={[
+                    'hover:text-masthead-ink',
+                    item.smOnly && 'hidden sm:inline',
+                  ]}
+                  href={item.href}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
         </ul>
 
         <button

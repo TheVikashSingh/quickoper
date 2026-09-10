@@ -3906,6 +3906,66 @@ y=50.
 lines of type regardless of wrapping. Height was never the question; whether the
 items share a row is. Comparing their vertical centres answers it directly.
 
+### D95 — The masthead never links to the page you are on, and the root never routes into a vertical
+
+Two reports, one root cause, and both were already written down as deferred.
+
+**"I don't see the calculators button besides methodology doing anything."**
+On `/finance` that link read *Calculators* and pointed at `/finance` — the page
+already open. Clicking it did nothing, which is exactly what the operator
+described. A link to the current page is not a navigation affordance; it is a
+dead control that costs a click to discover.
+
+**"On the landing page, remove the calculators option in the heading. It is a
+generic page. It shall not route to a finance page unless someone has clicked
+the finance section."** D82 made `vertical` required and left `site` pointing at
+finance, on the explicit reasoning that the change should move types and not
+pixels. D88 then named the consequence and deferred it: the slot *"pushes one
+vertical over the other from pages belonging to neither"*. D91 turned the root
+into a router, which made the contradiction plain — a page whose entire job is
+to offer two subjects, with a masthead already sending you into one of them.
+
+Both are now one rule: **the masthead never links to the page you are on, and a
+site-level page carries no vertical link at all.**
+
+**Fixing only what was reported would have left two more of the same defect.**
+`/methodology` linked *Methodology* to `/methodology`; `/apps` linked *Apps* to
+`/apps`. That is D59 and D66's shape — a fix applied to one page and not to its
+siblings — so it is implemented as a filter over the link list rather than three
+special cases. A fragment is not a different page, so `/methodology#finance` is
+suppressed on `/methodology` and survives on `/finance`, where the path really
+does differ.
+
+The `Apps` link needed its own guard because it renders outside the list: it is
+the destination the site exists to feed rather than a utility link, which is why
+it sits beside the wordmark. Same rule, separate condition.
+
+**Measured across the whole build: 26 pages, zero masthead self-links.**
+
+Where the vertical link survives is the case where it does something — a **tool**
+page, where "back to the hub" is real navigation:
+
+| page | masthead |
+|---|---|
+| `/` | Apps · Methodology · About |
+| `/about`, `/privacy` | Apps · Methodology (About suppressed on `/about`) |
+| `/finance` | Apps · Methodology#finance · About |
+| `/finance/debt-payoff-calculator` | Apps · **Calculators → /finance** · Methodology#finance · About |
+| `/machining/tap-drill-calculator` | Apps · **Machining → /machining** · Methodology#machining · About |
+
+**Hidden rather than marked `aria-current`.** These are a handful of items in a
+masthead that already wraps to two lines on a phone (D94); a disabled-looking
+entry costs the same horizontal space as a working one and teaches nothing.
+
+**A note on the deferral.** D82 was right to leave `site` pointing at finance —
+making the prop required was already a 27-page change, and bundling a navigation
+decision into it would have hidden the visual change inside a typing change.
+D88 was right to defer again for the same reason. What went wrong is that
+neither entry became a task anywhere; the deferral was recorded and then waited
+for a person to notice the symptom. **A comment saying "left to a later change"
+is not a queue**, and this is the second time this session that a documented
+deferral surfaced only because the operator opened the page.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
