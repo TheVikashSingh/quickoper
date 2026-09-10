@@ -3553,6 +3553,89 @@ below an 812px fold, an engrave alpha that failed AA in the light theme, and a
 Green CI caught none of the three. Auto-merge is right for the diffs where CI is
 the whole story; it is not a claim that CI is sufficient.
 
+### D90 — The line draws itself, and the technique the spec proposed would have destroyed a WCAG channel
+
+Item 3 of the visual pass, and the last. `visual-system.md` calls the chart
+draw-on *the one earned animation*: the site's promise is that it shows the
+working, and a line drawing itself **is** the working — the thesis animated
+rather than decoration laid over it.
+
+**The spec proposed `stroke-dasharray` / `stroke-dashoffset` keyframes, and that
+cannot be used here.** D42 made the dash pattern a **second channel** alongside
+colour, because WCAG 1.4.1 forbids colour as the sole carrier of information and
+two greens are exactly what deuteranopia defeats. Animating `stroke-dasharray`
+overwrites that pattern for the duration of the draw: the dashed series would
+render **solid while it animated** — in the one moment a reader is watching it.
+
+A clip wipe reveals the stroke without touching how the stroke is drawn, so the
+dash survives. Verified on the mortgage chart mid-change: the two series read
+`[null, "7 4"]` throughout. It also works identically for solid and dashed
+series, where a dash-offset animation would have needed two code paths.
+
+**And it is a CSS `clip-path` on the group, not an SVG `<clipPath>` element.**
+The first implementation used `<defs>`, a `<clipPath>`, a `<rect>` and a minted
+id — which has to be unique per document, or a second chart on the same page is
+clipped by the first's rectangle. That machinery measured **0.13 KB** of the 19.5
+and bought nothing the stylesheet could not do for free. Replacing it with
+`clip-path: inset()` in a keyframe dropped the cost to **0.05 KB** and deleted
+the uniqueness problem rather than solving it.
+
+**The key that retriggers it was wrong, and the gates could not see it.** React
+and Preact reuse a DOM node across renders, so a CSS animation attached to one
+runs once and never again; keying the group on the shape of the data means a new
+result produces a new node and the animation restarts. The first fingerprint was
+`lastIndex`, `yMax` and each series' **final value** — and on the tool this was
+written for, all three are constant:
+
+- a payoff curve always ends at **zero**, so the final value never moves;
+- `yMax` follows the **opening balance**, which the overpayment does not change;
+- `lastIndex` follows the **longest** series, so overpaying more shortened the
+  overpaid curve and left the contractual one at 360.
+
+So the chart drew once on load and never again, while the figures beside it
+changed. `npm run verify` was green throughout. It was caught by driving the
+input and watching the DOM node identity — `nodeReplaced: false` on a change that
+had visibly altered the result.
+
+It is per-series **length and midpoint** now. Length catches a schedule that
+finishes sooner; the midpoint catches a curve that changes shape without changing
+length — a different rate, or a coast projection whose horizon is fixed by age.
+Confirmed both ways: a real change replaces the node and restarts the animation,
+and setting an input to the value it already holds does not.
+
+**A reduced-motion reader gets a complete chart, and that was proved rather than
+assumed.** Every keyframe and every transition lives inside
+`@media (prefers-reduced-motion: no-preference)` — not *reduced* under a query,
+**absent**. The risk that buys is a chart clipped to nothing if the animation
+never applies, so it was tested directly: with the animation rule removed, the
+computed `clip-path` is `none` and the chart renders whole. There is no
+`animation-fill-mode`; the end state is identical to the group's natural state,
+so the element owns it once the animation is over.
+
+**One behaviour recorded so a future session does not read it as a bug.** While
+the document is **hidden** the animation timeline is frozen at zero, so the group
+sits at the from-state and the chart is clipped away. That is standard CSS
+animation behaviour, it resolves the instant the tab is shown, and it is written
+down only because it makes a backgrounded screenshot look broken when nothing is.
+It cost a diagnostic detour to establish — **tenth time the instrument was the
+thing that was wrong** (D29, D36, D50, D54, D59, D61, D65, D82, D83, D87).
+
+**The micro-interactions add to the focus ring rather than replacing it.** Input
+focus extends a scribed line beneath the field as an `inset` box-shadow; the
+`:focus-visible` outline is untouched and still declared once, globally. Verified
+in the built stylesheet: `outline: 2px solid var(--color-brand)` and the new
+`box-shadow` are separate rules on the same selector, so the ring composes with
+the underline instead of losing to it. A decorative underline is not an
+accessibility affordance and must never be mistaken for one.
+
+Cards lift one pixel and take the raised shadow on hover; buttons inset one pixel
+on press, like a struck die. One pixel, because these are plates on paper and
+paper does not fly.
+
+**Cost: 0.05 KB**, worst page 18.69 → 18.75, 0.75 KB spare. Every keyframe,
+transition and clip-path is CSS, which is not what rule 9 caps — the only
+JavaScript added is the key expression.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
