@@ -3478,6 +3478,81 @@ layout.
 pseudo-element are all CSS. The worst page stayed at 18.69 KB and content pages
 at 0.53 KB.
 
+### D89 — Auto-merge, and a CODEOWNERS file that enforces nothing
+
+The operator asked for the agent to merge its own pull requests. The rule
+forbidding that was in `CLAUDE.md`, `docs/STATE.md` and this file's working
+agreement, so it was raised rather than quietly followed or quietly broken. The
+settled answer is **GitHub auto-merge scoped by `CODEOWNERS`**, which keeps the
+safeguard and removes the clicking.
+
+**Nothing had to be enabled.** `allow_auto_merge` was already `true` on the
+repository. The agent now runs `gh pr merge --squash --auto` when a pull request
+touches no `CODEOWNERS` path; GitHub squashes it once `verify` and `secret-scan`
+go green, and never before them.
+
+**What `CODEOWNERS` already said, and it is the right policy:**
+
+> Anything touching a published number requires a human merge. CI can prove the
+> code matches the fixture. It cannot prove the fixture matches reality. …
+> **Everything not listed here auto-merges once CI is green.**
+
+So the intent was auto-merge from the beginning, gated on six paths:
+`src/lib/calc/`, `src/data/`, `tests/calc/`, `CLAUDE.md`, `.github/`,
+`wrangler.toml`.
+
+**And the finding: that gate does not exist.** Branch protection on `main` reads:
+
+```
+enforce_admins                    true
+required_status_checks            verify, secret-scan   (strict)
+require_code_owner_reviews        false
+required_approving_review_count   0
+```
+
+`require_code_owner_reviews` is **false** and required approvals is **zero**. So
+a pull request rewriting `src/lib/calc/mortgage.ts` would auto-merge on green CI
+with no human ever looking at it. The file that exists to prevent exactly that is
+inert — it is a comment with a syntax.
+
+**This is D45's shape, and the fifth instance of it.** `public/_headers` shipped
+broken from the first commit because Cloudflare parses it after CI and nothing in
+the repository read it (D45). `llms.txt` was a catalogue nothing checked against
+the build (D69). A gate can exist in `package.json` and still not run where it
+matters (D69 again). `CODEOWNERS` is the same class: **configuration that looks
+correct, is committed, is read by a human as authoritative, and is enforced by
+nothing.**
+
+It is worse than the others in one respect. `_headers` failed a deploy, loudly.
+This fails silently and in the direction of a merged change to the arithmetic on
+a YMYL site — the one failure mode `docs/STATE.md` calls fatal.
+
+**Not fixed here, and that is not laziness.** Branch protection is denied to an
+agent by `CLAUDE.md` and by the permission rules, correctly — a release path the
+agent can rewrite is not a release path. It is one operator command:
+
+```bash
+gh api -X PATCH repos/TheVikashSingh/quickoper/branches/main/protection/required_pull_request_reviews \
+  -F require_code_owner_reviews=true -F required_approving_review_count=1
+```
+
+After that the policy enforces itself: everything auto-merges on green **except**
+the six paths, which wait for a review from the operator. That is what both
+`CODEOWNERS` and this entry describe, and until it is run the boundary is held by
+the agent's own discipline.
+
+**Meanwhile the boundary is honoured as a rule of `CLAUDE.md`.** A pull request
+touching any `CODEOWNERS` path gets opened, flagged in its body, and left for the
+operator — including this one, which edits `CLAUDE.md`.
+
+**Why the rule was worth keeping rather than deleting.** This session shipped
+nine pull requests and three of them carried a defect that every gate passed and
+only a rendered page revealed: a jurisdiction note that pushed the calculator 76px
+below an 812px fold, an engrave alpha that failed AA in the light theme, and a
+`::before` that became a flex item and moved a heading to the centre of its row.
+Green CI caught none of the three. Auto-merge is right for the diffs where CI is
+the whole story; it is not a claim that CI is sufficient.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
