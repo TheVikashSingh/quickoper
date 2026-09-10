@@ -349,8 +349,8 @@ const slowMonths = demo.minimumsOnly.months;
     }
     {
       VERTICALS.map((v) => (
-        <div class="mt-6">
-          <p class="section-head flex items-baseline justify-between gap-3">
+        <div class="mt-6" data-vertical-key={v.id}>
+          <p class="section-head section-head--key flex items-baseline justify-between gap-3">
             <span>{v.label}</span>
             <a class="text-brand text-sm font-normal underline" href={v.hub}>
               {v.hubLabel}

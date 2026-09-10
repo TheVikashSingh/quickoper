@@ -10,8 +10,8 @@ changes the answer to "what exists" or "what is next".
 1. `CLAUDE.md` — the rules.
 2. `docs/DECISIONS.md` — why the rules are what they are, and what has already
    been tried and disproven. Read the **Superseded** section before proposing
-   any optimisation. **87 entries. D43–D59 are the launch and everything it exposed;
-   D60–D69 are the first live data and the tools built on it; D70–D87 are the
+   any optimisation. **88 entries. D43–D59 are the launch and everything it exposed;
+   D60–D69 are the first live data and the tools built on it; D70–D88 are the
    machining vertical, the catalogue, the URL migration and the visual pass.** Read the last block before touching
    deploy config, the catalogue, or any page that states a computed figure in
    prose.

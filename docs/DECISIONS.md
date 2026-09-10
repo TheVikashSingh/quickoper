@@ -3393,6 +3393,91 @@ kicker on the site and belongs in its own change with its own measurement.
 18.69, all of it the `shadow-raised` class string in the island markup. Every
 shadow, every token and the guilloché are CSS, and CSS is not what rule 9 caps.
 
+### D88 — The root gets brass, and the homepage becomes the only page that shows two subjects
+
+Item 2 of the visual pass. The root had been wearing one of its children's
+clothes: `vertical` was optional, `undefined` meant finance, so the homepage,
+`/about`, `/apps` and every trust page rendered in banknote green. D82 made the
+prop required and deliberately left `site` pointing at the finance palette so
+that change moved types and not pixels. This fills in the third value.
+
+**Why brass, in one line:** a banknote plate and a vernier scale are the same
+kind of object — something whose credibility comes from fine ruled lines cut
+into metal — and brass is the material of the instruments that cut them. It is
+chromatically distinct from both children (hue 80 against green at 158 and blue
+at 255), so neither vertical owns the root.
+
+Georgia stays. The serif is the house voice; machining is the exception that
+earns a sans, not the other way round.
+
+**The derivation technique is the part worth keeping.** `global.css` already
+records it: *"holding L constant while moving hue preserves the contrast ratios
+that were measured against the 4.5:1 text floor and the 3:1 UI-boundary
+floor."* So every lightness in the `site` block is carried over from finance and
+only the hue moves — which means the work behind `--color-ink-mute` at 52% (not
+57%) and `--color-line-strong` at 60% (not 77%) still holds without re-deriving
+it.
+
+**The accent is the one value that could not be carried over, because brass is
+not green at another hue — it is lighter.** `visual-system.md` proposed
+`oklch(52% 0.085 80)` and flagged it as to-be-measured. Measured, light theme:
+
+| L | on canvas | on sunken |
+|---|---|---|
+| 42% | 7.98 | 7.32 |
+| **47%** | **6.41** | **5.88** |
+| 52% (proposed) | 5.18 | **4.75** |
+| 55% | 4.55 | **4.17 — fails** |
+
+52% passes, and sits **0.25 above the floor on `--color-sunken`** — which is
+where links inside `<details>` panels live. It shipped at **47%**, which keeps a
+real margin, for the reason D68 refused 0.13 KB of headroom and D87 refused an
+engrave alpha of 0.08.
+
+**Every floor measured, both themes, all three verticals.** The `site` column
+tracks the two established ones rather than being newly generous or newly tight:
+
+| | site/light | site/dark | floor |
+|---|---|---|---|
+| brand on canvas | 6.41 | 9.45 | 4.5 |
+| brand on sunken | 5.88 | 9.83 | 4.5 |
+| ink-mute on canvas | 5.16 | 5.27 | 4.5 |
+| ink-mute on engrave line | 4.71 | 4.67 | 4.5 |
+| line-strong vs surface | 3.90 | 3.71 | 3.0 |
+| masthead-accent on masthead | 8.16 | 10.84 | 4.5 |
+
+**The homepage is now the only page where both children's accents appear, and
+they appear as wayfinding.** A green key on Money, a blue key on Shop floor,
+both on a brass page — so a visitor can see there are two subjects before
+reading a word. Measured against the brass canvas: 7.48 and 6.99 in light, 8.76
+and 7.69 in dark, against a 3:1 non-text floor.
+
+`--key` is set by an attribute rather than by the token swap, because the
+homepage's own vertical is `site` and the root cannot be finance and machining
+at once. It **defaults to `--color-brand`**, so a group with no key — or one
+naming a vertical that does not exist — renders in the page's own accent rather
+than in nothing.
+
+The honest cost: those two values are duplicated from each vertical's
+`--color-brand`, because a custom property cannot read another selector's scope.
+If an accent changes it changes in two places. That is written into the comment
+beside them rather than left for someone to discover.
+
+**A layout regression I introduced and caught by looking.** The key swatch is a
+`::before`, and it was attached to the group heading — which is
+`display: flex; justify-content: space-between`. The pseudo-element became a
+flex item, so "Money" was pushed to the **centre** of the row instead of sitting
+flush left. Every gate passed. It is on the label `<span>` now, and the labels
+measure flush at x=174 against a container edge of 174.
+
+That is the ornament-versus-layout version of a lesson this project keeps
+relearning: a decorative addition is not decorative if it participates in
+layout.
+
+**Cost: zero bytes.** A palette, two attribute-scoped custom properties and a
+pseudo-element are all CSS. The worst page stayed at 18.69 KB and content pages
+at 0.53 KB.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
