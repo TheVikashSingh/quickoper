@@ -133,6 +133,26 @@ export function LineChart({
     (_, i) => i * xTickStride,
   );
 
+  /*
+    The shape of the answer, not the identity of every point.
+
+    PER-SERIES LENGTH AND A MIDPOINT, AND THE FIRST VERSION OF THIS WAS WRONG.
+    It keyed on lastIndex, yMax and each series' FINAL value, all three of which
+    are constant on the tool this was written for: a payoff curve always ends at
+    zero, yMax follows the opening balance, and lastIndex follows the LONGEST
+    series — so overpaying more shortened the overpaid curve and moved none of
+    them. The chart drew once on load and never again, while the figures beside
+    it changed. Every gate passed; it was caught by driving the input.
+
+    Length catches a schedule that finishes sooner. The midpoint catches a curve
+    that changes shape without changing length — a different rate, or a coast
+    projection whose horizon is fixed by age. Together they move whenever the
+    answer does, and stay still when a keystroke rounds to the same schedule.
+  */
+  const drawKey = `${yMax}:${withData
+    .map((s) => `${s.points.length}/${s.points[s.points.length >> 1] ?? 0}`)
+    .join()}`;
+
   return (
     <figure class="m-0">
       <svg
@@ -185,22 +205,57 @@ export function LineChart({
           </text>
         ))}
 
+        {/*
+          THE LINE DRAWS ITSELF, AND IT IS A CLIP WIPE RATHER THAN A DASH OFFSET.
+
+          The obvious technique is stroke-dasharray/stroke-dashoffset keyframes,
+          and it is the one visual-system.md proposes. It cannot be used here:
+          D42 made the dash pattern a SECOND CHANNEL alongside colour, because
+          WCAG 1.4.1 forbids colour as the sole carrier of information and
+          deuteranopia is exactly the case two greens defeat. Animating
+          stroke-dasharray would overwrite that pattern for the duration of the
+          draw — the dashed series would render solid while it animated, which
+          is the one moment a reader is watching it.
+
+          A clip wipe reveals the stroke without touching how the stroke is
+          drawn, so the dash channel survives. It also works identically for
+          solid and dashed series, where a dash-offset animation would have
+          needed two code paths.
+
+          THE KEY IS WHAT RETRIGGERS IT. React reuses a DOM node across renders,
+          so a CSS animation attached to it runs once and never again. Keying the
+          group on the shape of the data means a new calculation produces a new
+          node and the animation restarts. It is deliberately NOT keyed on every
+          render — typing in an input that does not change the result should not
+          replay the draw.
+
+          It is a CSS clip-path on the group rather than an SVG <clipPath>
+          element, which means no id has to be minted and kept unique across two
+          charts on one page — that machinery cost 0.13 KB of the 19.5 and bought
+          nothing the stylesheet could not do for free.
+
+          Everything below is inert under prefers-reduced-motion: the keyframes
+          live inside a no-preference query, so the group is never clipped and
+          the chart simply appears.
+        */}
         {/* Series */}
-        {withData.map((s, i) => {
-          const style = styleFor(i, s.colour);
-          return (
-            <path
-              key={s.id}
-              d={path(s.points)}
-              fill="none"
-              stroke={style.colour}
-              stroke-width="2"
-              stroke-dasharray={style.dash === '' ? undefined : style.dash}
-              stroke-linejoin="round"
-              stroke-linecap="round"
-            />
-          );
-        })}
+        <g key={drawKey} class="chart-draw">
+          {withData.map((s, i) => {
+            const style = styleFor(i, s.colour);
+            return (
+              <path
+                key={s.id}
+                d={path(s.points)}
+                fill="none"
+                stroke={style.colour}
+                stroke-width="2"
+                stroke-dasharray={style.dash === '' ? undefined : style.dash}
+                stroke-linejoin="round"
+                stroke-linecap="round"
+              />
+            );
+          })}
+        </g>
       </svg>
 
       {withData.length > 1 && (

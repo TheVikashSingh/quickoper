@@ -609,6 +609,107 @@
   /* intentionally empty */
 }
 
+/* ── Motion ──────────────────────────────────────────────────────────────────
+   RULE 9 CAPS JAVASCRIPT, AND NONE OF THIS IS JAVASCRIPT. Keyframes and
+   transitions cost zero against the 19.5 KB budget; they add bytes to one
+   shared, immutably cached stylesheet instead. Content pages stay at 0.53 KB
+   and still move.
+
+   EVERYTHING IS INSIDE prefers-reduced-motion: no-preference. Not "reduced
+   under a query" — absent. A reader who has asked their system for less motion
+   gets a chart that is simply there, at full width, with no animation to
+   shorten.
+
+   What is deliberately NOT here, from visual-system.md's forbidden list: no
+   count-up on any figure (a financial number ticking upward reads as a slot
+   machine, which is the worst available connotation for a site arguing it is
+   verified); no scroll-triggered reveals (content parked at opacity 0 awaiting
+   an observer is bad for crawlers and contradicts D38); no animation library.
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* THE ONE EARNED ANIMATION. The site's promise is that it shows the working,
+     and a line drawing itself IS the working — this is the thesis animated
+     rather than decoration laid over it. It runs once per genuinely new result
+     (see the key in LineChart.tsx), left to right, at the speed of a hand
+     drawing a curve rather than a splash screen. */
+  @keyframes chart-draw {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  /* No fill-mode. The end state — inset(0 0 0 0) — is identical to the group`s
+     natural unclipped state, so letting the element own it after the animation
+     ends is one less thing to reason about.
+
+     PROVED: with the animation rule absent, which is exactly what a reader on
+     prefers-reduced-motion: reduce gets, the computed clip-path is `none` and
+     the chart renders complete. A draw-on that could leave a chart invisible
+     would be a bad trade at any byte count.
+
+     While the document is HIDDEN the timeline is frozen at 0, so the group sits
+     at the from-state and the chart is clipped away. That is standard CSS
+     animation behaviour, it resolves the moment the tab is shown, and it is
+     recorded here only because it makes a backgrounded screenshot look broken
+     when nothing is. */
+  .chart-draw {
+    animation: chart-draw 620ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  /* ── Micro-interactions, in the drafting idiom ───────────────────────────
+     A scribed line, a struck die, a plate settling. Each one is a transition
+     on something that was already changing state, so none of them introduces
+     movement where there was none. */
+
+  /* Input focus extends a scribed line beneath the field. The focus RING is
+     untouched — global :focus-visible still supplies it, and this sits under
+     it rather than replacing it, because a decorative underline is not an
+     accessibility affordance. */
+  input,
+  select,
+  textarea {
+    transition:
+      border-color 140ms ease,
+      box-shadow 180ms ease;
+  }
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    box-shadow: inset 0 -2px 0 -1px var(--color-brand);
+  }
+
+  /* A card lifts very slightly and its border firms up. One pixel, because the
+     card is a plate on paper and paper does not fly. */
+  [data-tool-card] {
+    transition:
+      border-color 160ms ease,
+      background-color 160ms ease,
+      transform 160ms ease,
+      box-shadow 160ms ease;
+  }
+  [data-tool-card]:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* A button press insets one pixel, like a struck die. */
+  button,
+  a[class*='rounded-control'],
+  [data-tool-card] {
+    transition-property: border-color, background-color, transform, box-shadow, color;
+    transition-duration: 160ms;
+    transition-timing-function: ease;
+  }
+  button:active,
+  a[class*='rounded-control']:active {
+    transform: translateY(1px);
+  }
+}
+
 /* ── Vertical colour keys ────────────────────────────────────────────────────
    The homepage is the ONLY page where both children's accents appear, and they
    appear as wayfinding rather than decoration: a visitor can see that there are
