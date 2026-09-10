@@ -10,8 +10,8 @@ changes the answer to "what exists" or "what is next".
 1. `CLAUDE.md` — the rules.
 2. `docs/DECISIONS.md` — why the rules are what they are, and what has already
    been tried and disproven. Read the **Superseded** section before proposing
-   any optimisation. **88 entries. D43–D59 are the launch and everything it exposed;
-   D60–D69 are the first live data and the tools built on it; D70–D88 are the
+   any optimisation. **89 entries. D43–D59 are the launch and everything it exposed;
+   D60–D69 are the first live data and the tools built on it; D70–D89 are the
    machining vertical, the catalogue, the URL migration and the visual pass.** Read the last block before touching
    deploy config, the catalogue, or any page that states a computed figure in
    prose.
@@ -391,11 +391,17 @@ downstream, and that clock does not start until the domain resolves.
 
 ## Working agreement
 
-- The agent owns branches, code, commits, pushes, PRs and CI. The operator owns
-  the merge click.
-- `CODEOWNERS` routes `src/lib/calc/`, `src/data/` and `tests/calc/` to the
-  operator, because CI can prove code matches a fixture but not that the fixture
-  matches reality.
+- The agent owns branches, code, commits, pushes, PRs and CI. **Since 2026-09-10 it
+  also enables auto-merge on pull requests that touch no `CODEOWNERS` path** —
+  `gh pr merge --squash --auto`, which squashes on green and never before.
+- **The operator still owns the merge click on anything `CODEOWNERS` lists:**
+  `src/lib/calc/`, `src/data/`, `tests/calc/`, `CLAUDE.md`, `.github/`,
+  `wrangler.toml`. CI can prove code matches a fixture but not that the fixture
+  matches reality, which is why those paths are listed.
+- **That boundary is currently honoured by the agent, not enforced by the server.**
+  `require_code_owner_reviews` is `false` and `required_approving_review_count`
+  is `0`, so `CODEOWNERS` states an intent branch protection does not implement.
+  D89 records it and carries the one command that closes it.
 - Branch protection is server-side with `enforce_admins: true`, so it binds the
   operator's account too — which is the point, since the agent authenticates
   with the operator's token.

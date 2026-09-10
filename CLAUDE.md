@@ -230,9 +230,21 @@ is not automatically last. Therefore:
 
 - Branch per unit of work: `feat/<name>`. **Never commit or push to `main`.**
 - Never `--force` in any form, never `git reset --hard`, never `git clean -fdx`, never rebase
-  a shared branch, never delete a branch or tag, never merge your own PR, never run
-  `wrangler deploy`, never modify branch protection or workflow permissions.
+  a shared branch, never delete a branch or tag, never run `wrangler deploy`, never modify
+  branch protection or workflow permissions.
 - Open a PR. CI must pass: typecheck, Vitest, secret scan, JS byte budget.
+- **Merging is `CODEOWNERS`-shaped, not agent-versus-operator.** Since 2026-09-10 the
+  agent enables GitHub auto-merge (`gh pr merge --squash --auto`) on a pull request that
+  touches **no path listed in `CODEOWNERS`**. It squashes itself once the required checks
+  go green, and never before them.
+- **A pull request touching any `CODEOWNERS` path is never auto-merged** — `src/lib/calc/`,
+  `src/data/`, `tests/calc/`, `CLAUDE.md`, `.github/`, `wrangler.toml`. Open it, say so,
+  and leave the merge to the operator. CI can prove the code matches the fixture; it cannot
+  prove the fixture matches reality, and that is the whole reason those paths are listed.
+- **Honour that boundary as a rule of this file, not as something the server enforces.**
+  Branch protection currently has `require_code_owner_reviews: false` and
+  `required_approving_review_count: 0`, so nothing stops an agent auto-merging a change to
+  `calc/`. See D89.
 - Explain trade-offs in the PR body, not just what changed.
 - One tool per session. Long sessions produce inconsistent output and unreviewable diffs.
 
