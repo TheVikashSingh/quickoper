@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ToolCard from '../../components/ToolCard.astro';
+import ToolRow from '../../components/ToolRow.astro';
 import { SITE } from '../../lib/site';
 import { toolsIn } from '../../lib/catalogue';
 
@@ -63,6 +64,8 @@ const structuredData = [
       for and the number your tooling will give you. Every result shows its formula and
       the standard it came from.
     </p>
+
+    <ToolRow class="mt-6" vertical="machining" />
 
     <section class="mt-10 space-y-4">
       {TOOLS.map((tool) => <ToolCard {...tool} />)}

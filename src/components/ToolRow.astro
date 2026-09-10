@@ -1,0 +1,73 @@
+---
+/**
+ * The compact row of every tool in one vertical, for the top of its hub.
+ *
+ * ─── Why it exists ──────────────────────────────────────────────────────────
+ *
+ * D38 put a row like this at the top of the old homepage and gave the reason:
+ * a visitor who came for a specific calculator should be able to see whether it
+ * exists before deciding anything, and that is the single most useful thing the
+ * space at the top of a landing page can do. It is what calculator.net gets
+ * right.
+ *
+ * D91 turned the root into a router and moved the money teaser to /finance —
+ * and lost the row on the way, so the money hub opened on a debt teaser with
+ * its four tools pushed below it. The operator noticed immediately: "all the
+ * calculators button disappeared on the top."
+ *
+ * ─── Why a compact row AND the detailed cards below ─────────────────────────
+ *
+ * The cards are ~275px tall each. At a 375px width four of them run from 435px
+ * to 1266px, so barely one and a half are on screen — a visitor sees a page of
+ * tools without seeing WHICH tools. The row shows all of them in two lines.
+ *
+ * Two listings of the same thing is exactly what D50 had to police, because the
+ * old homepage's row and list were separate hand-written arrays and drifted
+ * apart. That objection does not apply here: both render from
+ * `calculatorsIn(vertical)` in the registry (D82), so they cannot disagree —
+ * there is one source and two presentations of it.
+ *
+ * ─── One component, both hubs ───────────────────────────────────────────────
+ *
+ * Not copied into each hub. D59 and D66 are both the same defect — a pattern
+ * present on the siblings and absent from the newest — and a hand-written row
+ * per vertical is how the third one ends up missing it.
+ */
+
+import { calculatorsIn, type Vertical } from '../lib/catalogue';
+
+interface Props {
+  vertical: Vertical;
+  /** An optional extra destination pinned to the end — /finance/verify, say. */
+  extra?: { href: string; label: string } | undefined;
+  class?: string | undefined;
+}
+
+const { vertical, extra, class: className } = Astro.props;
+const tools = calculatorsIn(vertical);
+---
+
+<nav class:list={['relative', className]} aria-label="All calculators">
+  <div class="flex flex-wrap gap-2">
+    {
+      tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
+        >
+          {tool.short ?? tool.title}
+        </a>
+      ))
+    }
+    {
+      extra && (
+        <a
+          href={extra.href}
+          class="rounded-control bg-masthead text-masthead-ink hover:bg-brand border-brand border px-4 py-2 text-sm font-semibold"
+        >
+          {extra.label}
+        </a>
+      )
+    }
+  </div>
+</nav>

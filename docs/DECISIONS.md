@@ -3727,6 +3727,62 @@ category.** Every check was green on a homepage that spent seven sections talkin
 about debt before mentioning the other half of the site. No gate can ask "is this
 page about what it claims to be about".
 
+### D92 — The calculator row went missing on the way to /finance, and the fix I reached for first was the wrong one
+
+D91 turned the root into a router and moved the money teaser to `/finance`. It
+did not move the **compact row of calculators** that had sat at the top of the
+old homepage since D38 — so the money hub opened on a debt teaser with its four
+tools pushed below it. The operator saw it immediately: *"all the calculators
+button disappeared on the top."*
+
+**D38 had already written down why that row exists:** a visitor who came for a
+specific calculator should be able to see whether it exists before deciding
+anything, and that is the single most useful thing the space at the top of a
+landing page can do. It is what calculator.net gets right. The reasoning did not
+change; the row simply did not travel with the page it belonged to.
+
+**`/machining` had it right the whole time** — H1, then its tools, then
+everything else. Finance was the outlier, and it became the outlier through the
+change that was supposed to make the two consistent.
+
+**My first fix was wrong, and the reason is worth recording.** I moved the
+detailed `ToolCard` list above the teaser and measured it: at a 375px layout the
+first card sits at 435px, which is comfortably above the fold, so the check
+passed. But the cards are ~275px tall each and four of them run **435px to
+1266px** — so barely one and a half are on screen. The visitor sees *a page of
+tools* without seeing *which tools*, which is not what D38 asked for.
+
+A measurement that answers a slightly different question than the one being
+asked will pass, and that is a subtler failure than a wrong number.
+
+**The compact row is back, and this time it is one component for both hubs.**
+`components/ToolRow.astro` renders `calculatorsIn(vertical)`. Measured at 375px
+on `/finance`: the whole row occupies **347px to 489px** — all four money
+calculators plus *Check our arithmetic*, visible without scrolling.
+
+**Two listings of the same thing, and why D50's objection does not apply.** The
+old homepage carried a compact row AND a detailed list, they were separate
+hand-written arrays, they drifted, and `check-links.mjs` exists partly because of
+it. Here both render from the same registry entry (D82). There is one source and
+two presentations of it, so they cannot disagree — the failure D50 policed is
+structurally absent rather than gated.
+
+**Both hubs, not just the one that was reported.** D59 and D66 are the same
+defect twice — a pattern present on the siblings and absent from the newest — and
+a row hand-written per vertical is exactly how the third one ends up without it.
+`/machining` gets the same component and renders it in Dykem blue with no
+knowledge of which vertical it is in; the tokens do that.
+
+**The row lists calculators, not every tool.** `/machining/drill-size-chart` is
+`kind: 'reference'` and stays out of it, because the row is labelled *All
+calculators* and a printable sheet is not one. It is the first card immediately
+below.
+
+**Seventh defect this session found by looking rather than by a gate**, and the
+second in a row caused by the change that fixed the previous one. Both times the
+suite was green. A gate can check that a page contains a link; it cannot check
+that the link is where a person would look for it.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

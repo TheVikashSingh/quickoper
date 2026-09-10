@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ToolCard from '../../components/ToolCard.astro';
+import ToolRow from '../../components/ToolRow.astro';
 import { QuickCost } from '../../components/calculators/QuickCost';
 import ProofChart from '../../components/ornament/ProofChart.astro';
 import { SITE } from '../../lib/site';
@@ -143,6 +144,12 @@ const structuredData = [
     Each one gives you the formula, every period of the schedule, and a result you can
     export or print. Every calculation runs in your browser.
   </p>
+
+  <ToolRow
+    class="mt-6"
+    vertical="finance"
+    extra={{ href: '/finance/verify', label: 'Check our arithmetic' }}
+  />
 
   <section class="mt-8" aria-labelledby="quick-heading">
     <div class="rounded-panel border-line-strong bg-surface border p-1.5">
