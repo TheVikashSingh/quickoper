@@ -441,7 +441,7 @@ function Stat({
   note: string;
 }): JSX.Element {
   return (
-    <div class="rounded-panel border-line bg-surface border p-3">
+    <div class="rounded-panel border-line bg-surface shadow-raised border p-3">
       <div class="text-ink-mute text-xs font-medium tracking-wide uppercase">{label}</div>
       <div class="numeric mt-1 text-xl font-semibold">{value}</div>
       <div class="text-ink-soft mt-0.5 text-xs">{note}</div>

@@ -3311,6 +3311,88 @@ work done while it is free, on a site whose actual constraint is authority
 success signal, not a problem, and the correct operator action afterwards is to
 resubmit the existing `sitemap-index.xml` row rather than delete and re-add it.
 
+### D87 — The flatness was a hierarchy problem, and the ornament had a contrast ceiling nobody had measured
+
+The operator's report is *"it feels like a CLI, not pleasant to eyes"*. The
+architecture repo's `visual-system.md` diagnoses it correctly: the site is not
+under-decorated. It has five ornament components and a carefully built token
+system. Three things produce the flatness, and this entry is the first of them.
+
+**Everything sat on one plane.** `--shadow-panel` is `0 1px 2px … / 0.06` — six
+percent alpha on a two-pixel blur, which is invisible — and it was stamped on
+eleven blocks of identical weight, *including the result panel*, which is the one
+moment where the product delivers what it promised.
+
+`--shadow-raised` is the second plane and deliberately the only one. It goes on
+the stat panels that carry the computed answer and nowhere else. Two soft layers
+rather than one hard drop, because a struck plate sits on paper rather than
+floating above it.
+
+**On the UK tool it follows D66's asymmetry rather than flattening it.** That
+page renders its two horizons unequally on purpose: the contractual figure rests
+on no assumption, the whole-term figure assumes a rate that expires. The
+contractual panel is raised and the assumed one stays flat, so elevation now
+carries the same information the border weight already did. Making both panels
+equal would have undone the thing D66 was written to fix.
+
+**Then the ornament, where the interesting finding is.** `--color-engrave` was at
+5% alpha and the guilloché at `opacity-[0.08]`: five components built and then
+turned down until they do not register.
+
+Raising the engrave to 0.09 looked modest and **broke WCAG AA**. Measured through
+a canvas, compositing the engrave line over `--color-canvas` and reading
+`--color-ink-mute` — the tightest text on the site — against it:
+
+| alpha | light | dark | |
+|---|---|---|---|
+| 0.050 | 4.73 | 4.94 | where it was |
+| 0.065 | **4.60** | **4.86** | **where it is** |
+| 0.080 | 4.51 | 4.74 | |
+| 0.090 | **4.43** | 4.62 | light already below the 4.5 floor |
+| 0.100 | 4.34 | 4.53 | |
+
+So the ceiling in light sits between 0.07 and 0.08. 0.08 passes at 4.51, and was
+refused for the reason D68 refused 0.13 KB of headroom: a margin of 0.01 leaves
+the next person a failure they did not cause.
+
+**The comment that governed this token was wrong, and had been since it was
+written.** It said *"Text never sits directly on it — panels are opaque
+`--color-surface`"* and concluded the texture *"does not touch contrast anywhere
+it is measured"*. True of calculator pages; **false of every content page**,
+where the prose sits straight on the canvas with these gradients behind it. A
+sentence asserting that a decision is safe is exactly the kind of thing that
+stops anyone re-checking it, which is why it is replaced with the table above
+rather than a corrected sentence.
+
+**The visible gain came from the guilloché instead, and that one is safe where
+the body texture is not.** Doubled from 0.08 to 0.16 — it is a discrete corner
+element, not a full-bleed background, so it can be louder without sitting behind
+running text.
+
+**Proven rather than assumed, and the first attempt at proving it was wrong.** A
+block-box intersection test reported the homepage eyebrow overlapping the
+guilloché. It does not: that is a full-width `<p>` whose ink ends at x=419 while
+the guilloché starts at x=857. **Block-box overlap is not glyph overlap.**
+Re-run over every *text node* whose rendered rects actually intersect the
+ornament — on the homepage, `/methodology`, `/finance/credit-card-interest` and
+`/finance/coast-number`, in both themes — and nothing falls below 4.5:1.
+
+Ninth time the instrument was wrong before the source was (D29, D36, D50, D54,
+D59, D61, D65, D82, D83). The pattern is stable enough to state as a rule: **when
+a measurement says something is broken, first make sure it measured the thing.**
+
+**The type scale got one step, not a rework.** The homepage hero moves
+`text-3xl/4xl` → `text-4xl/5xl` so the top of the scale is unambiguously the top.
+The eyebrow was left alone: `.engraved-fine` is 12px, which contradicts the
+type-scale comment three declarations above it arguing that 12px is below what a
+reader with presbyopia can take comfortably. That is a real inconsistency and it
+is **recorded, not fixed** — shrinking or growing the eyebrow changes every
+kicker on the site and belongs in its own change with its own measurement.
+
+**Cost: 0.01 KB.** The homepage went 12.90 → 12.91 and the worst page 18.68 →
+18.69, all of it the `shadow-raised` class string in the island markup. Every
+shadow, every token and the guilloché are CSS, and CSS is not what rule 9 caps.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

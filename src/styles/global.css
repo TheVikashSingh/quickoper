@@ -84,12 +84,27 @@
   --radius-panel: 0.4rem;
   --shadow-panel: 0 1px 2px oklch(30% 0.02 160 / 0.06);
 
+  /* ── Elevation, spent once ────────────────────────────────────────────────
+     --shadow-panel is 6% alpha on a 2px blur, which is invisible, and it was
+     stamped on eleven blocks of identical weight — including the result panel,
+     the one moment where the product delivers what it promised. Everything on
+     one plane is what a terminal looks like, and that is the flatness the
+     operator reported.
+
+     This is the second plane, and it is deliberately the ONLY one. It goes on
+     the stat panels that carry the computed answer and nowhere else; a radius
+     and a shadow stamped on every block is what flattened the hierarchy in the
+     first place. Two soft layers rather than one hard drop, because a struck
+     plate sits on paper — it does not float above it. */
+  --shadow-raised:
+    0 1px 1px oklch(30% 0.02 160 / 0.05), 0 4px 14px oklch(30% 0.02 160 / 0.1);
+
   /* ── Engraving ────────────────────────────────────────────────────────────
      The ink used for guilloché, lathe work and rules. Deliberately a separate
      token from --color-line: a hairline between table rows and an engine-turned
      background want to move independently, and the engraving must be able to go
      very faint without dragging the table borders with it. */
-  --color-engrave: oklch(42% 0.105 158 / 0.05);
+  --color-engrave: oklch(42% 0.105 158 / 0.065);
   --color-engrave-strong: oklch(42% 0.105 158 / 0.22);
 
   /* ── The masthead band ────────────────────────────────────────────────────
@@ -147,10 +162,11 @@
     --color-negative: oklch(70% 0.16 25);
 
     --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.4);
+    --shadow-raised: 0 1px 1px oklch(0% 0 0 / 0.5), 0 6px 18px oklch(0% 0 0 / 0.45);
 
     /* Engraving on a dark note reads as light ink, and needs a little more
        presence to survive the darker field. */
-    --color-engrave: oklch(74% 0.135 158 / 0.055);
+    --color-engrave: oklch(74% 0.135 158 / 0.08);
     --color-engrave-strong: oklch(74% 0.135 158 / 0.24);
 
     --color-masthead: oklch(11% 0.02 162);
@@ -182,8 +198,9 @@
   --color-negative: oklch(70% 0.16 25);
 
   --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.4);
+  --shadow-raised: 0 1px 1px oklch(0% 0 0 / 0.5), 0 6px 18px oklch(0% 0 0 / 0.45);
 
-  --color-engrave: oklch(74% 0.135 158 / 0.055);
+  --color-engrave: oklch(74% 0.135 158 / 0.08);
   --color-engrave-strong: oklch(74% 0.135 158 / 0.24);
 
   --color-masthead: oklch(11% 0.02 162);
@@ -240,11 +257,36 @@
      to be able to move. And it costs bytes in the stylesheet that this costs
      in a few declarations.
 
-     It is deliberately at the threshold of visibility: --color-engrave is 5%
-     alpha. Text never sits directly on it — panels are opaque --color-surface,
-     so the reading surface stays clean paper and the texture is the field
-     around it. That is how a note is actually laid out, and it is why this
-     does not touch contrast anywhere it is measured. */
+     THE ALPHA IS SET BY A CONTRAST CEILING, NOT BY TASTE, AND THE COMMENT THAT
+     USED TO SIT HERE WAS WRONG. It said "text never sits directly on it —
+     panels are opaque --color-surface", and concluded the texture "does not
+     touch contrast anywhere it is measured". That is true of calculator pages
+     and false of every content page, where the prose sits straight on the
+     canvas with these gradients behind it. The claim had been carrying the
+     decision to raise or lower this token since it was written.
+
+     Measured through a canvas, compositing the engrave line over --color-canvas
+     and reading --color-ink-mute against it — the tightest text on the site:
+
+       alpha   light   dark
+       0.050   4.73    4.94     <- where it was
+       0.065   4.60    4.86     <- where it is
+       0.080   4.51    4.74
+       0.090   4.43    4.62     <- light already BELOW the 4.5 AA floor
+       0.100   4.34    4.53
+
+     So the ceiling in light is between 0.07 and 0.08, and 0.09 — which looked
+     like a modest raise — fails. It is 0.065 light / 0.08 dark, which keeps a
+     real margin rather than sitting on the line (D68's lesson on a different
+     axis).
+
+     The visible gain for the ornament came from the guilloché instead, which
+     was doubled to opacity 0.16. That is safe where this is not, because it is
+     a discrete corner element: every text node whose glyphs actually intersect
+     it was measured on the homepage, /methodology, /finance/credit-card-interest
+     and /finance/coast-number, in both themes, and none falls below 4.5:1.
+     Block-box overlap is not glyph overlap — a full-width <p> "overlaps" the
+     corner while its ink ends 400px short. */
   /* ── Reading comfort ──────────────────────────────────────────────────────
      Leading of 1.5 is a UI default, not a reading one. Long-form text wants
      more, and readers who track lines with difficulty want it most. */
@@ -593,7 +635,7 @@
   --color-negative: oklch(50% 0.17 25);
 
   /* Scribe marks, where finance has engraving. */
-  --color-engrave: oklch(45% 0.145 255 / 0.05);
+  --color-engrave: oklch(45% 0.145 255 / 0.065);
   --color-engrave-strong: oklch(45% 0.145 255 / 0.22);
 
   --color-masthead: oklch(24% 0.04 255);
@@ -632,7 +674,7 @@
     --color-caution: oklch(78% 0.13 75);
     --color-negative: oklch(70% 0.16 25);
 
-    --color-engrave: oklch(72% 0.13 255 / 0.06);
+    --color-engrave: oklch(72% 0.13 255 / 0.08);
     --color-engrave-strong: oklch(72% 0.13 255 / 0.24);
 
     --color-masthead: oklch(11.5% 0.022 255);
@@ -663,7 +705,7 @@
   --color-caution: oklch(78% 0.13 75);
   --color-negative: oklch(70% 0.16 25);
 
-  --color-engrave: oklch(72% 0.13 255 / 0.06);
+  --color-engrave: oklch(72% 0.13 255 / 0.08);
   --color-engrave-strong: oklch(72% 0.13 255 / 0.24);
 
   --color-masthead: oklch(11.5% 0.022 255);

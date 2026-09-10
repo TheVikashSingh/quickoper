@@ -485,7 +485,7 @@ function Verdict({
   const ahead = net >= 0;
   return (
     <div
-      class={`rounded-panel border p-4 ${ahead ? 'border-line-strong bg-surface' : 'border-caution bg-surface'}`}
+      class={`rounded-panel shadow-raised border p-4 ${ahead ? 'border-line-strong bg-surface' : 'border-caution bg-surface'}`}
     >
       <p class="engraved-fine text-ink-mute">
         {ahead ? 'The saving covers the charge' : 'The charge outweighs the saving'}
@@ -531,7 +531,7 @@ function Horizon({
 }): JSX.Element {
   return (
     <div
-      class={`rounded-panel border p-4 ${primary ? 'border-line-strong bg-surface' : 'border-line'}`}
+      class={`rounded-panel border p-4 ${primary ? 'border-line-strong bg-surface shadow-raised' : 'border-line'}`}
     >
       <p class={`engraved-fine ${primary ? 'text-ink' : 'text-ink-mute'}`}>{eyebrow}</p>
       <p class="text-ink mt-1 text-base font-semibold">{title}</p>
