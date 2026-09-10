@@ -3311,6 +3311,28 @@ work done while it is free, on a site whose actual constraint is authority
 success signal, not a problem, and the correct operator action afterwards is to
 resubmit the existing `sitemap-index.xml` row rather than delete and re-add it.
 
+**Verified live on 2026-09-10, after the deploy of #80.** Thirty checks, zero
+failures:
+
+| | |
+|---|---|
+| the nine old URLs | **301** to their `/finance/` counterpart, every one |
+| the nine destinations | **200** |
+| `/credit-card-interest` followed | 200 after **1 hop** |
+| `/not-a-real-page`, `/credit-card-interest-x`, `/finance-verify` | **404** — the controls |
+| `/`, `/about`, `/apps`, `/contact`, `/methodology`, `/privacy`, `/terms`, `/finance`, `/machining` | 200, unaffected |
+
+**The controls are again the half that carries the weight** (D60, D81). Nine
+301s prove nothing on their own — a Cloudflare dashboard rule answering ahead of
+the Worker would look identical from outside. `/credit-card-interest-x` is the
+sharp one: it 404s, so nothing is prefix-matching, and the rules are the nine
+literal paths this repository committed rather than a pattern somebody typed
+into a dashboard where no gate, diff or reviewer could see it.
+
+One hop, not two. A chain would have meant the redirect landed somewhere that
+redirected again, which is the usual way a migration quietly loses its
+destination.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
