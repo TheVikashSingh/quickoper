@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { DebtPayoffCalculator } from '../../components/calculators/DebtPayoffCalculator';
 import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
 import TrustStrip from '../../components/ornament/TrustStrip.astro';
 import RelatedTools from '../../components/RelatedTools.astro';
 
@@ -54,7 +55,7 @@ const structuredData = [
     name: 'Debt payoff calculator — avalanche vs snowball',
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'Any',
-    url: 'https://quickoper.com/finance/debt-payoff-calculator',
+    url: `${SITE.url}/finance/debt-payoff-calculator`,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     description:
       'Compare the avalanche and snowball debt payoff methods against paying minimums. Full month-by-month schedule, chart, CSV and PDF export. Runs entirely in your browser.',
@@ -64,12 +65,18 @@ const structuredData = [
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://quickoper.com/' },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
       {
         '@type': 'ListItem',
         position: 2,
+        name: 'Money calculators',
+        item: `${SITE.url}/finance`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
         name: 'Debt payoff calculator',
-        item: 'https://quickoper.com/finance/debt-payoff-calculator',
+        item: `${SITE.url}/finance/debt-payoff-calculator`,
       },
     ],
   },
@@ -107,7 +114,7 @@ const structuredData = [
       class="mt-5"
       items={[
         { label: 'Nothing you type is sent anywhere' },
-        { label: 'Every figure checkable in a spreadsheet', href: '/verify' },
+        { label: 'Every figure checkable in a spreadsheet', href: '/finance/verify' },
         { label: 'Full schedule, chart, CSV and printable report' },
       ]}
     />
@@ -457,17 +464,17 @@ const structuredData = [
       hubNote="three tools, each with its working shown and its arithmetic tested against a published figure"
       links={[
         {
-          href: '/credit-card-interest',
+          href: '/finance/credit-card-interest',
           label: 'How credit card interest is actually calculated',
           note: 'the daily periodic rate behind every figure above, and why 22.99% costs 25.838%',
         },
         {
-          href: '/minimum-payments',
+          href: '/finance/minimum-payments',
           label: 'How long minimum payments take, and when they never finish',
           note: 'the balances where the minimums never clear the card at all, worked out from first principles',
         },
         {
-          href: '/verify',
+          href: '/finance/verify',
           label: 'Check our arithmetic yourself',
           note: 'reproduce the payment and the interest total in a spreadsheet',
         },

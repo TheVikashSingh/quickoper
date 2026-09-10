@@ -23,7 +23,7 @@ Inputs: none.
 Status: one app listed, in development. No app is downloadable yet.
 Jurisdiction: none.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ## Tools — finance
 
@@ -37,7 +37,7 @@ payment.
 Jurisdiction: none. Interest is charged monthly on the opening balance, which
 is a convention, not a rule of any one country.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ### Coast FIRE calculator
 URL: https://quickoper.com/finance/coast-fire-calculator
@@ -47,7 +47,7 @@ Inputs: current age, retirement age, amount invested, annual spending,
 withdrawal rate, real annual return, monthly contribution.
 Jurisdiction: none. No tax treatment or account type is modelled.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ### Mortgage overpayment calculator
 URL: https://quickoper.com/finance/mortgage-overpayment-calculator
@@ -68,7 +68,7 @@ Key figures, computed on $320,000 at 6.706% over 30 years:
     rather than issuing a 361st bill.
 Not modelled: escrow, PMI, fees, prepayment penalties, adjustable rates.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ### UK early repayment charge calculator
 URL: https://quickoper.com/finance/uk-early-repayment-charge-calculator
@@ -105,12 +105,12 @@ still fixed, a 10% allowance and a 3% charge, overpaying £40,000:
     the charge percentage against the rate multiplied by the years left on the
     deal.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ## Derivations
 
 ### How long minimum payments take, and when they never finish
-URL: https://quickoper.com/minimum-payments
+URL: https://quickoper.com/finance/minimum-payments
 States: a minimum payment reduces a credit card balance only if it is larger
 than that month's interest. Interest is balance x (APR / 12); the balance moves
 by (interest - payment). If the payment is smaller than the interest the balance
@@ -136,7 +136,7 @@ calculator runs, assuming a fixed monthly payment and no further spending:
     amount.
 
 ### How credit card interest is actually calculated
-URL: https://quickoper.com/credit-card-interest
+URL: https://quickoper.com/finance/credit-card-interest
 States: a credit card daily periodic rate is APR divided by 365. At 22.99% APR
 that is 0.062986% per day. Interest is charged on the average daily balance of
 the billing cycle, not the closing balance.
@@ -150,7 +150,7 @@ Key figures, all computed on a $6,000 balance at 22.99% APR:
     day 1 and $113.25 if it lands on day 30.
 
 ### Why a 7% return is not 0.583% a month
-URL: https://quickoper.com/monthly-return-rate
+URL: https://quickoper.com/finance/monthly-return-rate
 States: converting a stated annual RETURN to a monthly rate requires the twelfth
 root, not division by twelve. A 7% annual return is 0.565415% per month, being
 (1.07)^(1/12) - 1. Dividing gives 0.583333%, which compounds to an effective
@@ -166,7 +166,7 @@ Key figures:
     $100,000 that is $414,568.14 against $432,194.24.
 
 ### Where the 4% rule comes from, and what it does not say
-URL: https://quickoper.com/withdrawal-rate
+URL: https://quickoper.com/finance/withdrawal-rate
 States: a withdrawal rate converts annual spending into a savings target by
 dividing 100 by the rate. 4% is 25 times spending; 3% is 33.33 times.
 Key figures, computed on $40,000 of annual spending:
@@ -181,7 +181,7 @@ Key figures, computed on $40,000 of annual spending:
     $262,120.48 apart on an identical 10% arithmetic mean.
 
 ### What a coast number is, and what it is not
-URL: https://quickoper.com/coast-number
+URL: https://quickoper.com/finance/coast-number
 States: a coast number is target / (1 + real return)^years - the amount that must
 already be invested for compounding alone to reach a retirement target with no
 further contributions. Passing it makes further SAVING optional, not working.
@@ -196,7 +196,7 @@ Key figures, on a $1,000,000 target:
     constant rate.
 
 ### Biweekly mortgage payments — what the thirteenth payment actually does
-URL: https://quickoper.com/biweekly-mortgage-payments
+URL: https://quickoper.com/finance/biweekly-mortgage-payments
 States: twenty-six half-payments a year is thirteen monthly payments, not
 twelve. The whole benefit of a biweekly schedule is that one extra payment; the
 fortnightly timing contributes almost nothing.
@@ -211,7 +211,7 @@ Key figures, computed on $320,000 at 6.706% over 30 years:
     mid-month. That effect is real and small beside the thirteenth payment.
 
 ### What an extra payment does in year one versus year twenty
-URL: https://quickoper.com/mortgage-overpayment-timing
+URL: https://quickoper.com/finance/mortgage-overpayment-timing
 States: the value of an extra mortgage payment depends on how much of the term
 is left in front of it, because interest is charged on the balance every
 remaining month. A dollar retired in month 1 escapes 359 future interest
@@ -230,7 +230,7 @@ Key figures, computed on $320,000 at 6.706% over 30 years, payment $2,066.16:
     extra money in suspense rather than applying it to principal.
 
 ### What a 15-year mortgage costs against a 30-year
-URL: https://quickoper.com/15-year-vs-30-year-mortgage
+URL: https://quickoper.com/finance/15-year-vs-30-year-mortgage
 States: at the same interest rate, halving the term raises the payment by about
 a third and removes more than half the interest. Both loans are charged
 identical interest in month one, because interest is charged on the balance and
@@ -269,7 +269,7 @@ Computes: nothing directly; indexes the machining tools.
 Inputs: none.
 Jurisdiction: none. ISO metric and Unified inch thread forms are international.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ### The machinist Android app (in development)
 URL: https://quickoper.com/machining/app
@@ -283,7 +283,7 @@ Store link appears on this page on release; there is no download, pre-order or
 price to pay before then.
 Jurisdiction: none.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ### Feeds and speeds calculator
 URL: https://quickoper.com/machining/feeds-and-speeds-calculator
@@ -304,7 +304,7 @@ they are inputs taken from the user's data sheet. The power section stays blank
 until kc1.1 and mc are supplied rather than defaulting them.
 Jurisdiction: none. ISO 3002-1 definitions.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ### Tap drill calculator
 URL: https://quickoper.com/machining/tap-drill-calculator
@@ -324,7 +324,7 @@ M8 x 1.25 at 75% wants 6.7822 mm and gets the 6.8 mm drill, which gives 73.90%.
 M12 on the published 10.2 mm drill gives 79.18%; #8-32 on a #29 gives 68.98%.
 Jurisdiction: none. ISO metric and Unified inch.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ### Drill size chart (metric and fractional inch)
 URL: https://quickoper.com/machining/drill-size-chart
@@ -350,7 +350,7 @@ The metric column is a shop index and is NOT presented as DIN 338 R40.
 Download: https://quickoper.com/machining/drill-size-chart.csv
 Jurisdiction: none. ISO 235 / DIN 338 metric and ASME B94.11M fractional inch.
 Methodology: https://quickoper.com/methodology
-Verification: https://quickoper.com/verify
+Verification: https://quickoper.com/finance/verify
 
 ## Verification
 

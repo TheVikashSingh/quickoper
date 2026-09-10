@@ -117,8 +117,24 @@ export const SITE_LEVEL: readonly string[] = [
   '/methodology',
   '/privacy',
   '/terms',
-  '/verify',
 ];
+
+/**
+ * Pages that belong to a vertical but carry no computed figures of their own.
+ *
+ * `/finance/verify` is the whole list today. It is a PROCEDURE — five
+ * spreadsheet formulas and one SEC calculator — not a destination the catalogue
+ * advertises, so it is neither a tool nor a derivation. It is not site-level
+ * either: every check on it is financial, which is why it moved under
+ * `/finance` while `/methodology` stayed at the root. A claim belongs to the
+ * site; a procedure belongs to its subject.
+ *
+ * It exists so `check-llms.mjs` can tell this from a page that is simply
+ * missing its catalogue entry. Before the migration `/verify` sat in
+ * `SITE_LEVEL` and was exempt by accident of where it happened to live; now it
+ * is exempt for a stated reason.
+ */
+export const VERTICAL_TRUST: readonly string[] = ['/finance/verify'];
 
 export const CATALOGUE: readonly Entry[] = [
   // ── Finance tools ──────────────────────────────────────────────────────────
@@ -167,7 +183,7 @@ export const CATALOGUE: readonly Entry[] = [
 
   // ── Finance derivations ────────────────────────────────────────────────────
   {
-    href: '/minimum-payments',
+    href: '/finance/minimum-payments',
     title: 'How long minimum payments take, and when they never finish',
     summary:
       'the one line that decides whether a card ever clears, and the balances where it does not',
@@ -175,14 +191,14 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'derivation',
   },
   {
-    href: '/credit-card-interest',
+    href: '/finance/credit-card-interest',
     title: 'How credit card interest is actually calculated',
     summary: 'the daily periodic rate, and why a stated APR is not what a card charges',
     vertical: 'finance',
     kind: 'derivation',
   },
   {
-    href: '/biweekly-mortgage-payments',
+    href: '/finance/biweekly-mortgage-payments',
     title: 'Biweekly mortgage payments: what the thirteenth payment does',
     summary:
       'why 26 half-payments is 13 monthly ones, and what that one extra payment removes',
@@ -190,7 +206,7 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'derivation',
   },
   {
-    href: '/mortgage-overpayment-timing',
+    href: '/finance/mortgage-overpayment-timing',
     title: 'What an extra payment does in year one versus year twenty',
     summary:
       'the same money, several times the effect, decided by how much term is left in front of it',
@@ -198,7 +214,7 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'derivation',
   },
   {
-    href: '/15-year-vs-30-year-mortgage',
+    href: '/finance/15-year-vs-30-year-mortgage',
     title: 'What a 15-year mortgage costs against a 30-year',
     summary:
       'both loans are charged the same interest in month one, and the term turns out not to be a property of the product',
@@ -206,7 +222,7 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'derivation',
   },
   {
-    href: '/monthly-return-rate',
+    href: '/finance/monthly-return-rate',
     title: 'Why a 7% return is not 0.583% a month',
     summary:
       'the division that overstates a thirty-year projection, and the correct conversion',
@@ -214,14 +230,14 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'derivation',
   },
   {
-    href: '/withdrawal-rate',
+    href: '/finance/withdrawal-rate',
     title: 'Where the 4% rule comes from',
     summary: 'what Bengen and the Trinity Study actually tested, and what they did not',
     vertical: 'finance',
     kind: 'derivation',
   },
   {
-    href: '/coast-number',
+    href: '/finance/coast-number',
     title: 'What a coast number is, and what it is not',
     summary: 'the assumption that moves the figure more than any other',
     vertical: 'finance',

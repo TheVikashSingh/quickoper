@@ -69,7 +69,7 @@ const structuredData = [
       {
         '@type': 'ListItem',
         position: 2,
-        name: 'Calculators',
+        name: 'Money calculators',
         item: `${SITE.url}/finance`,
       },
       {
@@ -167,7 +167,7 @@ const structuredData = [
       class="mt-5"
       items={[
         { label: 'Nothing you type is sent anywhere' },
-        { label: 'Payment matches the published figure', href: '/verify' },
+        { label: 'Payment matches the published figure', href: '/finance/verify' },
         { label: 'Full schedule, chart, CSV and printable report' },
       ]}
     />
@@ -329,8 +329,8 @@ const structuredData = [
         fraction of a cent retires the loan marginally more slowly. $2.73 over thirty
         years is under a cent a month. Neither figure is wrong; they answer slightly
         different questions, and{' '}
-        <a class="text-brand underline" href="/verify">our verification page</a> covers how
-        to check both.
+        <a class="text-brand underline" href="/finance/verify">our verification page</a> covers
+        how to check both.
       </p>
 
       <h2 class="text-ink section-head">Why the last payment is bigger</h2>
@@ -421,7 +421,7 @@ const structuredData = [
       /*
         THREE LINKS, WHICH IS INSIDE RULE 8 AGAIN. This block carried four —
         debt payoff, the timing derivation, the 15-vs-30 comparison and
-        /verify — so it was outside the rule's "2-3 genuine internal links plus
+        /finance/verify — so it was outside the rule's "2-3 genuine internal links plus
         the cluster hub" before anything was added to it. The gate only fails
         below two, so it passed CI the whole time.
 
@@ -431,7 +431,7 @@ const structuredData = [
         made before the loan exists. Nothing is orphaned — 15-vs-30 keeps its
         other inbound links now the catalogue renders the hub and the homepage.
 
-        /verify came out because it was the page's THIRD link to /verify: the
+        /finance/verify came out because it was the page's THIRD link to /finance/verify: the
         trust strip above the fold carries one, and the body prose carries
         another beside the figure it is about. A related-content block is not
         where a link earns its third appearance.
@@ -447,12 +447,12 @@ const structuredData = [
           note: 'the same overpayment idea across several debts at once',
         },
         {
-          href: '/mortgage-overpayment-timing',
+          href: '/finance/mortgage-overpayment-timing',
           label: 'What an extra payment does in year one versus year twenty',
           note: 'the same lump sum is worth several times more early than late, on this same loan',
         },
         {
-          href: '/biweekly-mortgage-payments',
+          href: '/finance/biweekly-mortgage-payments',
           label: 'Biweekly mortgage payments: what the thirteenth payment does',
           note: 'the same overpayment arriving as one extra payment a year rather than a monthly top-up',
         },

@@ -1,12 +1,12 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import NoteFrame from '../components/ornament/NoteFrame.astro';
-import Rule from '../components/ornament/Rule.astro';
-import RelatedTools from '../components/RelatedTools.astro';
-import { SITE } from '../lib/site';
-import { sourceRef } from '../lib/schema';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NoteFrame from '../../components/ornament/NoteFrame.astro';
+import Rule from '../../components/ornament/Rule.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { SITE } from '../../lib/site';
+import { sourceRef } from '../../lib/schema';
 
-import { compareOverpayment, contractualPayment } from '../lib/calc/mortgage';
+import { compareOverpayment, contractualPayment } from '../../lib/calc/mortgage';
 import {
   divide,
   format,
@@ -14,7 +14,7 @@ import {
   scale,
   subtract,
   type Minor,
-} from '../lib/calc/money';
+} from '../../lib/calc/money';
 
 const LAST_VERIFIED = '2026-08-12';
 const CURRENCY = 'USD';
@@ -187,8 +187,14 @@ const structuredData = [
       {
         '@type': 'ListItem',
         position: 2,
+        name: 'Money calculators',
+        item: `${SITE.url}/finance`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
         name: 'Biweekly mortgage payments',
-        item: `${SITE.url}/biweekly-mortgage-payments`,
+        item: `${SITE.url}/finance/biweekly-mortgage-payments`,
       },
     ],
   },
@@ -475,12 +481,12 @@ const structuredData = [
           note: 'put your own loan in and see what any extra amount removes, month by month',
         },
         {
-          href: '/mortgage-overpayment-timing',
+          href: '/finance/mortgage-overpayment-timing',
           label: 'What an extra payment does in year one versus year twenty',
           note: 'the same extra money, and why the month it lands in changes what it is worth',
         },
         {
-          href: '/verify',
+          href: '/finance/verify',
           label: 'Check our arithmetic yourself',
           note: 'reproduce the contractual payment against a spreadsheet in about a minute',
         },

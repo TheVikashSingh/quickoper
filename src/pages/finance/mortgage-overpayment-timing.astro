@@ -1,13 +1,13 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import NoteFrame from '../components/ornament/NoteFrame.astro';
-import Rule from '../components/ornament/Rule.astro';
-import RelatedTools from '../components/RelatedTools.astro';
-import { SITE } from '../lib/site';
-import { sourceRef } from '../lib/schema';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NoteFrame from '../../components/ornament/NoteFrame.astro';
+import Rule from '../../components/ornament/Rule.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { SITE } from '../../lib/site';
+import { sourceRef } from '../../lib/schema';
 
-import { calculateMortgage, compareLumpSum } from '../lib/calc/mortgage';
-import { format, fromMajor, sum, type Minor } from '../lib/calc/money';
+import { calculateMortgage, compareLumpSum } from '../../lib/calc/mortgage';
+import { format, fromMajor, sum, type Minor } from '../../lib/calc/money';
 
 const LAST_VERIFIED = '2026-08-17';
 const CURRENCY = 'USD';
@@ -157,8 +157,14 @@ const structuredData = [
       {
         '@type': 'ListItem',
         position: 2,
+        name: 'Money calculators',
+        item: `${SITE.url}/finance`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
         name: 'Overpayment timing',
-        item: `${SITE.url}/mortgage-overpayment-timing`,
+        item: `${SITE.url}/finance/mortgage-overpayment-timing`,
       },
     ],
   },
@@ -402,8 +408,8 @@ const structuredData = [
         <code>=IPMT(0.06706/12, 1, 360, -320000)</code> gives the first month's interest. Change
         the second argument of <code>IPMT</code> to 240 and you have the year-twenty row of
         the table above.{' '}
-        <a class="text-brand underline" href="/verify">Our verification page</a> walks through
-        the same checks in more detail.
+        <a class="text-brand underline" href="/finance/verify">Our verification page</a> walks
+        through the same checks in more detail.
       </p>
     </section>
 
@@ -508,12 +514,12 @@ const structuredData = [
           note: 'put your own loan in and see what any extra amount removes, month by month',
         },
         {
-          href: '/15-year-vs-30-year-mortgage',
+          href: '/finance/15-year-vs-30-year-mortgage',
           label: 'What a 15-year mortgage costs against a 30-year',
           note: 'the same extra payment made compulsory, and what the shorter term removes',
         },
         {
-          href: '/verify',
+          href: '/finance/verify',
           label: 'Check our arithmetic yourself',
           note: 'reproduce the payment and the interest split against a spreadsheet',
         },

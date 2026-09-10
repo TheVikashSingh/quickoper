@@ -3228,6 +3228,89 @@ carries the previous application's URLs — `www.quickoper.com/`, `/pricing`,
 D60's `www` redirect and are not evidence that the duplicate is back; anyone
 re-reading this table later should not mistake them for current.
 
+### D86 — Nine URLs move under /finance, and the gate that proved it
+
+The root namespace is now reserved for site-level pages; all vertical content
+lives under its vertical. Nine URLs moved:
+
+```
+/credit-card-interest          ->  /finance/credit-card-interest
+/biweekly-mortgage-payments    ->  /finance/biweekly-mortgage-payments
+/minimum-payments              ->  /finance/minimum-payments
+/monthly-return-rate           ->  /finance/monthly-return-rate
+/withdrawal-rate               ->  /finance/withdrawal-rate
+/coast-number                  ->  /finance/coast-number
+/15-year-vs-30-year-mortgage   ->  /finance/15-year-vs-30-year-mortgage
+/mortgage-overpayment-timing   ->  /finance/mortgage-overpayment-timing
+/verify                        ->  /finance/verify
+```
+
+`/`, `/about`, `/apps`, `/contact`, `/methodology`, `/privacy` and `/terms` stay
+at the root. `TheVikashSingh/quickoper-architecture` is the authority on URL
+structure from here on.
+
+**`/verify` moved and `/methodology` did not, and the line between them is the
+useful part.** `/methodology` is a **claim** — why the numbers can be trusted —
+and that claim is genuinely site-wide, which is why it grew per-vertical sections
+rather than moving (D83). `/verify` is a **procedure**, and its procedure is five
+spreadsheet formulas and one SEC calculator: every step of it is financial, and
+not one machining check appears on it. A claim belongs to the site; a procedure
+belongs to its subject.
+
+**Why now rather than later: there was nothing to protect.** 2,048 impressions,
+zero clicks, average position ~74 (D85). The cost of this move scales with page
+count and inbound links, and the site has close to none of the latter. Doing it
+at 26 pages is cheap; doing it at 60 would not be.
+
+**PR 1's gate did the job it was built for, on its first real use.** D81 shipped
+the absent-from-`dist/` assertion and recorded that it was proven synthetically
+but had *never run against an actual page move*. It has now:
+
+```
+PASS: public/_redirects — 0 affiliate rule(s) agree with the registry,
+      9 migration rule(s) resolve against the build.
+```
+
+Nine sources proven absent from `dist/` and nine destinations proven present.
+That is what separates a `git mv` from a copy, and it is the one thing no other
+gate could see — every other check reads `dist/` and would have found a
+still-built page present and correct while its redirect sat dead behind it.
+
+**The build caught what the gates could not.** `finance/debt-payoff-calculator`
+hardcoded `https://quickoper.com/` in its breadcrumbs instead of `SITE.url`.
+Replacing it broke the build outright — `ReferenceError: SITE is not defined` —
+because that page had never imported `SITE`. The hardcoding was not a style slip;
+it was the *reason* the import was missing, and each defect had been concealing
+the other since the page shipped.
+
+**Breadcrumbs were two-level on ten pages and are three-level now**, with a
+`/finance` crumb at position 2. The hub label was `'Calculators'` on two pages
+and `'Finance'` on a third; it is **`'Money calculators'`** everywhere, matching
+the hub's own H1. `'Calculators'` was the wrong choice for a second reason
+nobody had hit yet: with two verticals it no longer identifies anything, since
+`/machining` is calculators too, and machining's own crumb already uses its
+vertical name.
+
+**`/verify` left `SITE_LEVEL` for a new `VERTICAL_TRUST` list.** It had been
+exempt from the `llms.txt` catalogue requirement by accident of sitting at the
+root; it is now exempt for a stated reason — a page that belongs to a vertical
+but carries no computed figures of its own. Exemptions that are correct by
+coincidence stop being correct the moment anything moves, which is precisely what
+just happened.
+
+**Every path written down in the codebase resolves.** Four code comments named
+`/verify` as a live URL and were rewritten; the one in `catalogue.ts` describing
+where `/verify` *used to* sit is left alone, because it is history and reads as
+history. `public/_redirects` also carried a line saying "there are no migration
+rules yet", which stopped being true in the same commit that added nine.
+
+**What this does not do, stated so nobody reads more into it than is there.** It
+does not improve rankings, and nothing here was expected to. It is structural
+work done while it is free, on a site whose actual constraint is authority
+(D85). The old URLs reading *Page with redirect* in Search Console is the
+success signal, not a problem, and the correct operator action afterwards is to
+resubmit the existing `sitemap-index.xml` row rather than delete and re-add it.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
