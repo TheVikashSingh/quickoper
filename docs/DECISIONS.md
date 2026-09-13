@@ -3966,6 +3966,33 @@ for a person to notice the symptom. **A comment saying "left to a later change"
 is not a queue**, and this is the second time this session that a documented
 deferral surfaced only because the operator opened the page.
 
+### D96 — A golden row may be verified by a named checker, and must say who
+
+The provenance gate (`tests/calc/tap-drill-verification.test.ts`) said a
+catalogue had to be opened by *a person* before a row counted as verified. The
+operator is a software developer, not a machinist, and asked Claude to do the
+checking. On 2026-09-13 Claude checked the 18 rows against published charts
+from Dormer/Precision Twist Drill, Emuge and Guhring, with LittleMachineShop's
+75% chart as corroboration.
+
+The part of the rule that matters survives: **a row is verified only when two
+makers agree, and the row names its sources and its checker.** Every row
+checked this way ends `checked by Claude`, so it can always be told apart from
+a person's check, and anyone can re-open the named charts.
+
+Seventeen rows passed. M1.6 appears in only one maker's chart, so it stays
+PENDING and `MAX_PENDING` is 1.
+
+**Disagreements are recorded, not smoothed over.**
+- Emuge recommends one drill larger for 6-32, 10-24, 1/4-20 and 3/8-16, a
+  lower-engagement convention. The 72-77% and 75% charts agree with our rows,
+  so those rows say `Emuge picks next size up`.
+- LittleMachineShop gives 10.3 mm for M12, the drill nearest exactly 75%. The
+  three makers give 10.2 mm, the standard drill, and that stays.
+
+**Rejected:** marking all 18 verified because M1.6 → 1.25 mm is "obviously"
+right. That is exactly the state the gate exists to refuse.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
