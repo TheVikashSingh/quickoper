@@ -297,12 +297,13 @@ Three things are therefore absent, and the page says so rather than hiding it:
   values. Users enter a pitch directly until those values are verified.
 
 All three are gated behind the same rule: this site does not ship a reference
-figure a human has not checked against a primary source. `tests/fixtures/golden-tap-drill.csv`
+figure nobody has checked against a primary source. `tests/fixtures/golden-tap-drill.csv`
 carries `verified_against` / `verified_on` columns, and `MAX_PENDING` in
 `tests/calc/tap-drill-verification.test.ts` is a ratchet that may only be
-lowered. **All 18 rows currently read PENDING.** Checking them against two free
-manufacturer catalogue PDFs is under an hour, once, and it is the highest-value
-hour available to this vertical.
+lowered. **17 of 18 rows are verified** (2026-09-13, against Dormer/Precision
+Twist Drill, Emuge and Guhring charts; each row names its sources and says it
+was checked by Claude). M1.6 stays PENDING until a second maker's chart
+confirms it, so `MAX_PENDING` is 1.
 
 ## Next
 

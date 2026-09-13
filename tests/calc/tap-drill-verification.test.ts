@@ -31,7 +31,7 @@ import {
  * no code can fill in:
  *
  *   claimed_source    where the value is BELIEVED to come from
- *   verified_against  the catalogue a HUMAN opened, or the literal PENDING
+ *   verified_against  the catalogue(s) a named checker opened, or PENDING
  *   verified_on       ISO date of that check
  *
  * `PENDING` means: plausible, internally consistent, and NOT YET CHECKED
@@ -51,6 +51,16 @@ import {
  * right" is exactly the state this project exists to refuse. Verifying 18 rows
  * against two free manufacturer catalogue PDFs is well under an hour of one
  * person's time, once, and after that the numbers belong to us.
+ *
+ * ─── 2026-09-13: 17 of 18 checked ──────────────────────────────────────────
+ *
+ * With the operator's approval, Claude checked the rows against published
+ * charts from Dormer/Precision Twist Drill, Emuge and Guhring, with
+ * LittleMachineShop's 75% chart as corroboration. Each row names its sources
+ * and says "checked by Claude", so it can always be told apart from a check
+ * made by a person. A row needs two makers that agree; M1.6 has one, so it
+ * stays PENDING. Where makers differ (Emuge picks one drill larger on four
+ * inch threads), the row says so.
  */
 
 const CSV_PATH = fileURLToPath(
@@ -64,7 +74,7 @@ const CSV_PATH = fileURLToPath(
  * never pass review — it would mean unverified data was added, which is the
  * exact failure the gate exists to prevent.
  */
-const MAX_PENDING = 18;
+const MAX_PENDING = 1;
 
 interface GoldenRow {
   thread: string;
@@ -99,7 +109,7 @@ function loadGolden(): GoldenRow[] {
   });
 }
 
-/** A row is shippable only once a person has checked it against a source. */
+/** A row is shippable only once someone has checked it against a named source. */
 export function isVerified(row: GoldenRow): boolean {
   return row.verifiedAgainst.trim() !== '' && row.verifiedAgainst.trim() !== 'PENDING';
 }
