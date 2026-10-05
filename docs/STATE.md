@@ -118,6 +118,25 @@ that has never failed is not a gate.
 
 ---
 
+### The app's privacy section (2026-10-05)
+
+`/privacy` is also the privacy policy of the Machinist Android app, and Google
+Play links to it from the listing and requires a link from inside the app. It
+now describes the app with its one-time purchase (app roadmap 5.3, PR #66):
+
+- **Permissions:** one, Google Play's billing permission; no internet access. The
+  billing library's own logging cannot send without it.
+- **What the app keeps on the phone.**
+- **What Google gives us about an order:** the Play Developer API's order
+  resource; country, plus state and postcode only where Google is not the seller
+  of record.
+- **How long things are kept.**
+
+The page has its own date, `SITE.privacyLastUpdated`, so the other trust pages
+do not claim a revision they did not have. It must say the same as the app's
+Data safety answers, `machinist-calc-app/store/play/data-safety.md`: Google
+requires the two to match.
+
 ## Blocked on the operator
 
 Nothing in code depends on these, but launch does.
