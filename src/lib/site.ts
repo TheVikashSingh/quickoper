@@ -45,4 +45,12 @@ export const SITE = {
 
   /** Bumped when the trust pages are substantively revised. */
   legalLastUpdated: '2026-09-05',
+
+  /**
+   * The privacy policy's own date. It moved on its own for the Android app's
+   * one-time purchase (machinist-calc-app roadmap 5.3), which changed nothing on
+   * the other trust pages - so they keep `legalLastUpdated` rather than claim a
+   * revision they did not have.
+   */
+  privacyLastUpdated: '2026-10-05',
 } as const;
