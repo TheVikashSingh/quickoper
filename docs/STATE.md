@@ -219,9 +219,11 @@ the "calculators that show their working" promise — with `/methodology` and
 would restart both. Adding folders cannot disturb existing indexing; only
 changing or removing URLs does.
 
-**Its own identity, sharing the plumbing.** Finance draws on banknote engraving:
-warm paper, banknote green, Georgia. Machining draws on layout dye and scribed
-lines: ground-steel greys, Dykem blue, no serif. The token NAMES, the
+**Its own colours, sharing the plumbing and the type.** Finance draws on
+banknote engraving: warm paper, banknote green. Machining draws on layout dye
+and scribed lines: ground-steel greys, Dykem blue. Both, and the root, set
+headings in the house serif, Georgia; machining's own narrow sans was dropped
+when the operator saw it as a second site (D102). The token NAMES, the
 three-state dark handling and the measured contrast floors are identical — only
 the values change, scoped on `:root[data-vertical='machining']` and set by a
 `vertical` prop on BaseLayout. No component knows which vertical it renders in.
