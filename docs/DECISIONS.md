@@ -4355,6 +4355,54 @@ two, both exact ties where the reference's own floats were the ones a step out.
 
 Tapping, the other half of W5, follows separately.
 
+### D104 — Tapping: the feed is worked from S, never from n
+
+Roadmap W5's second half, and the last of the app's feeds and speeds on the
+site: tapping as a fifth operation, written from `machinist-calc-research`
+03-spec/calculations.md §3, "Tapping: the feed is the pitch", then compared
+with the Android core's tests (Gate 7): every golden row agrees, and the
+working's fn and vf lines carry the app's arithmetic, the 25.4 where it is used
+included.
+
+**The feed is worked from S.** A control is given S as a whole number of
+rev/min, and a synchronised (rigid) tapping cycle needs the feed to match the
+turns the spindle really makes. Haas's G84 guide (AP-602 X1) works every
+example that way — S500, then F = P × RPM — and says F and S "work together to
+time the Z-Axis feed movement with the spindle position". So n is rounded to S
+first and vf = pitch × S, and F ÷ S is the pitch exactly. Worked from n, an
+M10 × 1.5 at 10 m/min would show S318 beside F477.4648: a 1.5015 mm thread.
+Every other operation still works its feed from the unrounded n (D103), and
+the difference is deliberate: a milling feed is not locked to the spindle.
+
+**The published check (rule 3).** Haas's S500 examples in both modes: 1/2-13 is
+F976.923 mm/min and F38.4615 in/min, M12 × 1.75 F875.000 and F34.4488 (read in
+the PDF on 2026-10-06). Sandvik Coromant's tapping formulas, n = vc × 1000 /
+(π × D) and vf = P × n, were read off their formula images the same day; the
+page's definitions call the pitch p and the power P, and a feed of power times
+speed means nothing, so the P in the feed is the pitch.
+
+**An inch tap keeps its count.** 1/TPI inch is a whole number of nanometres
+only when TPI divides 25 400 000; 1/13 inch is not. So the pitch is carried as
+an exact fraction, 25 400 000 / TPI nm, and the feed as S × that, and both are
+rounded half-even from the fraction in integers. That matters at a tie: a
+32-thread tap's 1/32 inch is 0.03125, and at an odd S its feed in inches per
+minute ends in an exact 5 too; both round to the even figure. Threads per inch
+may carry up to three decimals, for the 11.5 of the larger pipe taps.
+
+**Either thread on either machine.** The thread is a metric pitch or threads
+per inch whatever the page's units, because a 1/4-20 is still a 1/4-20 on a
+machine set in millimetres. The working writes the 25.4 where it is used, as
+Haas tabulates it: S / TPI × 25.4 for an inch tap in millimetres, P × S / 25.4
+for a metric tap in inches.
+
+**What the page leaves out, and says.** No removal rate, chip or power line for
+a tap: Sandvik prints tapping torque and power from a kc the form does not ask
+for, so there is none rather than an "unavailable" one. A floating holder is
+named in the working as the holder maker's call, as Haas says. Switching into or
+out of tapping clears a cutting speed the operator typed for the other side,
+with a note — a milling speed on a tap turns it many times too fast — and swaps
+an untyped one for the other side's example.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

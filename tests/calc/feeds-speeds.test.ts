@@ -22,6 +22,8 @@ import {
   specificCuttingForce,
   spindleSpeed,
   tableFeed,
+  tapPitch,
+  tappingFeed,
   turningMrr,
 } from '../../src/lib/calc/feeds-speeds';
 import { inchToNm, mmToNm, roundHalfEven, nm } from '../../src/lib/calc/tap-drill';
@@ -897,5 +899,51 @@ describe('the thinning as an exact fraction, where one exists', () => {
     expect(ratio(chipThinningSquared(1_000_000, 10_000_000, 10))).toBeNull();
     expect(ratio(chipThinningSquared(1_000_000, 13_464_101.6, 30))).toBeNull();
     expect(ratio(chipThinningSquared(1_000_000, 10_000_000.5, 90))).toBeNull();
+  });
+});
+
+/**
+ * Tapping. Haas Automation, "G84 Tapping Canned Cycle (Group 09)", AP-602 X1,
+ * April 2016 (retrieved 2026-10-06,
+ * https://www.haascnc.com/content/dam/haascnc/videos/bonus-content/ep25-tap-programming/Haas_G84_Tapping.pdf):
+ * two taps at S500 in both modes — 1/2-13 is F976.923 mm/min and F38.4615
+ * in/min, M12 × 1.75 is F875.000 and F34.4488. The rule-3 published check.
+ */
+describe('tapping: the feed is the pitch', () => {
+  const perMin = (r: { num: number; den: number }, nmPer: number) =>
+    r.num / r.den / nmPer;
+
+  it("matches Haas's worked examples at S500, in both modes", () => {
+    const half13 = tappingFeed(500, { kind: 'tpi', tpi: 13 });
+    expect(roundHalfEven(perMin(half13, 1e6), 3)).toBe(976.923);
+    expect(roundHalfEven(perMin(half13, 25.4e6), 4)).toBe(38.4615);
+    const m12 = tappingFeed(500, { kind: 'pitch', pitchNm: mmToNm(1.75) });
+    expect(perMin(m12, 1e6)).toBe(875);
+    expect(roundHalfEven(perMin(m12, 25.4e6), 4)).toBe(34.4488);
+  });
+
+  it("keeps an inch tap's count: 1/13 in stays 25 400 000 / 13 nm", () => {
+    expect(tapPitch({ kind: 'tpi', tpi: 13 })).toEqual({ num: 25_400_000, den: 13 });
+    // The pipe taps' 11.5 threads per inch, exactly.
+    expect(tapPitch({ kind: 'tpi', tpi: 11.5 })).toEqual({ num: 254_000_000, den: 115 });
+    expect(tapPitch({ kind: 'pitch', pitchNm: mmToNm(1.5) })).toEqual({
+      num: 1_500_000,
+      den: 1,
+    });
+  });
+
+  it('is worked from the whole S, so F ÷ S is the pitch exactly', () => {
+    const f = tappingFeed(318, { kind: 'pitch', pitchNm: mmToNm(1.5) });
+    expect(f.num / f.den / 318).toBe(1_500_000);
+  });
+
+  it.each([
+    [() => tapPitch({ kind: 'tpi', tpi: 0 }), /threads per inch as a number above zero/],
+    [() => tapPitch({ kind: 'tpi', tpi: Number.NaN }), /threads per inch/],
+    [() => tapPitch({ kind: 'tpi', tpi: 13.12345 }), /more than three decimals/],
+    [() => tappingFeed(318.5, { kind: 'tpi', tpi: 20 }), /whole number of rev\/min/],
+    [() => tappingFeed(0, { kind: 'tpi', tpi: 20 }), /whole number of rev\/min/],
+  ])('refuses %#', (f, message) => {
+    expect(f).toThrow(message);
   });
 });

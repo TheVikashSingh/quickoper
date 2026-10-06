@@ -36,6 +36,7 @@ const input = (over: Partial<FeedsInput>): FeedsInput => ({
   ap: 2,
   d0: 20,
   kappa: null,
+  thread: { kind: 'pitch', value: 1.5 },
   ...over,
 });
 
@@ -87,9 +88,9 @@ describe("the page's opening cut: Vc 100, Dc 10, fz 0.1, z 4, ae 5, ap 2", () =>
   });
 
   it('hands the power panel the exact mean chip, (2/π) × fz here', () => {
-    expect(d.power.chipLabel).toBe('hm');
-    expect(d.power.chipNm).toBeCloseTo((2 / Math.PI) * 100_000, 6);
-    expect(d.power.mrrCm3).toBeCloseTo(12.7324, 4);
+    expect(d.power?.chipLabel).toBe('hm');
+    expect(d.power?.chipNm).toBeCloseTo((2 / Math.PI) * 100_000, 6);
+    expect(d.power?.mrrCm3).toBeCloseTo(12.7324, 4);
   });
 });
 
@@ -239,7 +240,7 @@ describe('the other operations', () => {
       'Q  = Dc × fn × Vc / 4 = 10.0000 × 0.2000 × 80 / 4 = 40.0000 cm³/min',
     );
     expect(d.restore).toBeNull();
-    expect(d.power.chipLabel).toBe('h = fn');
+    expect(d.power?.chipLabel).toBe('h = fn');
   });
 
   it('boring: 20 to 24 mm at Vc 150, fn 0.15 — ap 2, n 1989.4368, Q 45', () => {
@@ -440,5 +441,124 @@ describe('a chip exactly on a rounding tie', () => {
     expect(stepsOfSquare(2n, 1n, 'metric')).toBe(0); // √2 nm
     // 4/9 of 2025 nm, squared: a fraction, not a whole square.
     expect(stepsOfSquare(2025n * 2025n * 16n, 81n, 'metric')).toBe(9); // 900 nm
+  });
+});
+
+/**
+ * Tapping, through the page's own path: a cutting speed and a diameter give
+ * S, and the feed is worked from S. The spec's golden table (calculations.md
+ * §3, worked in Python with decimal arithmetic before any Kotlin existed),
+ * row by row, and the working's lines as the app prints them.
+ */
+describe('tapping', () => {
+  const tap = (over: Partial<FeedsInput>) =>
+    feedsDisplay(input({ op: 'tapping', ...over }));
+  const shown = (d: FeedsDisplay) => d.stats.map((s) => `${s.value} ${s.unit}`);
+
+  it.each([
+    // [tap, input, S, fn, vf]
+    [
+      'M10 × 1.5 at 10 m/min',
+      { vc: 10, diameter: 10, thread: { kind: 'pitch', value: 1.5 } },
+      '318',
+      '1.5000 mm/rev',
+      '477.0000 mm/min',
+    ],
+    [
+      'M6 × 1 at 8 m/min',
+      { vc: 8, diameter: 6, thread: { kind: 'pitch', value: 1 } },
+      '424',
+      '1.0000 mm/rev',
+      '424.0000 mm/min',
+    ],
+    [
+      '1/4-20 at 30 sfm',
+      { units: 'inch', vc: 30, diameter: 0.25, thread: { kind: 'tpi', value: 20 } },
+      '458',
+      '0.0500 in/rev',
+      '22.9000 in/min',
+    ],
+    [
+      '1/4-20 at 30 sfm, metric machine',
+      { vc: 9.144, diameter: 6.35, thread: { kind: 'tpi', value: 20 } },
+      '458',
+      '1.2700 mm/rev',
+      '581.6600 mm/min',
+    ],
+    [
+      '1/2-13 at 50 sfm',
+      { units: 'inch', vc: 50, diameter: 0.5, thread: { kind: 'tpi', value: 13 } },
+      '382',
+      '0.0769 in/rev',
+      '29.3846 in/min',
+    ],
+    [
+      '#10-24 at 20 sfm',
+      { units: 'inch', vc: 20, diameter: 0.19, thread: { kind: 'tpi', value: 24 } },
+      '402',
+      '0.0417 in/rev',
+      '16.7500 in/min',
+    ],
+    [
+      'M10 × 1.5 on an inch machine',
+      { units: 'inch', vc: 33.3, diameter: 0.4, thread: { kind: 'pitch', value: 1.5 } },
+      '318',
+      '0.0591 in/rev',
+      '18.7795 in/min',
+    ],
+  ] as const)('%s', (_name, over, S, fn, vf) => {
+    const d = tap(over as Partial<FeedsInput>);
+    expect(shown(d)).toEqual([`${S} rev/min`, vf, fn]);
+    expect(d.restore).toBeNull();
+    expect(d.power).toBeNull();
+  });
+
+  it('prints the feed line the way the app and Haas do', () => {
+    const metric = tap({ vc: 10, diameter: 10 }).working;
+    expect(metric).toContain('   = 318.3099 rev/min, so S318');
+    expect(metric).toContain('vf = P × S = 1.5 × 318 = 477.0000 mm/min');
+    expect(metric).toContain(
+      "With a floating holder, the holder's maker gives the feed.",
+    );
+    const inch = tap({
+      units: 'inch',
+      vc: 30,
+      diameter: 0.25,
+      thread: { kind: 'tpi', value: 20 },
+    }).working;
+    expect(inch).toContain('vf = S / TPI = 458 / 20 = 22.9000 in/min');
+    const across = tap({
+      vc: 9.144,
+      diameter: 6.35,
+      thread: { kind: 'tpi', value: 20 },
+    }).working;
+    expect(across).toContain('vf = S / TPI × 25.4 = 458 / 20 × 25.4 = 581.6600 mm/min');
+    const back = tap({ units: 'inch', vc: 33.3, diameter: 0.4 }).working;
+    expect(back).toContain('vf = P × S / 25.4 = 1.5 × 318 / 25.4 = 18.7795 in/min');
+  });
+
+  it('works the feed from S, not n: F ÷ S is the pitch', () => {
+    // Worked from n = 318.3099 the feed would be 477.4648, a 1.5015 mm thread.
+    expect(stat(tap({ vc: 10, diameter: 10 }), 'Feed')?.value).toBe('477.0000');
+  });
+
+  it('rounds an exact tie half-even: a 32-thread tap at S1001', () => {
+    // 1/32 in = 0.03125, a tie, to 0.0312; 1001 / 32 = 31.28125, a tie, to 31.2812.
+    const d = tap({
+      units: 'inch',
+      vc: 65.5,
+      diameter: 0.25,
+      thread: { kind: 'tpi', value: 32 },
+    });
+    expect(shown(d)).toEqual(['1001 rev/min', '31.2812 in/min', '0.0312 in/rev']);
+  });
+
+  it.each([
+    [{ thread: { kind: 'pitch', value: 0 } }, /Enter the pitch as a number above zero/],
+    [{ thread: { kind: 'tpi', value: 0 } }, /threads per inch as a number above zero/],
+    [{ vc: 0.001 }, /less than 1 rev\/min/],
+    [{ diameter: Number.NaN }, /Enter the tap diameter as a number above zero/],
+  ] as const)('refuses %o', (over, message) => {
+    expect(() => tap(over as Partial<FeedsInput>)).toThrow(message);
   });
 });

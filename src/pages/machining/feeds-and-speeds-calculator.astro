@@ -68,6 +68,18 @@ const SOURCES = [
   },
   {
     label:
+      'Sandvik Coromant — Threading formulas and definitions: the tapping spindle speed n = vc × 1000 / (π × D), and the feed vf = P × n',
+    url: 'https://www.sandvik.coromant.com/en-us/knowledge/machining-formulas-definitions/threading-formulas-definitions',
+    retrieved: CHIP_CHECKED,
+  },
+  {
+    label:
+      'Haas Automation — G84 Tapping Canned Cycle (Group 09), AP-602 X1, April 2016: F and S work together, and the worked examples at S500',
+    url: 'https://www.haascnc.com/content/dam/haascnc/videos/bonus-content/ep25-tap-programming/Haas_G84_Tapping.pdf',
+    retrieved: CHIP_CHECKED,
+  },
+  {
+    label:
       'Sandvik Coromant — CoroMill 345 cutter 345-063C6-13M: Dc 63.00 mm (2.4803 in), entering angle 45°, maximum depth 6.00 mm',
     url: 'https://www.sandvik.coromant.com/en-us/product-details?c=345-063C6-13M',
     retrieved: CHIP_CHECKED,
@@ -111,7 +123,7 @@ const structuredData = [
     url: `${SITE.url}/machining/feeds-and-speeds-calculator`,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     description:
-      'Metric-first feeds and speeds for milling, turning, drilling and boring. Spindle speed, feed in both mm/rev and mm/min, material removal rate, the maximum and mean chip at any entering angle, the feed that restores a thinned chip, and cutting power, with the formula and the substituted values shown.',
+      'Metric-first feeds and speeds for milling, turning, drilling, boring and tapping. Spindle speed, feed in both mm/rev and mm/min, material removal rate, the maximum and mean chip at any entering angle, the feed that restores a thinned chip, the synchronised tapping feed, and cutting power, with the formula and the substituted values shown.',
   },
   {
     '@context': 'https://schema.org',
@@ -151,7 +163,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
 
 <BaseLayout
   title="Feeds and speeds calculator"
-  description="Metric-first feeds and speeds for milling, turning, drilling and boring. Spindle speed, feed in both mm/rev and mm/min, removal rate, the real chip thickness at any entering angle and cutting power — with the formula and every substituted value shown."
+  description="Metric-first feeds and speeds for milling, turning, drilling, boring and tapping. Spindle speed, feed in both mm/rev and mm/min, removal rate, the real chip thickness at any entering angle, the tapping feed and cutting power — with the formula and every substituted value shown."
   vertical="machining"
   structuredData={structuredData}
 >
@@ -166,10 +178,10 @@ const hint = 'text-ink-mute mt-1 text-xs';
       Feeds and speeds
     </h1>
     <p class="text-ink-soft mt-4 max-w-prose text-lg">
-      Milling, turning, drilling and boring, treated the same. Feed in millimetres per
-      revolution <em>and</em> per minute, always both, and for milling the chip each tooth really
-      cuts, at any entering angle. Your cutting data comes from your tooling data sheet — this
-      does the arithmetic.
+      Milling, turning, drilling, boring and tapping, treated the same. Feed in
+      millimetres per revolution <em>and</em> per minute, always both, and for milling the chip
+      each tooth really cuts, at any entering angle. Your cutting data comes from your tooling
+      data sheet — this does the arithmetic.
     </p>
 
     <!-- ── Calculator ──────────────────────────────────────────────────── -->
@@ -189,6 +201,9 @@ const hint = 'text-ink-mute mt-1 text-xs';
             >
             <label class="flex items-center gap-2"
               ><input type="radio" name="op" value="boring" /> Boring</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="op" value="tapping" /> Tapping</label
             >
           </div>
         </fieldset>
@@ -241,7 +256,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
             The catalogue’s Dc: at the tip, on an angled cutter.
           </p>
         </div>
-        <div>
+        <div id="fs-fz-wrap">
           <label class={label} for="fs-fz"
             ><span id="fs-fz-label">Feed per tooth</span></label
           >
@@ -257,6 +272,32 @@ const hint = 'text-ink-mute mt-1 text-xs';
             required
           />
           <p class={hint} id="fs-fz-hint">Also from the data sheet.</p>
+        </div>
+        <div id="fs-thread-wrap" hidden>
+          <label class={label} for="fs-thread"
+            ><span id="fs-thread-label">Pitch P (mm)</span></label
+          >
+          <input
+            class={`${field} mt-1`}
+            id="fs-thread"
+            name="thread"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0.01"
+            value="1.5"
+          />
+          <fieldset class="mt-1">
+            <legend class="sr-only">The thread is given as</legend>
+            <div class="flex flex-wrap gap-3 text-xs">
+              <label class="flex items-center gap-1"
+                ><input type="radio" name="threadKind" value="pitch" checked /> Metric pitch</label
+              >
+              <label class="flex items-center gap-1"
+                ><input type="radio" name="threadKind" value="tpi" /> Threads per inch</label
+              >
+            </div>
+          </fieldset>
         </div>
 
         <div id="fs-teeth-wrap">
@@ -343,9 +384,10 @@ const hint = 'text-ink-mute mt-1 text-xs';
     </section>
 
     <p id="fs-error" class="text-negative mt-3 hidden text-sm" role="alert"></p>
+    <p id="fs-note" class="text-caution mt-3 hidden text-sm" role="status"></p>
 
     <!-- ── Power ───────────────────────────────────────────────────────── -->
-    <section class="mt-10">
+    <section id="fs-power-section" class="mt-10">
       <h2 class="font-display text-ink text-2xl font-semibold">Cutting power</h2>
       <p class="text-ink-soft mt-2 max-w-prose">
         Needs two more numbers from your data sheet: the specific cutting force{' '}
@@ -529,6 +571,32 @@ const hint = 'text-ink-mute mt-1 text-xs';
         over the speed the data sheet meant. The width of cut still stops at Dc: only the
         tip leaves a flat floor, so a 70 mm face under a 63 mm cutter is two passes.
       </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Tapping: the feed is the pitch
+      </h3>
+      <p>
+        A tap's feed is not a choice. Every turn it advances one thread, so the feed per
+        revolution is the pitch: 1.5 mm for an M10 × 1.5, 1/20 inch for a 1/4-20. The
+        spindle speed comes from the tap's cutting speed and its nominal diameter, as for
+        any other tool, and the table feed is the pitch times that speed.
+      </p>
+      <p>
+        Times which speed matters. A control is given S as a whole number of rev/min, and
+        in a synchronised, rigid, tapping cycle the feed has to match the turns the
+        spindle really makes, or the tap is forced along its own axis. Haas's G84 guide
+        works every example from S: an M12 × 1.75 at S500 is F875, and a 1/2-13 at S500 is
+        F976.923 in millimetres or F38.4615 in inches. So this page rounds n to S first
+        and works the feed from S. An M10 × 1.5 at 10 m/min turns at 318.31 rev/min, so
+        S318 and F477, and F ÷ S is the pitch exactly. Worked from n instead, the feed
+        would be 477.4648, and S318 with F477.4648 describes a 1.5015 mm thread.
+      </p>
+      <p>
+        An inch tap keeps its count: 1/13 inch is not a whole number of nanometres, so a
+        1/2-13 is worked as S ÷ 13, never as a rounded pitch times S. A floating holder is
+        different again, and Haas says to ask its maker for the feed. Tapping torque and
+        power need a specific cutting force for the tap, which this page does not ask for,
+        so it shows neither.
+      </p>
     </section>
 
     <!-- ── App ─────────────────────────────────────────────────────────── -->
@@ -640,6 +708,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
   const powerEl = must('fs-power');
   const workingEl = must('fs-working');
   const errorEl = must('fs-error');
+  const noteEl = must('fs-note');
 
   const num = (f: HTMLFormElement, name: string): number =>
     Number((f.elements.namedItem(name) as HTMLInputElement).value);
@@ -661,6 +730,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
     turning: ['Workpiece diameter', 'Diameter at the cut, not the stock size.'],
     drilling: ['Drill diameter', 'The hole the drill produces.'],
     boring: ['Final bore d₁', 'The hole this pass produces. Vc applies here.'],
+    tapping: ['Tap diameter', 'The nominal diameter: 10 for M10, 0.25 for 1/4-20.'],
   };
 
   function relabel(): void {
@@ -677,11 +747,50 @@ const hint = 'text-ink-mute mt-1 text-xs';
         ? 'Feed per tooth f<sub>z</sub>'
         : 'Feed per revolution f<sub>n</sub>';
 
+    const tapping = op === 'tapping';
     must('fs-teeth-wrap').hidden = op !== 'milling';
     must('fs-ae-wrap').hidden = op !== 'milling';
     must('fs-kappa-wrap').hidden = op !== 'milling';
-    must('fs-ap-wrap').hidden = op === 'drilling' || op === 'boring';
+    must('fs-ap-wrap').hidden = op === 'drilling' || op === 'boring' || tapping;
     must('fs-d0-wrap').hidden = op !== 'boring';
+    must('fs-fz-wrap').hidden = tapping;
+    must('fs-thread-wrap').hidden = !tapping;
+    must('fs-thread-label').textContent =
+      pick('threadKind') === 'pitch' ? 'Pitch P (mm)' : 'Threads per inch';
+    // A tap's power needs a kc the form does not ask for: no power line at all.
+    must('fs-power-section').hidden = tapping;
+  }
+
+  /**
+   * Switching into or out of tapping clears a cutting speed the operator gave
+   * for the other side, with a note (calculations.md §3): a milling speed on a
+   * tap gives a spindle speed many times too fast. A speed nobody typed is
+   * swapped for the other side's example instead.
+   */
+  let vcTyped = false;
+  let lastOp = pick('op');
+  must('fs-vc').addEventListener('input', () => {
+    vcTyped = true;
+    noteEl.classList.add('hidden');
+  });
+  function switchOperation(): void {
+    const op = pick('op');
+    const crossed = (op === 'tapping') !== (lastOp === 'tapping');
+    lastOp = op;
+    if (!crossed) return;
+    const vc = form.elements.namedItem('vc') as HTMLInputElement;
+    if (!vcTyped) {
+      vc.value = op === 'tapping' ? (pick('units') === 'metric' ? '10' : '30') : '100';
+      noteEl.classList.add('hidden');
+      return;
+    }
+    vc.value = '';
+    vcTyped = false;
+    noteEl.textContent =
+      op === 'tapping'
+        ? 'Cutting speed cleared: a milling or turning speed on a tap would turn it many times too fast. Enter the tap’s own speed.'
+        : 'Cutting speed cleared: a tapping speed is far too slow for this. Enter its own speed.';
+    noteEl.classList.remove('hidden');
   }
 
   /** One figure. Only strings from the display module reach the markup. */
@@ -714,6 +823,10 @@ const hint = 'text-ink-mute mt-1 text-xs';
         ap: num(form, 'ap'),
         d0: num(form, 'd0'),
         kappa: kappa === '' ? null : Number(kappa),
+        thread: {
+          kind: pick('threadKind') === 'tpi' ? 'tpi' : 'pitch',
+          value: num(form, 'thread'),
+        },
       });
 
       const restore =
@@ -751,6 +864,10 @@ const hint = 'text-ink-mute mt-1 text-xs';
    * fn` — understating it by exactly π. See D75.
    */
   function renderPower(power: FeedsDisplay['power'], u: UnitSystem): void {
+    if (power === null) {
+      powerEl.innerHTML = '';
+      return;
+    }
     const kc11 = raw(powerForm, 'kc11');
     const mc = raw(powerForm, 'mc');
     if (kc11 === '' || mc === '') {
@@ -808,7 +925,10 @@ const hint = 'text-ink-mute mt-1 text-xs';
   }
 
   form.addEventListener('input', render);
-  form.addEventListener('change', render);
+  form.addEventListener('change', (event) => {
+    if ((event.target as HTMLInputElement).name === 'op') switchOperation();
+    render();
+  });
   powerForm.addEventListener('input', render);
   render();
 </script>

@@ -32,7 +32,7 @@ changes the answer to "what exists" or "what is next".
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
 | Pages built | 29 (28 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 804 passing |
+| Tests | 826 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
@@ -251,8 +251,15 @@ fz × √(ae/Dc), which put slotting power about 11% low. The page now follows
 the D72 split: `calc/feeds-speeds-display.ts` builds every figure and the
 working as strings, `tests/calc/feeds-speeds-display.test.ts` checks them, and
 the page computes nothing. A chip exactly on a rounding tie is rounded from its
-exact square (390 of 2.1 million 45° cuts had printed a step out). Tapping is
-still to come (roadmap W5).
+exact square (390 of 2.1 million 45° cuts had printed a step out).
+
+**Tapping (2026-10-07, D104).** A fifth operation: S from the tap's cutting
+speed and nominal diameter, rounded to the whole rev/min a control takes, and
+the feed worked from S, so F ÷ S is the pitch exactly (Haas's G84 guide, whose
+S500 examples are tests). A metric pitch or threads per inch, either way round
+from the page's units, with the 25.4 where it is used. No removal rate, chip or
+power line for a tap. Switching into or out of tapping clears a typed cutting
+speed with a note, as the app does.
 
 IT HAS NO MATERIAL DROPDOWN, and that is the point. Cutting speed is not a
 property of a material: it is a property of a material AND an insert substrate,

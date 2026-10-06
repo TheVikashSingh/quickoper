@@ -294,11 +294,13 @@ URL: https://quickoper.com/machining/feeds-and-speeds-calculator
 Computes: spindle speed, feed per revolution AND table feed, material removal
 rate, net cutting power and machine power, for milling, turning, drilling and
 boring; for milling also the maximum and mean chip thickness at any entering
-angle, and the feed per tooth that restores a thinned chip.
+angle, and the feed per tooth that restores a thinned chip; and for tapping
+the spindle speed S and the synchronised feed.
 Inputs: cutting speed Vc, cutting diameter Dc, feed per tooth (milling) or feed
 per revolution (the others), tooth count, radial depth ae, axial depth ap, the
 milling entering angle (blank for 90 degrees), the starting bore for boring,
-unit system; optionally kc1.1, mc, spindle efficiency and machine rating.
+the tap's nominal diameter and its metric pitch or threads per inch, unit
+system; optionally kc1.1, mc, spindle efficiency and machine rating.
 Key figures: n = Vc x 1000 / (pi x D) metric, Vc x 12 / (pi x D) inch, with D
 the cutting diameter at depth: Dcap = Dc + 2 x ap / tan(kr) on an angled
 milling cutter (Sandvik Coromant), so a 63 mm 45-degree cutter 6 mm deep cuts at
@@ -316,6 +318,15 @@ figure to compare with a spindle rating. Every figure is rounded once,
 half-even, to four places; a chip exactly on a rounding tie is rounded from
 its exact value. Until 2026-10-07 the mean chip was the approximation
 fz x sqrt(ae/Dc), which put slotting power about 11% low.
+Tapping: n = vc x 1000 / (pi x D) from the tap's nominal diameter (Sandvik
+Coromant), S = n rounded to the whole rev/min a control takes, and the feed
+worked from S, vf = pitch x S, so F / S is the pitch exactly, as a
+synchronised (rigid) tapping cycle needs (Haas G84 guide). M10 x 1.5 at
+10 m/min: S318, F477 mm/min; worked from the unrounded n it would be 477.4648,
+which with S318 describes a 1.5015 mm thread. An inch tap keeps its count:
+1/2-13 at S500 is 500 / 13 x 25.4 = 976.9231 mm/min, 38.4615 in/min, as Haas
+prints. No removal rate, chip or power for a tap: its power needs a kc the form
+does not ask for.
 NO MATERIAL DATABASE. This tool never supplies a cutting speed or a feed per
 tooth. Those are properties of a material AND an insert grade, coating,
 geometry, coolant and machine, published differently by every tooling maker, so
