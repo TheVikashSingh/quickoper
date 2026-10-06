@@ -151,6 +151,54 @@ export const SHOP_RULE_PERCENT = 100 / ENGAGEMENT_K;
 /** Default engagement when the user expresses no preference. */
 export const DEFAULT_ENGAGEMENT_PERCENT = 75;
 
+// ─── Forming taps ───────────────────────────────────────────────────────────
+
+/**
+ * Cutting or forming. A cutting tap cuts the thread out of the hole's wall. A
+ * forming (roll, fluteless) tap has no cutting edges: it pushes the wall's
+ * metal into the thread, so the same thread needs a bigger hole.
+ */
+export type TapKind = 'cutting' | 'forming';
+
+/**
+ * The forming-tap constant: K = 0.68 in the same expression the cutting
+ * constant sits in, %thread = 100 × (D − d) / (K × P).
+ *
+ * NOT derived from the thread profile, unlike ENGAGEMENT_K. It is the rule the
+ * forming-tap makers publish, d = D − 0.0068 × % × P (P in the unit of D; for
+ * an inch thread P = 1/TPI), with the percentage written as a percentage:
+ *
+ *   - Harvey Performance, "8 Unique Facts About Thread Forming Taps": "Drill
+ *     Size = Major Diameter – [(0.0068 x desired % of thread) / Threads Per
+ *     Inch]", and a 1/4-20 roll tap on a #1 drill for 65 % of thread.
+ *   - Sandvik Coromant, threading formulas page: the same rule, worked as
+ *     0.2279 in for 1/4-20 at 65 % and 7.422 mm for M8 × 1.25 at 68 %. Both
+ *     come out exact here.
+ *   - Guhring, "Drill size for thread forming", catalogue pp. 238–239: tables
+ *     from 55 to 72.5 % that do not state their rule. 59 of their figures are
+ *     this rule to within the half-hundredth of a millimetre they are printed
+ *     to (`tests/calc/forming-taps.test.ts`).
+ *
+ * All three were read in the research repo on 2026-09-28, against
+ * `03-spec/calculations.md` §2, "Forming taps: a bigger hole".
+ *
+ * It is about half the cutting constant, and that is the point: for the same
+ * percentage a forming tap needs a larger hole.
+ */
+export const FORMING_K = 0.68;
+
+/**
+ * The percentage a forming tap opens on: 65 %, where Harvey's and Sandvik's
+ * worked examples are set and the middle of the 60–75 % Harvey advises. The
+ * cutting default stays 75 %, where the cutting charts are worked.
+ */
+export const FORMING_DEFAULT_PERCENT = 65;
+
+/** K for a kind of tap: 3√3/4 for cutting, the makers' 0.68 for forming. */
+export function engagementConstant(kind: TapKind): number {
+  return kind === 'forming' ? FORMING_K : ENGAGEMENT_K;
+}
+
 // ─── Unit conversion ────────────────────────────────────────────────────────
 
 export function mmToNm(mm: number): Nanometres {
@@ -225,8 +273,9 @@ export function engagementPercent(
   majorNm: Nanometres,
   pitchNm: Nanometres,
   drillNm: Nanometres,
+  kind: TapKind = 'cutting',
 ): number {
-  return engagementPercentExact(majorNm, pitchNm, drillNm);
+  return engagementPercentExact(majorNm, pitchNm, drillNm, kind);
 }
 
 /**
@@ -245,11 +294,12 @@ export function engagementPercentExact(
   majorNm: number,
   pitchNm: number,
   drillNm: number,
+  kind: TapKind = 'cutting',
 ): number {
   assertPositive('majorNm', majorNm);
   assertPositive('pitchNm', pitchNm);
   assertPositive('drillNm', drillNm);
-  return (100 * (majorNm - drillNm)) / (ENGAGEMENT_K * pitchNm);
+  return (100 * (majorNm - drillNm)) / (engagementConstant(kind) * pitchNm);
 }
 
 /**
@@ -273,13 +323,14 @@ export function drillDiameterFor(
   majorNm: Nanometres,
   pitchNm: Nanometres,
   engagement: number,
+  kind: TapKind = 'cutting',
 ): number {
   assertPositive('majorNm', majorNm);
   assertPositive('pitchNm', pitchNm);
   if (!Number.isFinite(engagement) || engagement <= 0 || engagement > 100) {
     throw new RangeError(`engagement must be in (0, 100], got ${engagement}`);
   }
-  return majorNm - (ENGAGEMENT_K * pitchNm * engagement) / 100;
+  return majorNm - (engagementConstant(kind) * pitchNm * engagement) / 100;
 }
 
 /** Basic minor diameter D₁ = D − 1.25 H = (5/8)√3 P. Not the tap drill. */
@@ -330,11 +381,12 @@ export function rankBySuitability(
   pitchNm: Nanometres,
   targetNm: number,
   series: readonly Drill[],
+  kind: TapKind = 'cutting',
 ): DrillChoice[] {
   return series
     .map((drill) => ({
       drill,
-      engagementPercent: engagementPercent(majorNm, pitchNm, drill.nm),
+      engagementPercent: engagementPercent(majorNm, pitchNm, drill.nm, kind),
       deltaNm: drill.nm - targetNm,
     }))
     .sort((a, b) => Math.abs(a.deltaNm) - Math.abs(b.deltaNm));
@@ -425,6 +477,7 @@ export function snapToSeries(
   pitchNm: Nanometres,
   targetNm: number,
   series: readonly Drill[],
+  kind: TapKind = 'cutting',
 ): DrillChoice | undefined {
   if (series.length === 0) return undefined;
   const chosen = series.reduce((best, d) => {
@@ -442,7 +495,7 @@ export function snapToSeries(
   });
   return {
     drill: chosen,
-    engagementPercent: engagementPercent(majorNm, pitchNm, chosen.nm),
+    engagementPercent: engagementPercent(majorNm, pitchNm, chosen.nm, kind),
     deltaNm: chosen.nm - targetNm,
   };
 }

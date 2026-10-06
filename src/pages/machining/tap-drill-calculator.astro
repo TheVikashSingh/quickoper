@@ -28,6 +28,9 @@ import { NUMBER_LETTER_SOURCES } from '../../lib/calc/number-letter-drills';
 
 const LAST_VERIFIED = '2026-09-01';
 
+/** When the forming-tap rule was read against its three makers (D98). */
+const FORMING_CHECKED_ON = '2026-09-28';
+
 /**
  * Sources link to a CATALOGUE, not to a deep per-standard page.
  *
@@ -60,6 +63,25 @@ const SOURCES = [
   // Number and letter drill diameters: every figure is printed by at least two
   // of these three makers (number-letter-drills.ts, D97).
   ...NUMBER_LETTER_SOURCES,
+  // The forming-tap rule, d = D − 0.0068 × % × P: Harvey and Sandvik print it,
+  // and Guhring's forming tables follow it (tap-drill.ts FORMING_K, D98).
+  {
+    label:
+      'Harvey Performance — 8 Unique Facts About Thread Forming Taps (the forming-tap drill rule)',
+    url: 'https://www.harveyperformance.com/in-the-loupe/8-unique-facts-about-thread-forming-taps/',
+    retrieved: FORMING_CHECKED_ON,
+  },
+  {
+    label:
+      'Sandvik Coromant — Threading formulas and definitions (forming-tap drill size, with worked examples)',
+    url: 'https://www.sandvik.coromant.com/en-us/knowledge/machining-formulas-definitions/threading-formulas-definitions',
+    retrieved: FORMING_CHECKED_ON,
+  },
+  {
+    label: 'Guhring — Drill size for thread forming (catalogue pp. 238–239)',
+    url: 'https://guhring.com/media/support/Tapping-Drill-Size-For-Thread-Forming.pdf',
+    retrieved: FORMING_CHECKED_ON,
+  },
 ].map((s) => sourceRef.parse(s));
 
 const FAQ = [
@@ -69,15 +91,15 @@ const FAQ = [
   },
   {
     q: 'Why 75% engagement by default?',
-    a: 'Because it is the usual shop compromise. Higher engagement is a stronger thread and a harder, hotter, more breakage-prone tapping operation; the extra holding power above about 75% is small because the failure moves into the screw rather than the thread. 60% to 80% is the normal working band, and the field is yours to change.',
+    a: 'Because it is the usual shop compromise. Higher engagement is a stronger thread and a harder, hotter, more breakage-prone tapping operation; the extra holding power above about 75% is small because the failure moves into the screw rather than the thread. 60% to 80% is the normal working band, and the field is yours to change. A forming tap opens at 65% instead, where its makers work their own examples, and its usual range is 55% to 75%.',
   },
   {
     q: 'Which drill does it pick, and can it come out larger than the target?',
     a: 'It picks the nearest drill in your index to the computed target. Where the target lands exactly midway between two drills the tie is broken half-even, which is how the published charts come out: M8 × 1.25 up to 6.8 mm, M12 × 1.75 down to 10.2 mm. So yes, it can be larger, and often is: M8 × 1.25 at 75% wants 6.7822 mm and gets the 6.8 mm drill, which gives 73.9%. That is what every published chart specifies, and it is why the engagement you get is reported beside the engagement you asked for rather than assumed to match. What protects you is not the direction of the rounding — it is that the drill comes from an index of sizes that exist, and that its true engagement is always shown.',
   },
   {
-    q: 'Does it know number and letter drills?',
-    a: "Yes. Choose the inch index and it searches fractional, number (#80 to #1) and letter (A to Z) drills together, which is the rack the published inch charts pick from: 1/4-20 at 75% gets a #7 and 75.44%, #8-32 a #29 and 68.97%. Number and letter sizes are a table rather than a rule, so every one of the 106 figures is one that Guhring, Pan American Tool and Dormer print. All three print the same figure for 104 sizes. For J and M two of the three agree, the page uses their figure, and it shows the third maker's whenever J or M is the answer.",
+    q: 'Which drills and taps does it cover?',
+    a: "Every drill in four series: metric, fractional, number (#80 to #1) and letter (A to Z). The inch index searches the last three together, the rack the published inch charts pick from, so 1/4-20 at 75% gets a #7 and 75.44%. The number and letter sizes are the figures Guhring, Pan American Tool and Dormer print; for J and M two of the three agree, and the third maker's figure is shown whenever J or M is the answer. It covers cutting and forming taps. A forming tap is worked by its makers' own rule, d = D − 0.0068 × % × P, and needs a bigger hole: M6 × 1 at 65% gets 5.6 mm, where a cutting tap gets 5.2 mm.",
   },
   {
     q: 'Is the minor diameter the same as the tap drill?',
@@ -99,7 +121,7 @@ const structuredData = [
     url: `${SITE.url}/machining/tap-drill-calculator`,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     description:
-      'Metric-first tap drill sizing. Returns a drill from a real index of metric, fractional, number and letter drills, and the thread engagement that drill actually produces, with the surrounding sizes shown.',
+      'Metric-first tap drill sizing for cutting and forming taps. Returns a drill from a real index of metric, fractional, number and letter drills, and the thread engagement that drill actually produces, with the surrounding sizes shown.',
   },
   {
     '@context': 'https://schema.org',
@@ -138,7 +160,7 @@ const label = 'block text-sm font-semibold text-ink-soft';
 
 <BaseLayout
   title="Tap drill calculator"
-  description="Metric-first tap drill sizing that reports the thread engagement your actual drill produces, not the one you asked for. Searches metric, fractional, number and letter drills, and shows the surrounding sizes, the formula and the source standard."
+  description="Metric-first tap drill sizing that reports the thread engagement your actual drill produces, not the one you asked for. Searches metric, fractional, number and letter drills, for cutting or forming taps, and shows the surrounding sizes, the formula and the source standard."
   vertical="machining"
   structuredData={structuredData}
 >
@@ -208,8 +230,22 @@ const label = 'block text-sm font-semibold text-ink-soft';
             />
             <span class="font-numeric text-ink-mute">%</span>
           </div>
-          <p class="text-ink-mute mt-1 text-xs">60–80 is the usual band.</p>
+          <p class="text-ink-mute mt-1 text-xs">
+            Usual band: 60–80 cutting, 55–75 forming.
+          </p>
         </div>
+
+        <fieldset class="sm:col-span-3">
+          <legend class={label}>Tap</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="kind" value="cutting" checked /> Cutting</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="kind" value="forming" /> Forming (roll)</label
+            >
+          </div>
+        </fieldset>
 
         <fieldset class="sm:col-span-3">
           <legend class={label}>Units</legend>
@@ -247,6 +283,14 @@ const label = 'block text-sm font-semibold text-ink-soft';
         class="border-line block border-t px-5 py-5"
         for="td-form"
         aria-live="polite"></output>
+      <p
+        id="td-forming-note"
+        class="border-line text-ink-soft hidden border-t px-5 py-4 text-sm"
+      >
+        Worked by the forming-tap makers' rule, d = D − 0.0068 × % × P. Check the hole
+        against your own tap's chart, which has the last word: too small a hole overloads
+        a forming tap and can break it.
+      </p>
     </section>
 
     <p id="td-error" class="text-negative mt-3 hidden text-sm" role="alert"></p>
@@ -304,11 +348,12 @@ const label = 'block text-sm font-semibold text-ink-soft';
       </div>
       <p class="text-ink-mute mt-3 max-w-prose text-sm">
         Engagement is measured on the 5H/8 flank of the ISO 68-1 basic profile, where the
-        fundamental triangle height H = (√3 ⁄ 2) × P. The constant K = 3√3⁄4 = 1.2990381…
-        follows from that geometry, and 100 ÷ K = 76.98% is why the old shop rule “drill =
-        major − pitch” lands just under 77%. K is carried at full precision rather than as
-        the trade's rounded 1.299, which shifts the second decimal of the engagement this
-        page prints on some threads.
+        fundamental triangle height H = (√3 / 2) × P. The constant K = 3 × √3 / 4 =
+        1.2990381… follows from that geometry, and 100 ÷ K = 76.98% is why the old shop
+        rule “drill = major − pitch” lands just under 77%. K is carried at full precision
+        rather than as the trade's rounded 1.299, which shifts the second decimal of the
+        engagement this page prints on some threads. For a forming tap K is 0.68 instead:
+        not a property of the profile, but the forming-tap makers' own rule.
       </p>
     </section>
 
@@ -430,6 +475,34 @@ const label = 'block text-sm font-semibold text-ink-soft';
         65.22%.
       </p>
       <h3 class="font-display text-ink text-xl font-semibold">
+        Forming taps need a bigger hole
+      </h3>
+      <p>
+        A forming tap, also sold as a roll or fluteless tap, has no cutting edges. It
+        pushes the metal of the hole's wall into the shape of the thread, so the same
+        thread needs a larger hole than a cutting tap would. Its makers publish their own
+        rule for that hole: d = D − 0.0068 × % × P, with P in the unit of D, or 1/TPI for
+        an inch thread. Set the tap to forming and this page works by that rule. Harvey
+        Performance and Sandvik Coromant print it, and Guhring's forming-tap tables follow
+        it: 59 of their figures, from 55% to 72.5%, are this rule rounded to the two
+        decimals they print.
+      </p>
+      <p>
+        M6 × 1 at 65% shows the size of the difference. A cutting tap wants 5.1556 mm and
+        gets the 5.2 mm drill. A forming tap wants 5.558 mm, which Guhring's table prints
+        as 5.56, and gets the 5.6 mm drill at 58.82%. Sandvik works 1/4-20 at 65% as
+        0.2279 inch, and this page gives the same target; the nearest drill is a #1 at
+        0.2280 inch, which is the drill Harvey names for that thread.
+      </p>
+      <p>
+        The usual range is lower for a forming tap: 55% to 75%, from the lowest table
+        Guhring prints to the top of the range Harvey advises, against 60% to 80% for a
+        cutting tap. So a forming tap opens at 65%, where both makers' worked examples
+        sit. Check the hole against your own tap's chart either way: a forming tap is the
+        one that suffers for a hole that is too small, with more wear, more torque and
+        possibly a broken tap.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
         Minor diameter is not the tap drill
       </h3>
       <p>
@@ -537,9 +610,10 @@ const label = 'block text-sm font-semibold text-ink-soft';
         Metric and fractional diameters are generated from those definitions rather than
         transcribed from a table. Number and letter drills are a table, so each figure is
         one that at least two of the three makers listed print, read from their charts on
-        2026-09-27. Links point at the ISO classification and the ASME catalogue rather
-        than at per-standard pages, because those are renumbered across revisions — the
-        designation in each label is the durable reference.
+        2026-09-27. The forming-tap rule is cited to the two makers that print it and the
+        one whose tables follow it. Links point at the ISO classification and the ASME
+        catalogue rather than at per-standard pages, because those are renumbered across
+        revisions — the designation in each label is the durable reference.
       </p>
     </section>
 
@@ -575,6 +649,11 @@ const label = 'block text-sm font-semibold text-ink-soft';
     type DisplayUnits,
     type TapDrillDisplay,
   } from '../../lib/calc/tap-drill-display';
+  import {
+    DEFAULT_ENGAGEMENT_PERCENT,
+    FORMING_DEFAULT_PERCENT,
+    type TapKind,
+  } from '../../lib/calc/tap-drill';
   import type { SeriesName } from '../../lib/calc/drill-series';
 
   /**
@@ -596,6 +675,8 @@ const label = 'block text-sm font-semibold text-ink-soft';
   const workingEl = must('td-working');
   const errorEl = must('td-error');
   const csvBtn = must('td-csv');
+  const formingNote = must('td-forming-note');
+  const engagementInput = must<HTMLInputElement>('td-engagement');
 
   let csvRows: string[][] = [];
 
@@ -618,6 +699,8 @@ const label = 'block text-sm font-semibold text-ink-soft';
     const majorRaw = num('major');
     const pitchRaw = num('pitch');
     const target = num('engagement');
+    const kind = pick('kind') as TapKind;
+    formingNote.classList.toggle('hidden', kind !== 'forming');
 
     errorEl.classList.add('hidden');
     try {
@@ -631,6 +714,7 @@ const label = 'block text-sm font-semibold text-ink-soft';
         engagementPercent: target,
         units: units as DisplayUnits,
         series,
+        kind,
       });
 
       const band =
@@ -705,6 +789,29 @@ const label = 'block text-sm font-semibold text-ink-soft';
    * for 1/4-20 under an index control reading "Inch". The answer must never
    * disagree with the controls beside it.
    */
+  /**
+   * Each kind of tap opens on its own example percentage: 75 % where the
+   * cutting charts are worked, 65 % where the forming-tap makers work theirs.
+   * A percentage the user typed is theirs, and survives the switch.
+   *
+   * Renders again for the same reason the units handler does: the form's
+   * `input` render has already run, with the old percentage.
+   */
+  let engagementTyped = false;
+  engagementInput.addEventListener('input', () => {
+    engagementTyped = true;
+  });
+  form.querySelectorAll('input[name="kind"]').forEach((el) =>
+    el.addEventListener('change', () => {
+      if (engagementTyped) return;
+      const forming = pick('kind') === 'forming';
+      engagementInput.value = String(
+        forming ? FORMING_DEFAULT_PERCENT : DEFAULT_ENGAGEMENT_PERCENT,
+      );
+      render();
+    }),
+  );
+
   let seriesTouched = false;
   form.querySelectorAll('input[name="series"]').forEach((el) =>
     el.addEventListener('change', () => {

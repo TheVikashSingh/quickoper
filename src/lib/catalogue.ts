@@ -251,7 +251,8 @@ export const CATALOGUE: readonly Entry[] = [
     short: 'Tap drill',
     summary:
       'Enter a thread, get the drill from a real index and the thread engagement that drill genuinely produces. Metric-first, with the whole neighbourhood shown rather than one rounded number.',
-    detail: 'Metric, fractional, number and letter drills. Works offline once loaded.',
+    detail:
+      'Metric, fractional, number and letter drills; cutting and forming taps. Works offline once loaded.',
     vertical: 'machining',
     kind: 'calculator',
   },

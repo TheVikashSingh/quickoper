@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-10-06, number and letter drills on the drill chart and the tap drill calculator (D97).
+**Updated:** 2026-10-06, number and letter drills on the drill chart and the tap drill calculator (D97), and forming taps on the calculator (D98).
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -227,8 +227,8 @@ the values change, scoped on `:root[data-vertical='machining']` and set by a
 `vertical` prop on BaseLayout. No component knows which vertical it renders in.
 
 **The calculator island is vanilla TypeScript, not Preact.** `/machining/tap-drill-calculator/`
-ships **5.42 KB** against the 19.5 KB budget (3.40 KB before the number and
-letter drill table joined it, D97), where the Preact finance
+ships **5.62 KB** against the 19.5 KB budget (3.40 KB before the number and
+letter drill table joined it, D97; 5.42 KB before forming taps, D98), where the Preact finance
 calculators sit at 17–18.7 KB. A form and a table do not need a framework, and
 the headroom is for the chart and the drill chart that follow.
 
@@ -320,6 +320,15 @@ reads it refuses to load unless two makers agree on every figure, so a bad edit
 fails the build rather than reaching a page. The tap drill calculator searches
 them through the new inch index (fractional, number and letter together), and
 every Unified row of the golden fixture now renders its published drill exactly.
+
+**Forming (roll) taps ship since 2026-10-06 (D98).** A Cutting / Forming choice
+on the tap drill calculator. A forming tap is worked by its makers' rule,
+d = D − 0.0068 × % × P (`FORMING_K = 0.68` in `tap-drill.ts`), which Harvey
+Performance and Sandvik Coromant print and Guhring's forming tables follow: 59
+of Guhring's figures are pinned in `tests/calc/forming-taps.test.ts`, with
+Sandvik's two worked examples exact. It opens at 65 %; its usual band is 55–75 %.
+The drill chosen does not depend on the kind of tap, only the percentage
+reported for it does.
 
 Two things are still absent, and the pages say so rather than hiding it:
 
