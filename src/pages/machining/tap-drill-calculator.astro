@@ -698,6 +698,12 @@ const label = 'block text-sm font-semibold text-ink-soft';
    * than 6.8 mm does. Arithmetically right, practically useless, and the exact
    * complaint this tool exists to answer. Once the user picks an index by hand
    * we stop overriding it.
+   *
+   * And then render again. A radio fires `input` BEFORE `change`, so the
+   * form's render ran with the new units and the OLD index, and setting
+   * `checked` here fires no event of its own: the page showed a 5.1 mm drill
+   * for 1/4-20 under an index control reading "Inch". The answer must never
+   * disagree with the controls beside it.
    */
   let seriesTouched = false;
   form.querySelectorAll('input[name="series"]').forEach((el) =>
@@ -712,7 +718,9 @@ const label = 'block text-sm font-semibold text-ink-soft';
       const target = form.querySelector<HTMLInputElement>(
         `input[name="series"][value="${want}"]`,
       );
-      if (target) target.checked = true;
+      if (target === null) return;
+      target.checked = true;
+      render();
     }),
   );
 
