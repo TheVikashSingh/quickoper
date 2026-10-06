@@ -188,6 +188,99 @@ describe('the result panel shows what the module computed', () => {
   });
 });
 
+/**
+ * Inch threads against the inch index: fractional, number and letter drills.
+ *
+ * The published drills and engagements are the Unified rows of the golden
+ * fixture, verified against the Dormer/Precision Twist Drill and Guhring charts
+ * on 2026-09-13 (D96). At 75 %, the basis the inch charts are worked at, the
+ * page must render each thread's published drill and engagement exactly —
+ * which it could not before number and letter drills shipped (D97).
+ */
+describe('inch threads render their published drill', () => {
+  const unified = GOLDEN.filter((r) => r.system === 'unified_inch');
+
+  it.each(unified)('$thread renders $drillLabel and $engagementPct %', (row) => {
+    const d = tapDrillDisplay({
+      major: row.major,
+      pitch: row.pitchOrTpi,
+      engagementPercent: 75,
+      units: 'in',
+      series: 'inch',
+    });
+    // The fixture writes 5/16 where the page marks the drill 5/16".
+    expect(d.drillLabel.replace(/"$/, '')).toBe(row.drillLabel);
+    expect(d.drillLength).toBe(formatLength(inchToNm(row.tapDrill), 'in'));
+    expect(d.engagementPercent).toBeCloseTo(row.engagementPct, 2);
+  });
+
+  it('says which series the drill is from', () => {
+    const quarter = tapDrillDisplay({
+      major: 0.25,
+      pitch: 20,
+      engagementPercent: 75,
+      units: 'in',
+      series: 'inch',
+    });
+    expect(quarter.drillLabel).toBe('#7');
+    expect(quarter.drillSeries).toBe('number');
+    expect(quarter.drillNote).toBeNull();
+  });
+
+  /**
+   * J is one of the two letters the makers split on. 5/16-24 at 65 % wants
+   * 0.2773"; J (0.2770") is nearest, and gives
+   * 100 × (0.3125 − 0.2770) / (3√3/4 × 1/24) = 65.59 %.
+   */
+  it("shows the third maker's figure whenever J is the answer", () => {
+    const d = tapDrillDisplay({
+      major: 0.3125,
+      pitch: 24,
+      engagementPercent: 65,
+      units: 'in',
+      series: 'inch',
+    });
+    expect(d.drillLabel).toBe('J');
+    expect(d.engagementPercent).toBeCloseTo(65.59, 2);
+    expect(d.drillNote).toContain('Guhring prints 0.2772 in');
+    expect(d.working).toContain('Guhring prints 0.2772 in');
+  });
+
+  /**
+   * 5/16-18 at 85 % wants 0.25116" and at 87 % 0.24971": either side of the
+   * quarter-inch hole that is both 1/4" and letter E. Both must be called 1/4",
+   * and exactly one row of the neighbour table may be the recommended one.
+   */
+  it.each([85, 87])(
+    'calls the quarter-inch hole 1/4" from either side, at %i percent',
+    (pct) => {
+      const d = tapDrillDisplay({
+        major: 0.3125,
+        pitch: 18,
+        engagementPercent: pct,
+        units: 'in',
+        series: 'inch',
+      });
+      expect(d.drillLabel).toBe('1/4"');
+      expect(d.neighbours.filter((n) => n.chosen).map((n) => n.label)).toEqual(['1/4"']);
+      expect(d.neighbours.map((n) => n.label)).toContain('E');
+    },
+  );
+
+  it('refuses a thread above the top of the inch index', () => {
+    // 5/8-11 at 75 % wants 0.5364"; the inch index stops at 1/2". D73's rule.
+    expect(() =>
+      tapDrillDisplay({
+        major: 0.625,
+        pitch: 11,
+        engagementPercent: 75,
+        units: 'in',
+        series: 'inch',
+      }),
+    ).toThrow(/No drill in this index reaches 0\.5364 in/);
+  });
+});
+
 describe('the exact figures D72 got wrong', () => {
   /**
    * Pinned by value, in the unit system that broke. If either of these moves by

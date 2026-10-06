@@ -3993,6 +3993,71 @@ PENDING and `MAX_PENDING` is 1.
 **Rejected:** marking all 18 verified because M1.6 → 1.25 mm is "obviously"
 right. That is exactly the state the gate exists to refuse.
 
+### D97 — Number and letter drills ship, copied from the table three makers were read against
+
+The drill chart and the tap drill calculator both said number and letter drills
+were missing until someone checked them against a manufacturer catalogue. The
+Android app did that check on 2026-09-27 (its roadmap 3.1), and this is the site
+taking the result.
+
+**What was checked.** Every one of the 106 sizes, in the decimal-equivalents
+charts of three makers: Guhring (p. 285), Pan American Tool (p. 2) and Dormer
+(catalogue p. 515, a distributor's copy). Each size was paired with the figure
+on its own row, not with whatever came next in the document — Dormer prints its
+metric sizes between the drill rows, so #25 at .1495 sits directly above 3.8 mm
+at .1496. All three print the same figure for 104 sizes. For J and M two agree:
+Guhring prints 0.2772 and 0.2949, which is its own 7.04 and 7.49 mm turned back
+into inches. The shipped figure is the one two makers print, and the third is a
+note wherever that drill appears: on the chart, in the tap drill result and its
+working, and in the CSV. Nothing is averaged. Checked by Claude, which D96
+allows when the record says so.
+
+**Copied, not re-typed.** `src/data/number-letter-drills.csv` is the app's
+`fixtures/number-letter-drills.csv` (commit bd13018) byte for byte, and a test
+pins its SHA-256. Re-reading the same three documents a second time would have
+added little; what protects the site is that (a) the module reading the table
+refuses to load unless at least two makers print every shipped figure, every
+size appears once and in order, and a note is present exactly where the makers
+disagree, and (b) the hash makes any edit here visible. Every guard has been
+made to fire by a corrupted copy in the test. The parser was written against the
+table, not ported from the Kotlin, so the two cores still check each other
+(Gate 7).
+
+**Why `src/data/`.** CLAUDE.md says a figure that is not in `src/data/` with a
+cited source must not ship, and CODEOWNERS covers that folder, so only the
+operator merges a change to it. The provenance is inside the file — each
+maker's figure on every row — rather than in a `generatedData` wrapper: a CSV
+has no header block, and the three documents are cited in
+`number-letter-drills.ts` and validated through `sourceRef` on both pages.
+
+**The inch index.** The tap drill calculator gains `inch`: fractional, number
+and letter drills searched together, the rack the published inch charts pick
+from. At 75 % every Unified row of the golden fixture now renders its published
+drill and engagement exactly. Against fractions alone, #8-32 got 9/64 in at
+57.58 %; the inch index gives the #29 every chart names, at 68.97 %. Choosing
+inch units selects it, as choosing millimetres selects metric, until the user
+picks an index by hand. "Fractional only" stays, for a shop without number
+drills.
+
+**One hole, two names.** Letter E and 1/4 in are both 0.2500 in, as 12.7 mm and
+1/2 in already were. `snapToSeries` used to send an equal pair to the half-even
+tie-break, where a step of zero made the LATER name win, so a target near a
+quarter inch came back as E. Now the name listed first is kept, from either
+side, and `drillsFor` lists a tie metric, fractional, number, letter. The
+neighbour table marks the recommended drill by identity rather than diameter,
+because both names would otherwise say "recommended".
+
+**Two pairs share an inch figure without being one hole.** #13 is 0.1850 in and
+4.7 mm is 0.18504; #12 is 0.1890 and 4.8 mm is 0.18898. At four decimals they
+print the same; the millimetre column separates them (4.699 against 4.700, 4.801
+against 4.800). The chart says so, and the test pins exactly those collisions.
+
+**Corrected on the way, because the same pages carried them:** the tap drill FAQ
+still said a tie goes to "the larger one", which D71 replaced with half-even;
+`llms.txt` still gave #8-32 on a #29 as 68.98 %, which D71 made 68.97 %, and
+described `/machining/app` as asking whether the app is worth building, which
+STATE.md records as dropped.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

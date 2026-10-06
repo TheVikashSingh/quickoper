@@ -298,6 +298,12 @@ export interface Drill {
   readonly label: string;
   /** Which catalogue it belongs to. */
   readonly series: 'metric' | 'fractional' | 'number' | 'letter';
+  /**
+   * Where the makers disagree about this drill, in words, shown wherever the
+   * drill is. Only letters J and M carry one: two makers print the shipped
+   * figure and the third prints its own. See `number-letter-drills.ts`.
+   */
+  readonly note?: string;
 }
 
 export interface DrillChoice {
@@ -425,6 +431,12 @@ export function snapToSeries(
     const dDist = Math.abs(d.nm - targetNm);
     const bestDist = Math.abs(best.nm - targetNm);
     if (dDist < bestDist) return d;
+    // One hole under two names: 1/4" and letter E are both 0.2500 in, and 1/2"
+    // is 12.7 mm. The name listed first is kept, on whichever side of that hole
+    // the target fell; `drillsFor` lists a tie metric, fractional, number,
+    // letter. Without this an equal pair reached evenOfPair with a step of
+    // zero and the LATER name won, so 1/4" came back as E.
+    if (d.nm === best.nm) return best;
     if (dDist === bestDist) return d.nm === evenOfPair(best.nm, d.nm) ? d : best;
     return best;
   });

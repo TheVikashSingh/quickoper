@@ -251,6 +251,28 @@ describe('snapToSeries', () => {
   it('returns undefined for an empty series', () => {
     expect(snapToSeries(mmToNm(8), mmToNm(1.25), 6_800_000, [])).toBeUndefined();
   });
+
+  /**
+   * One hole under two names keeps the first name, from either side.
+   *
+   * 1/4" and letter E are both 0.2500" (6 350 000 nm). Before this rule an
+   * equal pair reached the half-even tie-break with a step of zero and the
+   * LATER name won, so a target just above or below a quarter inch came back
+   * as E. The drill was right; the name was not the one the index lists first.
+   */
+  it('names a hole with two names by the first, from either side', () => {
+    const twins: Drill[] = [
+      { nm: nm(6_248_400), label: 'D', series: 'letter' },
+      { nm: nm(6_350_000), label: '1/4"', series: 'fractional' },
+      { nm: nm(6_350_000), label: 'E', series: 'letter' },
+      { nm: nm(6_527_800), label: 'F', series: 'letter' },
+    ];
+    const major = inchToNm(0.3125);
+    const pitch = tpiToPitchNm(18);
+    for (const target of [6_340_000, 6_350_000, 6_360_000]) {
+      expect(snapToSeries(major, pitch, target, twins)?.drill.label).toBe('1/4"');
+    }
+  });
 });
 
 describe('rankBySuitability', () => {

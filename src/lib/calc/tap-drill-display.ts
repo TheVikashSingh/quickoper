@@ -33,6 +33,7 @@ import {
   roundHalfEven,
   snapToSeries,
   tpiToPitchNm,
+  type Drill,
   type Nanometres,
 } from './tap-drill';
 
@@ -83,7 +84,14 @@ export interface NeighbourRow {
 
 export interface TapDrillDisplay {
   drillLabel: string;
+  /** Which series the drill comes from, so the page can say "letter drill". */
+  drillSeries: Drill['series'];
   drillLength: string;
+  /**
+   * Where the makers disagree about the chosen drill, or null. Only letters J
+   * and M carry one; the page shows it beside the drill and in the working.
+   */
+  drillNote: string | null;
   /** The engagement the chosen drill truly gives, at two decimals. */
   engagementPercent: number;
   /** What the user asked for, carried so the page can show both. */
@@ -208,12 +216,16 @@ export function tapDrillDisplay(input: TapDrillInput): TapDrillDisplay {
       length: formatLength(d.nm, units),
       engagementPercent: roundHalfEven(engagementPercentExact(majorNm, pitchNm, d.nm), 2),
       delta: formatDelta(delta, units),
-      chosen: d.nm === choice.drill.nm,
+      // The drill itself, not its diameter: 1/4" and E are one hole, and only
+      // the name the result panel gives is the recommended row.
+      chosen: d === choice.drill,
     }));
 
   return {
     drillLabel: choice.drill.label,
+    drillSeries: choice.drill.series,
     drillLength: formatLength(choice.drill.nm, units),
+    drillNote: choice.drill.note ?? null,
     engagementPercent: roundHalfEven(choice.engagementPercent, 2),
     requestedPercent: engagementPercent,
     targetLength: formatLength(targetNm, units),
@@ -233,6 +245,11 @@ export function tapDrillDisplay(input: TapDrillInput): TapDrillDisplay {
 
 ` +
       `100 × (${lengthValue(majorNm, units)} − ${lengthValue(choice.drill.nm, units)})` +
-      ` / (${K_SHOWN} × ${lengthValue(pitchNm, units)}) = ${roundHalfEven(choice.engagementPercent, 2)}%`,
+      ` / (${K_SHOWN} × ${lengthValue(pitchNm, units)}) = ${roundHalfEven(choice.engagementPercent, 2)}%` +
+      (choice.drill.note === undefined
+        ? ''
+        : `
+
+${choice.drill.label}: ${choice.drill.note} The figure used is the one two makers print.`),
   };
 }

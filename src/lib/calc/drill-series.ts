@@ -14,19 +14,15 @@
  *
  * The first two are generated from their own definition, so there is no
  * opportunity for a transcription error: a wrong value would require the
- * arithmetic to be wrong, and the arithmetic is tested. The second two are
- * sixty-odd decimal numbers that someone has to copy correctly, and a single
- * mistyped digit is a scrapped part.
+ * arithmetic to be wrong, and the arithmetic is tested. The second two are 106
+ * decimal numbers that someone has to copy correctly, and a single mistyped
+ * digit is a scrapped part.
  *
- * SO NUMBER AND LETTER DRILLS ARE NOT IN THIS FILE. They arrive as a data file
- * carrying the same `verified_against` provenance the golden fixtures use, once
- * a human has checked them against a manufacturer catalogue. Shipping them from
- * recollection would put exactly the class of unverified figure into the
- * product that the provenance gate exists to keep out.
- *
- * The cost is real and is worth paying: an inch-first user gets fractional
- * sizes only until that lands. The metric user — who is the entire reason this
- * tool exists — is fully served today.
+ * SO NUMBER AND LETTER DRILLS ARE NOT TYPED IN THIS FILE. They come from
+ * `number-letter-drills.ts`, which reads a data file recording what three
+ * makers print for every size and refuses to load unless at least two of them
+ * agree on each one. Until that table was checked they did not ship at all,
+ * and an inch-first user got fractional sizes only (D97).
  *
  * ─── Sources ────────────────────────────────────────────────────────────────
  *
@@ -34,9 +30,11 @@
  *   - ASME B94.11M: twist drills, fractional inch series.
  *
  * Both are cited for the SERIES DEFINITION — the step and the range — not for
- * individual values, because individual values are computed here.
+ * individual values, because individual values are computed here. The number
+ * and letter drills cite their three makers in `number-letter-drills.ts`.
  */
 
+import { LETTER_DRILLS, NUMBER_DRILLS } from './number-letter-drills';
 import { type Drill, nm, NM_PER_INCH } from './tap-drill';
 
 /**
@@ -129,13 +127,41 @@ export const FRACTIONAL_DRILLS: readonly Drill[] = Array.from(
   },
 );
 
-/** Which catalogues a user can search. */
-export type SeriesName = 'metric' | 'fractional' | 'both';
+/**
+ * Which catalogues a user can search.
+ *
+ *   metric      the metric shop index
+ *   inch        fractional, number and letter drills: the inch rack
+ *   fractional  fractional only, for a shop without number or letter drills
+ *   both        every drill in all four series
+ */
+export type SeriesName = 'metric' | 'inch' | 'fractional' | 'both';
+
+/**
+ * Among drills of identical diameter, the order their names are listed in.
+ *
+ * Two holes have two names each: 1/2" is 12.7 mm, and 1/4" is letter E. The
+ * name listed first is the one `snapToSeries` reports, so the order is fixed
+ * here rather than left to whatever order the arrays were joined in: metric
+ * first, then fractional, then number, then letter. A machinist reaching for a
+ * quarter-inch hole says 1/4 before E.
+ */
+const SERIES_RANK: Readonly<Record<Drill['series'], number>> = {
+  metric: 0,
+  fractional: 1,
+  number: 2,
+  letter: 3,
+};
 
 /**
  * The drills to search, ascending by diameter.
  *
- * `both` is the honest default for a mixed shop: a machinist with an imperial
+ * `inch` is the rack the published inch tap drill charts choose from:
+ * 1/4-20 takes a #7, 5/16-18 an F, 3/8-16 a 5/16. Against the fractional
+ * series alone, 1/4-20 at 75 % lands on 13/64" and the #7 every chart names is
+ * not there to be found.
+ *
+ * `both` is the honest choice for a mixed shop: a machinist with an imperial
  * index and a metric index reaches for whichever is closer, and hiding half the
  * rack behind a toggle is how a calculator recommends a drill its user does not
  * own.
@@ -146,31 +172,25 @@ export function drillsFor(series: SeriesName): readonly Drill[] {
       ? METRIC_DRILLS
       : series === 'fractional'
         ? FRACTIONAL_DRILLS
-        : [...METRIC_DRILLS, ...FRACTIONAL_DRILLS];
-  return [...chosen].sort((a, b) => a.nm - b.nm);
+        : series === 'inch'
+          ? [...FRACTIONAL_DRILLS, ...NUMBER_DRILLS, ...LETTER_DRILLS]
+          : [...METRIC_DRILLS, ...FRACTIONAL_DRILLS, ...NUMBER_DRILLS, ...LETTER_DRILLS];
+  return [...chosen].sort(
+    (a, b) => a.nm - b.nm || SERIES_RANK[a.series] - SERIES_RANK[b.series],
+  );
 }
 
 /**
  * Series NOT yet available, and why — surfaced in the UI rather than hidden.
  *
- * A calculator that silently omits the number drills will recommend a 13/64"
- * where a #7 was the right answer, and the user has no way to know. Saying so
- * is the honest failure mode.
+ * Number and letter drills were on this list until their table was checked
+ * against three makers (D97). What remains is the one series whose values are
+ * still unchecked.
  */
 export const PENDING_SERIES = [
   {
     name: 'DIN 338 R40 preferred series',
     reason:
       'The exact standard series, as distinct from the shop index generated here. Awaiting verification against the standard.',
-  },
-  {
-    name: 'Number drills (#80–#1)',
-    reason:
-      'Sixty transcribed decimal values. Awaiting verification against a manufacturer catalogue before they ship.',
-  },
-  {
-    name: 'Letter drills (A–Z)',
-    reason:
-      'Twenty-six transcribed decimal values. Awaiting the same verification against a manufacturer catalogue.',
   },
 ] as const;

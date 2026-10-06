@@ -256,12 +256,16 @@ Key figures, computed on $320,000 at 6.706%, the same rate applied to both terms
 
 ## Tools — machining
 
-Metric-first calculations for machining. The drill catalogues are GENERATED from
-their series definitions rather than transcribed from a table, so no individual
-diameter is a value someone copied. Series that WOULD require transcription —
-number drills, letter drills, the DIN 338 R40 preferred series, and named thread
-presets — are deliberately absent until a person has verified them against a
-manufacturer catalogue, and each page names what is missing.
+Metric-first calculations for machining. The metric and fractional drill
+catalogues are GENERATED from their series definitions rather than transcribed
+from a table. Number drills (#80-#1) and letter drills (A-Z) have no generating
+rule, so every figure is one printed by at least two of three manufacturers'
+charts (Guhring, Pan American Tool, Dormer), read and compared size by size on
+2026-09-27. All three print the same figure for 104 of the 106 sizes; for J and
+M two agree, and the third maker's figure is shown as a note wherever that drill
+appears. The DIN 338 R40 preferred series and named thread presets are
+deliberately absent until they are verified, and each page names what is
+missing.
 
 ### Machining calculators (hub)
 URL: https://quickoper.com/machining
@@ -273,8 +277,8 @@ Verification: https://quickoper.com/finance/verify
 
 ### The machinist Android app (in development)
 URL: https://quickoper.com/machining/app
-Computes: nothing. It describes an unreleased Android app and asks machinists
-whether it is worth building.
+Computes: nothing. It describes the Android app, which is in development and
+not yet released.
 Inputs: none.
 Status: IN DEVELOPMENT, NOT RELEASED. There is no price to pay, no pre-order and
 no download. The page carries no purchasable offer for that reason.
@@ -313,7 +317,8 @@ engagement, breaking an exact tie half-even, plus the engagement that drill
 ACTUALLY produces, the basic minor diameter, and the surrounding drill sizes with
 their engagements.
 Inputs: thread major diameter, pitch (or threads per inch), target engagement
-percentage, unit system, drill index to search.
+percentage, unit system, drill index to search: metric; inch (fractional, number
+and letter drills together); fractional only; or both racks.
 Key figures: engagement = 100 x (D - d) / (K x P) where K = 3*sqrt(3)/4 =
 1.2990381..., from the ISO 68-1 basic profile where H = (sqrt(3)/2) x P.
 100 / K = 76.98%, which is why the shop rule "drill = major - pitch" lands just
@@ -321,31 +326,35 @@ under 77%. K is carried at full precision, not as the trade's rounded 1.299.
 Basic minor diameter is D1 = D - 1.25 x H and is NOT the tap drill. Standard tap drills do not give a
 uniform engagement, and the recommendation can land ABOVE the target diameter:
 M8 x 1.25 at 75% wants 6.7822 mm and gets the 6.8 mm drill, which gives 73.90%.
-M12 on the published 10.2 mm drill gives 79.18%; #8-32 on a #29 gives 68.98%.
+M12 on the published 10.2 mm drill gives 79.18%; #8-32 on a #29 gives 68.97%.
+Inch threads search the inch index, the rack the published inch charts pick from:
+at 75%, 1/4-20 gets a #7 (75.44%) and #8-32 a #29 (68.97%). Against fractional
+drills alone #8-32 would get 9/64 in at 57.58%.
 Jurisdiction: none. ISO metric and Unified inch.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
-### Drill size chart (metric and fractional inch)
+### Drill size chart (metric, fractional, number and letter)
 URL: https://quickoper.com/machining/drill-size-chart
-Computes: nothing on demand. It PUBLISHES two generated drill catalogues as a
-printable table, each row carrying the diameter in millimetres and in inches.
+Computes: nothing on demand. It PUBLISHES four drill series as printable tables,
+each row carrying the diameter in millimetres and in inches.
 Inputs: none. Both units are printed on every row, so there is no toggle and the
 page ships no JavaScript at all.
 Key figures: 151 metric sizes, 0.5 mm to 13.0 mm, in 0.05 mm steps below 3 mm and
 0.1 mm steps above. 32 fractional inch sizes, 1/64 in to 1/2 in, each n x 25.4 /
-64 mm. 1 in = 25.4 mm exactly (1959 agreement), so 1/4 in is 6.350 mm exactly and
-1/2 in IS 12.7 mm — the same drill, listed in both series, and the only such
-coincidence in the range. Millimetres shown to 3 decimals and inches to 4, which
-is presentation only; no figure re-enters a calculation.
+64 mm. 80 number drills, #80 (0.0135 in) to #1 (0.2280 in), and 26 letter drills,
+A (0.2340 in) to Z (0.4130 in), each figure printed by at least two of three
+makers' charts. 1 in = 25.4 mm exactly (1959 agreement), so 1/4 in is 6.350 mm
+exactly. Two holes carry two names, and only two: 1/2 in IS 12.7 mm, and 1/4 in
+IS letter E. Millimetres shown to 3 decimals and inches to 4, which is
+presentation only; no figure re-enters a calculation.
 NOT A COMPLETE CHART, and it says so above the tables rather than below them.
 It STOPS at 13 mm and 1/2 in — jobber-set ranges, not the whole of either
 series — so M16 (14.0 mm), M20 (17.5 mm) and M24 (21.0 mm) have no drill on it,
 and neither does the 17/32 in a 5/8-11 calls for. The tap drill calculator
 searches the same catalogue and stops at the same place.
-Number drills (#80-#1), letter drills (A-Z) and the DIN 338 R40 preferred series
-are absent because they are transcribed tables rather than generated series, and
-nothing ships until a person has checked them against a manufacturer catalogue.
+The DIN 338 R40 preferred series is absent: it is a transcribed list, and it has
+not yet been checked against the standard.
 The metric column is a shop index and is NOT presented as DIN 338 R40.
 Download: https://quickoper.com/machining/drill-size-chart.csv
 Jurisdiction: none. ISO 235 / DIN 338 metric and ASME B94.11M fractional inch.
