@@ -380,26 +380,218 @@ export function millingPower(
   );
 }
 
+// ─── The chip a milling tooth really cuts ──────────────────────────────────
+//
+// `calculations.md` §3, "Chip thickness" and "Entering angle κr". A tooth does
+// not cut a chip as thick as its feed per tooth: the chip is comma-shaped, and
+// how thick it gets depends on how much of the cutter is in the cut and on the
+// angle the edge meets the work at. Straight cutting edges only — a round
+// insert's entering angle changes with depth, and Sandvik gives it separate
+// formulas in the insert diameter, not covered here.
+//
+// Until 2026-10-06 this module had one chip figure, hm ≈ fz × √(ae/Dc). That
+// is the narrow-cut limit of the real mean: right at 10% engagement (0.3162
+// against 0.3108), 57% thick in a full slot (fz against (2/π) fz), and the
+// Kienzle force it fed came out low by the same chip, so slotting power was
+// about 11% short at mc 0.25 (D103).
+
+/** A square shoulder: the entering angle at which every formula below is κr-free. */
+export const SQUARE_SHOULDER_DEG = 90;
+
 /**
- * Average chip thickness for a side-milling cut, in nm.
+ * Refuse an entering angle the straight-edge formulas cannot take.
  *
- * hm ≈ fz × sin(κ) × √(ae/Dc) for ae < Dc/2, which is the common radial-chip-
- * thinning approximation with the lead angle κ taken as 90° (a square-shoulder
- * cutter). Slotting (ae = Dc) reduces to fz.
+ * κr is measured from the surface being cut: 90° for a square shoulder, 45°
+ * for most face mills, about 10° for a high-feed cutter. Zero would be an edge
+ * lying flat on the work, with no chip and an infinite cutting diameter.
+ */
+function assertEnteringAngle(kappaDeg: number): void {
+  // A 0 is almost certainly an American lead angle, measured from the axis
+  // rather than the surface (the app's refusal says the same).
+  if (kappaDeg === 0) {
+    throw new RangeError(
+      'An entering angle of 0° would lay the edge flat on the work. A lead angle of 0° is a square shoulder: enter 90°, or leave it blank.',
+    );
+  }
+  if (!Number.isFinite(kappaDeg) || kappaDeg <= 0 || kappaDeg > 90) {
+    throw new RangeError(
+      'The entering angle κr must be more than 0° and no more than 90°.',
+    );
+  }
+}
+
+/** sin κr, exactly 1 at a square shoulder rather than whatever a float makes it. */
+function sinKappa(kappaDeg: number): number {
+  // A last-bit difference in sin κr cannot move a four-decimal figure except
+  // at a tie, and ties are rounded from `chipThinningSquared`, exactly.
+  return kappaDeg === SQUARE_SHOULDER_DEG ? 1 : Math.sin((kappaDeg * Math.PI) / 180);
+}
+
+/**
+ * sin² κr as an exact fraction, where it is rational. By Niven's theorem the
+ * angles in (0°, 90°] whose cos 2κr — and so sin² κr = (1 − cos 2κr) / 2 — is
+ * rational are the multiples of 30° and 45°.
+ */
+const EXACT_SIN2: Readonly<Record<number, readonly [bigint, bigint]>> = {
+  30: [1n, 4n],
+  45: [1n, 2n],
+  60: [3n, 4n],
+  90: [1n, 1n],
+};
+
+/**
+ * (hex / fz)² as an exact fraction, wherever one exists; null where it does
+ * not, which is where a chip cannot land exactly on a rounding tie by any but
+ * a contrived coincidence of the inputs.
  *
- * APPROXIMATE, and labelled so wherever it is shown. Exact chip thickness
- * depends on cutter geometry the tool vendor knows and this calculator does
- * not; the approximation is what the vendor guides themselves publish for
- * sizing a cut.
+ * A chip that lands exactly on a tie — 0.00225 mm, say, half-way between
+ * 0.0022 and 0.0023 — has to be rounded from its exact value, because a float
+ * a hair either side decides it otherwise. One did: a 50 mm 45° cutter 20 mm
+ * deep, ae 10, cuts at Dcap 90 and thins the chip to exactly 4/9 of fz, so
+ * fz 0.001 mm is restored by exactly 0.00225 mm, and the floats printed 0.0023.
+ * Half-even says 0.0022. So the display rounds hex and the restoring feed from
+ * their squares — fz² × this fraction, and fz² over it — in exact integers.
+ *
+ * Exact, at full width (ae ≥ D/2), wherever sin² κr is rational: the ratio is
+ * sin κr alone. Below full width also D must be rational: Dc at 90°, and
+ * Dc + 2 × ap at 45°, where tan κr is 1. Lengths must be whole nanometres.
+ */
+export function chipThinningSquared(
+  aeNm: number,
+  diameterNm: number,
+  kappaDeg: number,
+): { readonly num: bigint; readonly den: bigint } | null {
+  const sin2 = EXACT_SIN2[kappaDeg];
+  if (sin2 === undefined || !Number.isInteger(aeNm)) return null;
+  const [sNum, sDen] = sin2;
+  if (2 * aeNm >= diameterNm) return { num: sNum, den: sDen };
+  if ((kappaDeg !== 90 && kappaDeg !== 45) || !Number.isInteger(diameterNm)) return null;
+  const ae = BigInt(aeNm);
+  const d = BigInt(diameterNm);
+  // (sin κr × 2 × √(D × ae − ae²) / D)² = sin² κr × 4 × ae × (D − ae) / D²
+  return { num: sNum * 4n * ae * (d - ae), den: sDen * d * d };
+}
+
+/** One pass cannot cut wider than the diameter the chip is cut at. */
+function assertWidth(aeNm: number, diameterNm: number): void {
+  if (aeNm > diameterNm) {
+    throw new RangeError(
+      'The width of cut aₑ cannot be more than the cutter diameter: that is two passes.',
+    );
+  }
+}
+
+/**
+ * The diameter an angled cutter cuts at, at depth of cut ap, in nm:
+ *
+ *     Dcap = Dc + 2 × ap / tan κr
+ *
+ * Sandvik Coromant, milling formulas ("Max. cutting diameter at specific
+ * depth", straight cutting edge) and catalogue page H 79, which define Dcap as
+ * the cutting diameter at depth ap and work the cutting speed, the spindle
+ * speed and the maximum chip all at it. `Dc` is the catalogue's diameter, at
+ * the tip of an angled cutter: the CoroMill 345 63 mm 45° cutter cuts at
+ * 63 + 2 × 6 / tan 45° = 75 mm at its 6 mm maximum depth.
+ *
+ * At κr = 90° it is Dc exactly, whatever the depth.
+ */
+export function cuttingDiameterAtDepth(
+  dcNm: Nanometres,
+  apNm: Nanometres,
+  kappaDeg: number,
+): number {
+  assertPositive('dcNm', dcNm);
+  assertPositive('apNm', apNm);
+  assertEnteringAngle(kappaDeg);
+  if (kappaDeg === SQUARE_SHOULDER_DEG) return dcNm;
+  // tan 45° is 1; Math.tan(π/4) is 0.9999999999999999, which would put a
+  // whole-nanometre Dcap a hair off and every rounding tie from it with it.
+  if (kappaDeg === 45) return dcNm + 2 * apNm;
+  return dcNm + (2 * apNm) / Math.tan((kappaDeg * Math.PI) / 180);
+}
+
+/**
+ * How thick the chip is against the feed per tooth: hex / fz, above 0, at most 1.
+ *
+ * Sandvik Coromant, milling formulas (images read 2026-09-25 and 2026-10-05):
+ *
+ *     ae ≥ D/2:   hex = fz × sin κr
+ *     ae < D/2:   hex = fz × sin κr × 2 × √(D × ae − ae²) / D
+ *
+ * D is the diameter the chip is cut at, Dcap on an angled cutter. The two
+ * branches meet at ae = D/2.
+ */
+export function chipThinning(aeNm: number, diameterNm: number, kappaDeg: number): number {
+  assertPositive('aeNm', aeNm);
+  assertPositive('diameterNm', diameterNm);
+  assertEnteringAngle(kappaDeg);
+  assertWidth(aeNm, diameterNm);
+  const s = sinKappa(kappaDeg);
+  if (2 * aeNm >= diameterNm) return s;
+  // √(D × ae − ae²) written as √(ae × (D − ae)), which cancels less.
+  return (s * 2 * Math.sqrt(aeNm * (diameterNm - aeNm))) / diameterNm;
+}
+
+/** Maximum chip thickness hex, in nm: fz × (hex / fz). */
+export function maxChipThickness(
+  fzNm: Nanometres,
+  aeNm: number,
+  diameterNm: number,
+  kappaDeg: number = SQUARE_SHOULDER_DEG,
+): number {
+  assertPositive('fzNm', fzNm);
+  return fzNm * chipThinning(aeNm, diameterNm, kappaDeg);
+}
+
+/**
+ * The feed per tooth that cuts a chip as thick as `fz`, in nm.
+ *
+ * Sandvik prints the formula this way round — fz "is calculated from the
+ * recommended maximum chip thickness value" — so with the data sheet's fz read
+ * as the chip it means, the feed that cuts it is fz ÷ (hex / fz). At 10%
+ * engagement on a square shoulder that is 1/0.6 = 1.667 times the feed.
+ *
+ * Shown, never applied: data sheets for angled cutters often print fz already
+ * raised for κr, and raising it again would be 1.4 times too much on a 45°
+ * face mill and 5.8 times on a 10° cutter.
+ */
+export function restoringFeed(
+  fzNm: Nanometres,
+  aeNm: number,
+  diameterNm: number,
+  kappaDeg: number = SQUARE_SHOULDER_DEG,
+): number {
+  assertPositive('fzNm', fzNm);
+  return fzNm / chipThinning(aeNm, diameterNm, kappaDeg);
+}
+
+/**
+ * Mean chip thickness hm, in nm — exact, not the √(ae/Dc) approximation this
+ * module used before.
+ *
+ *     hm = fz × sin κr × (ae/D) × (360/π) / arccos°(1 − 2 × ae/D)
+ *
+ * Kennametal Inc, US Patent 12,202,058 B2 ("Peripheral milling tool and method
+ * for arranging cutting edges", Frank Endres). The patent prints 114.6, a
+ * rounding of 360/π = 114.5916…; the exact constant is used. With the arccos
+ * in radians, (360/π) / arccos° is 2 / arccos. It is the mean of
+ * fz × sin κr × sin φ over the arc φ the tooth spends in the cut, and gives
+ * the textbook (2/π) × fz in a full slot.
+ *
+ * D is the diameter the chip is cut at, Dcap on an angled cutter. This is the
+ * chip thickness the Kienzle force takes.
  */
 export function meanChipThickness(
   fzNm: Nanometres,
-  aeNm: Nanometres,
-  dcNm: Nanometres,
+  aeNm: number,
+  diameterNm: number,
+  kappaDeg: number = SQUARE_SHOULDER_DEG,
 ): number {
   assertPositive('fzNm', fzNm);
   assertPositive('aeNm', aeNm);
-  assertPositive('dcNm', dcNm);
-  const ratio = Math.min(aeNm / dcNm, 1);
-  return fzNm * Math.sqrt(ratio);
+  assertPositive('diameterNm', diameterNm);
+  assertEnteringAngle(kappaDeg);
+  assertWidth(aeNm, diameterNm);
+  const x = aeNm / diameterNm;
+  return (fzNm * sinKappa(kappaDeg) * x * 2) / Math.acos(1 - 2 * x);
 }

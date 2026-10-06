@@ -34,6 +34,9 @@ import { SITE } from '../../lib/site';
 
 const LAST_VERIFIED = '2026-09-01';
 
+/** The chip and entering-angle sources, each read in a browser on this date. */
+const CHIP_CHECKED = '2026-10-06';
+
 const SOURCES = [
   {
     label: 'ISO 3002-1 — basic quantities in cutting and grinding. ICS 25.100',
@@ -44,6 +47,30 @@ const SOURCES = [
     label: 'Sandvik Coromant — metalworking formulas and definitions (technical guide)',
     url: 'https://www.sandvik.coromant.com/en-gb/knowledge',
     retrieved: LAST_VERIFIED,
+  },
+  {
+    label:
+      'Sandvik Coromant — Milling formulas and definitions: Dcap = Dc + 2 × ap / tan κr, the cutting and spindle speeds worked at Dcap, and the maximum chip thickness hex',
+    url: 'https://www.sandvik.coromant.com/en-us/knowledge/machining-formulas-definitions/milling-formulas-definitions',
+    retrieved: CHIP_CHECKED,
+  },
+  {
+    label:
+      'Sandvik Coromant — Entering angle and chip thickness in milling: the feed for a 0.1, 0.15 and 0.2 mm chip at 90°, 75°, 65°, 45° and 10°',
+    url: 'https://www.sandvik.coromant.com/en-us/knowledge/milling/entering-angle-and-chip-thickness',
+    retrieved: CHIP_CHECKED,
+  },
+  {
+    label:
+      'Kennametal Inc, US Patent 12,202,058 B2 (inventor Frank Endres) — the average chip thickness hm, and the √(ae/d) approximation it calls one',
+    url: 'https://patents.google.com/patent/US12202058B2/en',
+    retrieved: CHIP_CHECKED,
+  },
+  {
+    label:
+      'Sandvik Coromant — CoroMill 345 cutter 345-063C6-13M: Dc 63.00 mm (2.4803 in), entering angle 45°, maximum depth 6.00 mm',
+    url: 'https://www.sandvik.coromant.com/en-us/product-details?c=345-063C6-13M',
+    retrieved: CHIP_CHECKED,
   },
 ].map((s) => sourceRef.parse(s));
 
@@ -58,7 +85,7 @@ const FAQ = [
   },
   {
     q: 'Is the chip thickness figure exact?',
-    a: 'No, and it is labelled approximate. It uses the standard radial-chip-thinning approximation, fz × √(ae/Dc), which is what the tooling guides themselves publish for sizing a cut. Exact chip thickness depends on cutter geometry your vendor knows and this page does not.',
+    a: 'Yes, for a straight-edged cutter. The maximum chip, hex, is Sandvik Coromant’s formula, and the mean chip, hm, is the one in a Kennametal patent, with the exact 360/π where the patent prints 114.6. Until October 2026 this page used the shortcut fz × √(ae/Dc), which the same patent lists as an approximation: close for a narrow cut, but in a full slot it came out as thick as the feed, where the real mean is 0.637 of it, and the slotting power it fed was about 11% low at a typical mc of 0.25. Round inserts are not covered: their entering angle changes with the depth of cut.',
   },
   {
     q: 'Why are there two power figures?',
@@ -69,8 +96,8 @@ const FAQ = [
     a: 'In the removal rate, and it is not a small difference. A drill removes the whole cylinder it advances into, so Q = Dc × fn × Vc / 4 — which is the turning expression at a depth of cut of exactly Dc/4 and at no other value. This page told people to use turning mode for drilling until D74; that gives the right spindle speed and feed, but the removal rate and the power come out at whatever depth of cut you typed. For a 10 mm drill, entering Dc/2 doubles them and entering Dc quadruples them. Drilling and boring are now their own modes and neither asks you for a depth of cut.',
   },
   {
-    q: 'Does this work offline?',
-    a: 'Yes. Everything runs in your browser and nothing you enter is transmitted. Once loaded it keeps working without a connection.',
+    q: 'Why does the entering angle change the spindle speed?',
+    a: 'Because an angled cutter cuts at a larger diameter than its tip. At depth ap it cuts at Dcap = Dc + 2 × ap / tan κr, and Sandvik Coromant works the cutting speed, the spindle speed and the chip all at that diameter. Its CoroMill 345, a 63 mm cutter at 45°, cuts at 75 mm when 6 mm deep: at 250 m/min it should turn at 1061 rev/min. Worked at the 63 mm on the box it would turn at 1263, and its outer edge would run 19% over the speed the data sheet meant. Leave the angle blank for a square shoulder, 90°, where Dcap is Dc.',
   },
 ];
 
@@ -84,7 +111,7 @@ const structuredData = [
     url: `${SITE.url}/machining/feeds-and-speeds-calculator`,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     description:
-      'Metric-first feeds and speeds for milling and turning. Spindle speed, feed in both mm/rev and mm/min, material removal rate, chip thickness and cutting power, with the formula and the substituted values shown.',
+      'Metric-first feeds and speeds for milling, turning, drilling and boring. Spindle speed, feed in both mm/rev and mm/min, material removal rate, the maximum and mean chip at any entering angle, the feed that restores a thinned chip, and cutting power, with the formula and the substituted values shown.',
   },
   {
     '@context': 'https://schema.org',
@@ -124,7 +151,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
 
 <BaseLayout
   title="Feeds and speeds calculator"
-  description="Metric-first feeds and speeds for milling and turning. Spindle speed, feed in both mm/rev and mm/min, removal rate and cutting power — with the formula and every substituted value shown."
+  description="Metric-first feeds and speeds for milling, turning, drilling and boring. Spindle speed, feed in both mm/rev and mm/min, removal rate, the real chip thickness at any entering angle and cutting power — with the formula and every substituted value shown."
   vertical="machining"
   structuredData={structuredData}
 >
@@ -139,9 +166,10 @@ const hint = 'text-ink-mute mt-1 text-xs';
       Feeds and speeds
     </h1>
     <p class="text-ink-soft mt-4 max-w-prose text-lg">
-      Milling and turning, treated the same. Feed in millimetres per revolution{' '}
-      <em>and</em> per minute, always both. Your cutting data comes from your tooling data sheet
-      — this does the arithmetic.
+      Milling, turning, drilling and boring, treated the same. Feed in millimetres per
+      revolution <em>and</em> per minute, always both, and for milling the chip each tooth really
+      cuts, at any entering angle. Your cutting data comes from your tooling data sheet — this
+      does the arithmetic.
     </p>
 
     <!-- ── Calculator ──────────────────────────────────────────────────── -->
@@ -209,7 +237,9 @@ const hint = 'text-ink-mute mt-1 text-xs';
             value="10"
             required
           />
-          <p class={hint} id="fs-dc-hint">Tool diameter at the cut.</p>
+          <p class={hint} id="fs-dc-hint">
+            The catalogue’s Dc: at the tip, on an angled cutter.
+          </p>
         </div>
         <div>
           <label class={label} for="fs-fz"
@@ -287,6 +317,21 @@ const hint = 'text-ink-mute mt-1 text-xs';
             required
           />
           <p class={hint}>Depth of cut.</p>
+        </div>
+        <div id="fs-kappa-wrap">
+          <label class={label} for="fs-kappa">Entering angle κᵣ (°)</label>
+          <input
+            class={`${field} mt-1`}
+            id="fs-kappa"
+            name="kappa"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="1"
+            max="90"
+            placeholder="90"
+          />
+          <p class={hint}>Blank for 90°, a square shoulder. Most face mills are 45°.</p>
         </div>
       </form>
 
@@ -448,18 +493,41 @@ const hint = 'text-ink-mute mt-1 text-xs';
       </p>
       <h3 class="font-display text-ink text-xl font-semibold">Chip thinning</h3>
       <p>
-        When radial engagement is less than half the cutter diameter, the chip a tooth
-        actually cuts is thinner than the feed per tooth you programmed. The tooth enters
-        and leaves the material over a shorter arc, so the maximum thickness it reaches is
-        reduced by roughly √(aₑ/Dc). Machinists exploit this deliberately — a light radial
-        cut lets you raise feed per tooth substantially without overloading the edge,
-        which is the whole basis of high-efficiency milling.
+        A tooth does not cut a chip as thick as its feed per tooth. The chip is
+        comma-shaped, zero where the tooth enters and thickest where it leaves, and how
+        thick it gets depends on how much of the cutter is in the cut. Below half the
+        diameter the thickest point is hex = fz × 2 × √(Dc × aₑ − aₑ²) / Dc, Sandvik
+        Coromant's formula. At a width of 10% of the cutter that is 0.6 of the feed, so to
+        cut the chip the data sheet means, the feed can rise by 1/0.6 = 1.667 times. The
+        page shows that feed and never applies it: every figure above it uses the feed you
+        typed.
       </p>
       <p>
-        It matters here because chip thickness feeds the power calculation. Use the
-        programmed feed per tooth instead of the thinned value and the specific cutting
-        force comes out too low, which understates power exactly when a light radial cut
-        is tempting you to push feed.
+        The force on the tooth follows the mean chip, not the thickest point: hm = fz ×
+        (aₑ/Dc) × (360/π) / arccos°(1 − 2 × aₑ/Dc), from a Kennametal patent, which prints
+        114.6 for 360/π. In a full slot it is (2/π) × fz, 0.637 of the feed. This page
+        used to take the shortcut fz × √(aₑ/Dc), which the same patent calls an
+        approximation: close for a narrow cut, but as thick as the feed in a slot. A
+        thinner chip needs more force per square millimetre, so the power it gave for
+        slotting was about 11% low at a typical mc of 0.25.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">The entering angle</h3>
+      <p>
+        κᵣ is the angle the cutting edge meets the work at: 90° for a square shoulder, 45°
+        for most face mills, about 10° for a high-feed cutter. Every chip above thins by
+        sin κᵣ, which is why Sandvik's table gives a 45° cutter 1.4 times the feed of a
+        square shoulder for the same 0.1 mm chip, and a 10° cutter 5.8 times. Data sheets
+        for angled cutters often print the feed already raised, so the page warns before
+        you raise it again.
+      </p>
+      <p>
+        An angled cutter also cuts at a larger diameter than its tip: Dcap = Dc + 2 × aₚ /
+        tan κᵣ. Sandvik works the cutting speed there, so this page works the spindle
+        speed there too. Sandvik's own CoroMill 345, a 63 mm cutter at 45°, cuts at 75 mm
+        at its 6 mm maximum depth, and at 250 m/min it should turn at 1061 rev/min. Worked
+        at the 63 mm on the box it would turn at 1263, and its outer edge would run 19%
+        over the speed the data sheet meant. The width of cut still stops at Dc: only the
+        tip leaves a flat floor, so a 70 mm face under a 63 mm cutter is two passes.
       </p>
     </section>
 
@@ -521,7 +589,8 @@ const hint = 'text-ink-mute mt-1 text-xs';
     <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
       These are calculated starting figures, not a substitute for your tool manufacturer's
       recommendation. Rigidity, coolant, workholding and tool wear all move the right
-      answer. Verify against your tooling supplier's data, and take a test cut.
+      answer. Verify against your tooling supplier's data, and take a test cut. Everything
+      runs in your browser and nothing you enter is sent anywhere.
     </p>
 
     <RelatedTools
@@ -545,29 +614,19 @@ const hint = 'text-ink-mute mt-1 text-xs';
 
 <script>
   import {
-    boringDepthOfCut,
-    drillingMrr,
+    feedsDisplay,
+    type FeedsDisplay,
+    type Operation,
+    type Stat,
+  } from '../../lib/calc/feeds-speeds-display';
+  import {
     DEFAULT_EFFICIENCY,
-    feedPerRev,
-    meanChipThickness,
-    millingMrr,
-    removalRateFor,
-    netCuttingPower,
     machinePower,
+    netCuttingPower,
     specificCuttingForce,
-    spindleSpeed,
-    tableFeed,
-    turningMrr,
     type UnitSystem,
   } from '../../lib/calc/feeds-speeds';
-  import {
-    inchToNm,
-    nm,
-    NM_PER_INCH,
-    mmToNm,
-    roundHalfEven,
-    nmExactToMm,
-  } from '../../lib/calc/tap-drill';
+  import { nmExactToMm, roundHalfEven } from '../../lib/calc/tap-drill';
 
   function must<T extends HTMLElement>(id: string): T {
     const el = document.getElementById(id);
@@ -581,7 +640,6 @@ const hint = 'text-ink-mute mt-1 text-xs';
   const powerEl = must('fs-power');
   const workingEl = must('fs-working');
   const errorEl = must('fs-error');
-  const D = 4;
 
   const num = (f: HTMLFormElement, name: string): number =>
     Number((f.elements.namedItem(name) as HTMLInputElement).value);
@@ -590,21 +648,16 @@ const hint = 'text-ink-mute mt-1 text-xs';
   const pick = (name: string): string =>
     (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
 
-  const toNm = (v: number, u: UnitSystem) => (u === 'metric' ? mmToNm(v) : inchToNm(v));
-  const fromNm = (v: number, u: UnitSystem) =>
-    u === 'metric' ? v / 1_000_000 : v / NM_PER_INCH;
-  const lenUnit = (u: UnitSystem) => (u === 'metric' ? 'mm' : 'in');
-
   /**
    * Which fields an operation actually has.
    *
-   * Only milling has a tooth count and a radial width of cut. Only milling and
-   * turning have a depth of cut you enter: drilling's is fixed by the drill,
-   * and boring's is derived from the two diameters, which is the point of
-   * asking for both — see D74.
+   * Only milling has a tooth count, a radial width of cut and an entering
+   * angle. Only milling and turning have a depth of cut you enter: drilling's
+   * is fixed by the drill, and boring's is derived from the two diameters,
+   * which is the point of asking for both — see D74.
    */
   const DIAMETER_LABEL: Record<string, [string, string]> = {
-    milling: ['Cutter diameter', 'Tool diameter at the cut.'],
+    milling: ['Cutter diameter', 'The catalogue’s Dc: at the tip, on an angled cutter.'],
     turning: ['Workpiece diameter', 'Diameter at the cut, not the stock size.'],
     drilling: ['Drill diameter', 'The hole the drill produces.'],
     boring: ['Final bore d₁', 'The hole this pass produces. Vc applies here.'],
@@ -626,8 +679,19 @@ const hint = 'text-ink-mute mt-1 text-xs';
 
     must('fs-teeth-wrap').hidden = op !== 'milling';
     must('fs-ae-wrap').hidden = op !== 'milling';
+    must('fs-kappa-wrap').hidden = op !== 'milling';
     must('fs-ap-wrap').hidden = op === 'drilling' || op === 'boring';
     must('fs-d0-wrap').hidden = op !== 'boring';
+  }
+
+  /** One figure. Only strings from the display module reach the markup. */
+  function statHtml(s: Stat): string {
+    return `<div>
+      <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">${s.label}</p>
+      <p class="mt-1 font-numeric text-xl font-semibold text-ink sm:text-2xl">${s.value}</p>
+      <p class="text-sm text-ink-mute">${s.unit}</p>
+      ${s.note === null ? '' : `<p class="font-sans text-xs text-ink-mute">${s.note}</p>`}
+    </div>`;
   }
 
   function render(): void {
@@ -635,110 +699,39 @@ const hint = 'text-ink-mute mt-1 text-xs';
     errorEl.classList.add('hidden');
     try {
       const u = pick('units') as UnitSystem;
-      const op = pick('op');
-      const milling = op === 'milling';
-      const vc = num(form, 'vc');
-      const dcNm = toNm(num(form, 'dc'), u);
-      const rpm = spindleSpeed(vc, dcNm, u);
+      const kappa = raw(form, 'kappa');
+      // Everything below is presentation. The numbers, their units and their
+      // rounding come from `calc/feeds-speeds-display.ts`, which the tests
+      // check as strings; this page used to convert and round them itself.
+      const d = feedsDisplay({
+        op: pick('op') as Operation,
+        units: u,
+        vc: num(form, 'vc'),
+        diameter: num(form, 'dc'),
+        feed: num(form, 'fz'),
+        teeth: num(form, 'teeth'),
+        ae: num(form, 'ae'),
+        ap: num(form, 'ap'),
+        d0: num(form, 'd0'),
+        kappa: kappa === '' ? null : Number(kappa),
+      });
 
-      // Only milling derives feed per revolution from a tooth count; every
-      // other operation is given fn directly, which is how their data sheets
-      // and their machine controls are both written.
-      const fzNm = toNm(num(form, 'fz'), u);
-      const fnNm = milling ? feedPerRev(fzNm, num(form, 'teeth')) : fzNm;
-      const vfNm = tableFeed(fnNm, rpm);
-      const aeNm = milling ? toNm(num(form, 'ae'), u) : dcNm;
-
-      // The depth of cut, per operation.
-      //
-      // Drilling has none to enter — the drill fixes it — and the value used
-      // here is Dc/4, which is not a placeholder: the derivation in
-      // `drillingMrr` shows drilling IS turning at exactly that depth. Boring's
-      // is derived from the two diameters so it cannot be entered doubled (D74).
-      const apNm =
-        op === 'drilling'
-          ? nm(Math.round(dcNm / 4))
-          : op === 'boring'
-            ? boringDepthOfCut(toNm(num(form, 'd0'), u), dcNm)
-            : toNm(num(form, 'ap'), u);
-
-      // Every removal rate here is cm³/min whatever the user typed, because
-      // Nanometres carry no unit system and the formulas are metric. `mrrCm3`
-      // is what the power arithmetic needs; `rate` is what the panel shows.
-      const mrrCm3 =
-        op === 'milling'
-          ? millingMrr(aeNm, apNm, vfNm)
-          : op === 'drilling'
-            ? drillingMrr(vc, dcNm, fnNm, u)
-            : turningMrr(vc, apNm, fnNm, u);
-
-      // The value and its unit come back together so they cannot disagree.
-      // They did disagree: this page used to pick an `in³/min` label to stand
-      // beside an unconverted cm³/min number, and hand surface feet per minute
-      // to functions that require m/min — 16.387064× too high for milling,
-      // 53.7633× for the other three, with nothing on screen to suggest it.
-      const rate = removalRateFor(mrrCm3, u);
-
-      const hmNm = milling ? meanChipThickness(fzNm, aeNm, dcNm) : fnNm;
-
-      const L = lenUnit(u);
-      const feedMin = u === 'metric' ? 'mm/min' : 'in/min';
-      const feedRev = u === 'metric' ? 'mm/rev' : 'in/rev';
-      const stat = (k: string, v: string, s: string) =>
-        `<div><p class="font-mono text-xs uppercase tracking-widest text-ink-mute">${k}</p>
-         <p class="mt-1 font-numeric text-2xl font-semibold text-ink">${v}</p>
-         <p class="text-sm text-ink-mute">${s}</p></div>`;
-
-      resultEl.innerHTML = `<div class="grid gap-4 sm:grid-cols-3">
-        ${stat('Spindle speed', `${roundHalfEven(rpm, 0)}`, 'rev/min')}
-        ${stat('Feed', `${roundHalfEven(fromNm(vfNm, u), D)}`, feedMin)}
-        ${stat('Feed per rev', `${roundHalfEven(fromNm(fnNm, u), D)}`, feedRev)}
-        ${stat('Removal rate', `${roundHalfEven(rate.value, D)}`, rate.unit)}
-        ${stat(milling ? 'Mean chip (approx)' : 'Chip thickness', `${roundHalfEven(fromNm(hmNm, u), D)}`, L)}
-      </div>`;
-
-      const show = (v: number) => roundHalfEven(fromNm(v, u), D);
-      const metric = u === 'metric';
-      // The derivation quotes the panel's own rendered figure rather than
-      // rounding a second time, so the two cannot disagree on a decimal.
-      const q = `${roundHalfEven(rate.value, D)} ${rate.unit}`;
-      workingEl.textContent =
-        `n  = ${u === 'metric' ? 'Vc × 1000' : 'Vc × 12'} / (π × Dc)\n` +
-        `   = ${u === 'metric' ? `${vc} × 1000` : `${vc} × 12`} / (π × ${show(dcNm)} ${L})\n` +
-        `   = ${roundHalfEven(rpm, 4)} rev/min\n\n` +
-        (milling
-          ? `fn = fz × z = ${show(fzNm)} × ${num(form, 'teeth')} = ${show(fnNm)} ${feedRev}\n`
-          : `fn = ${show(fnNm)} ${feedRev}   (entered)\n`) +
-        `vf = fn × n = ${show(fnNm)} × ${roundHalfEven(rpm, 2)} = ${show(vfNm)} ${feedMin}\n\n` +
-        // Metric and inch are genuinely different equations here, not one
-        // equation with the numbers swapped: metric divides mm³ down to cm³,
-        // inch multiplies surface FEET per minute up to inches per minute. A
-        // derivation showing the metric form to an inch user teaches arithmetic
-        // that does not reproduce the answer above it — which is what this box
-        // did, printing `0.25 × 0.1 × 24.4462 / 1000 = 10.015 in³/min` where
-        // the left-hand side evaluates to 0.00061.
-        (op === 'milling'
-          ? metric
-            ? `Q  = ae × ap × vf / 1000 = ${show(aeNm)} × ${show(apNm)} × ${show(vfNm)} / 1000 = ${q}\n`
-            : `Q  = ae × ap × vf = ${show(aeNm)} × ${show(apNm)} × ${show(vfNm)} = ${q}\n`
-          : op === 'drilling'
-            ? (metric
-                ? `Q  = Dc × fn × Vc / 4 = ${show(dcNm)} × ${show(fnNm)} × ${vc} / 4 = ${q}\n`
-                : `Q  = Dc × fn × Vc × 12 / 4 = ${show(dcNm)} × ${show(fnNm)} × ${vc} × 12 / 4 = ${q}\n`) +
-              `     a drill removes the whole cylinder, not a swept slot\n`
-            : (op === 'boring'
-                ? `ap = (d₁ − d₀) / 2 = derived, ${show(apNm)} ${L}\n`
-                : '') +
-              (metric
-                ? `Q  = Vc × ap × fn = ${vc} × ${show(apNm)} × ${show(fnNm)} = ${q}\n`
-                : `Q  = Vc × 12 × ap × fn = ${vc} × 12 × ${show(apNm)} × ${show(fnNm)} = ${q}\n`)) +
-        (milling
-          ? `\nhm ≈ fz × √(ae/Dc) = ${show(fzNm)} × √(${show(aeNm)}/${show(dcNm)}) = ${show(hmNm)} ${L}   (approximate)\n`
-          : '');
+      const restore =
+        d.restore === null
+          ? ''
+          : `<div class="border-line bg-sunken rounded-panel mt-5 border p-4">
+              <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Feed to restore the chip</p>
+              <p class="mt-1 font-numeric text-xl font-semibold text-ink">${d.restore.value} <span class="text-sm font-normal text-ink-mute">${d.restore.unit}</span></p>
+              <p class="mt-2 font-sans text-sm text-ink-soft">${d.restore.note}</p>
+            </div>`;
+      resultEl.innerHTML = `<div class="grid grid-cols-2 gap-4 sm:grid-cols-3">${d.stats
+        .map(statHtml)
+        .join('')}</div>${restore}`;
+      workingEl.textContent = d.working;
 
       // Power takes the cm³/min figure, never the displayed one: Kienzle's kc
       // is N/mm² and the 60000 in Pc is dimensioned for cm³/min.
-      renderPower(mrrCm3, hmNm, u, milling);
+      renderPower(d.power, u);
     } catch (err) {
       errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
       errorEl.classList.remove('hidden');
@@ -749,14 +742,15 @@ const hint = 'text-ink-mute mt-1 text-xs';
   }
 
   /**
-   * Power from the removal rate the operation actually has.
+   * Power from the removal rate the operation actually has, at the chip the
+   * Kienzle force takes: the exact mean chip hm when milling, fn otherwise.
    *
    * It used to take ae, ap and vf and hand them to `millingPower`, which
    * recomputes the MILLING removal rate from them. Turning passed Dc as ae, so
    * the power was computed from `Dc × ap × vf / 1000` rather than `Vc × ap ×
    * fn` — understating it by exactly π. See D75.
    */
-  function renderPower(mrr: number, hmNm: number, u: UnitSystem, thinned: boolean): void {
+  function renderPower(power: FeedsDisplay['power'], u: UnitSystem): void {
     const kc11 = raw(powerForm, 'kc11');
     const mc = raw(powerForm, 'mc');
     if (kc11 === '' || mc === '') {
@@ -769,13 +763,13 @@ const hint = 'text-ink-mute mt-1 text-xs';
     }
     try {
       const eta = num(powerForm, 'eta') || DEFAULT_EFFICIENCY;
-      const kc = specificCuttingForce(Number(kc11), Number(mc), hmNm);
+      const kc = specificCuttingForce(Number(kc11), Number(mc), power.chipNm);
 
       // Two quantities, not one. Pc is what the cut costs; Pm is what the
       // machine must deliver. This panel showed Pm under the words "Net cutting
       // power" while the Android app showed Pc under the same words — 25% apart
       // at eta = 0.8. calculations.md §3 now names both.
-      const pc = netCuttingPower(mrr, kc);
+      const pc = netCuttingPower(power.mrrCm3, kc);
       const pm = machinePower(pc, eta);
 
       const machine = raw(powerForm, 'machine');
@@ -804,9 +798,7 @@ const hint = 'text-ink-mute mt-1 text-xs';
             <p class="text-ink-mute mt-1 text-sm">P<sub>c</sub> / η, η = ${eta}. Compare this one against your spindle.</p>
           </div>
         </div>
-        <p class="text-ink-mute mt-3 text-sm">kc = ${roundHalfEven(kc, 1)} N/mm² at ${roundHalfEven(nmExactToMm(hmNm), 4)} mm chip${
-          thinned ? ' (thinned)' : ''
-        }</p>${verdict}
+        <p class="text-ink-mute mt-3 text-sm">kc = ${roundHalfEven(kc, 1)} N/mm² at ${power.chipLabel} = ${roundHalfEven(nmExactToMm(power.chipNm), 4)} mm</p>${verdict}
       </div>`;
     } catch (err) {
       powerEl.innerHTML = `<p class="text-negative text-sm">${

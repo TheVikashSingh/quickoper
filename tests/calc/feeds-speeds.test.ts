@@ -2,7 +2,10 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
   boringDepthOfCut,
+  chipThinning,
+  chipThinningSquared,
   CM3_PER_IN3,
+  cuttingDiameterAtDepth,
   cuttingSpeedToMetric,
   DEFAULT_EFFICIENCY,
   drillingMrr,
@@ -13,7 +16,9 @@ import {
   millingMrr,
   netCuttingPower,
   machinePower,
+  maxChipThickness,
   millingPower,
+  restoringFeed,
   specificCuttingForce,
   spindleSpeed,
   tableFeed,
@@ -168,25 +173,170 @@ describe('cutting power', () => {
   });
 });
 
-describe('mean chip thickness', () => {
-  it('thins with radial engagement', () => {
-    // fz 0.1, ae 5, Dc 10 -> 0.070711 mm
-    const hm = meanChipThickness(mmToNm(0.1), mmToNm(5), mmToNm(10));
-    expect(roundHalfEven(hm / 1_000_000, 6)).toBeCloseTo(0.070711, 5);
+/**
+ * The chip a milling tooth really cuts: `calculations.md` §3, "Chip thickness"
+ * and "Entering angle κr".
+ *
+ * The tables are the spec's own golden values, computed independently in
+ * Python from the formulas as printed (Sandvik Coromant's hex and fz, and
+ * Kennametal US 12,202,058 B2's hm with the exact 360/π) before any Kotlin
+ * existed, and computed again for this site before this module changed: all
+ * agree to every digit the spec prints. Per unit feed, D the diameter the chip
+ * is cut at.
+ */
+describe('chip thickness, square shoulder (κr 90°)', () => {
+  // [ae/D, hex/fz, fz to restore / fz, hm/fz]
+  it.each([
+    [0.05, 0.4358898944, 2.2941573387, 0.2217163091],
+    [0.1, 0.6, 1.6666666667, 0.3107997753],
+    [0.2, 0.8, 1.25, 0.4313620865],
+    [0.25, 0.8660254038, 1.1547005384, 0.4774648293],
+    [0.5, 1, 1, 0.6366197724],
+    [0.75, 1, 1, 0.7161972439],
+    [1, 1, 1, 0.6366197724],
+  ])('at ae/D %f: hex %f, restore %f, hm %f', (x, hex, back, hm) => {
+    const D = 1_000_000;
+    const fz = nm(1_000_000);
+    const ae = x * D;
+    expect(maxChipThickness(fz, ae, D) / fz).toBeCloseTo(hex, 10);
+    expect(restoringFeed(fz, ae, D) / fz).toBeCloseTo(back, 10);
+    expect(meanChipThickness(fz, ae, D) / fz).toBeCloseTo(hm, 10);
   });
 
-  it('equals feed per tooth when slotting', () => {
-    // ae = Dc is a full slot: no radial thinning.
-    const hm = meanChipThickness(mmToNm(0.1), mmToNm(10), mmToNm(10));
-    expect(hm).toBeCloseTo(mmToNm(0.1), 9);
+  it('is the exact mean, not the √(ae/Dc) approximation this page used', () => {
+    // A full slot is (2/π) fz, the textbook result. The approximation gave fz,
+    // 57% thick, and a Kienzle force that left slotting power ~11% short.
+    const fz = mmToNm(0.1);
+    expect(meanChipThickness(fz, mmToNm(10), mmToNm(10))).toBeCloseTo(
+      (2 / Math.PI) * fz,
+      6,
+    );
+    expect(fz * Math.sqrt(1)).toBeGreaterThan(
+      meanChipThickness(fz, mmToNm(10), mmToNm(10)),
+    );
   });
 
-  it('never exceeds feed per tooth', () => {
-    // Clamped at ae = Dc. A cutter cannot engage more than its own diameter,
-    // and an unclamped sqrt would quietly report a thicker chip than possible.
-    const hm = meanChipThickness(mmToNm(0.1), mmToNm(50), mmToNm(10));
-    expect(hm).toBeCloseTo(mmToNm(0.1), 9);
+  it('agrees with the mean of fz × sin φ over the arc the tooth cuts', () => {
+    // The definition, by the midpoint rule, with no reference to either source.
+    for (const x of [0.03, 0.1, 0.4, 0.6, 0.9, 1]) {
+      const arc = Math.acos(1 - 2 * x);
+      const steps = 20_000;
+      let sum = 0;
+      for (let i = 0; i < steps; i++) sum += Math.sin(((i + 0.5) * arc) / steps);
+      const mean = sum / steps;
+      expect(
+        meanChipThickness(nm(1_000_000), x * 1_000_000, 1_000_000) / 1_000_000,
+      ).toBeCloseTo(mean, 8);
+    }
   });
+
+  it('refuses a width of cut wider than the diameter', () => {
+    expect(() => meanChipThickness(mmToNm(0.1), mmToNm(10.001), mmToNm(10))).toThrow(
+      /cannot be more than the cutter diameter/,
+    );
+    expect(() => maxChipThickness(mmToNm(0.1), mmToNm(11), mmToNm(10))).toThrow(
+      /two passes/,
+    );
+  });
+});
+
+describe('chip thickness and the entering angle', () => {
+  // Per unit feed at κr 45°: [ae/D, hex/fz, restore/fz, hm/fz].
+  it.each([
+    [0.05, 0.3082207001, 3.2444284226, 0.1567771056],
+    [0.1, 0.4242640687, 2.357022604, 0.2197686287],
+    [0.2, 0.5656854249, 1.767766953, 0.3050190565],
+    [0.25, 0.6123724357, 1.6329931619, 0.3376186186],
+    [0.5, 0.7071067812, 1.4142135624, 0.4501581581],
+    [0.75, 0.7071067812, 1.4142135624, 0.5064279278],
+    [1, 0.7071067812, 1.4142135624, 0.4501581581],
+  ])('at 45°, ae/D %f: hex %f, restore %f, hm %f', (x, hex, back, hm) => {
+    const D = 1_000_000;
+    const fz = nm(1_000_000);
+    expect(maxChipThickness(fz, x * D, D, 45) / fz).toBeCloseTo(hex, 10);
+    expect(restoringFeed(fz, x * D, D, 45) / fz).toBeCloseTo(back, 10);
+    expect(meanChipThickness(fz, x * D, D, 45) / fz).toBeCloseTo(hm, 10);
+  });
+
+  // The spec's golden cuts. The CoroMill 345 is Sandvik's own 63 mm 45° cutter
+  // (product 345-063C6-13M: DC 63.00, KAPR 45°, APMX 6.00).
+  it.each([
+    [
+      'CoroMill 345',
+      63,
+      6,
+      45,
+      45,
+      0.2,
+      75,
+      0.141421356237,
+      0.282842712475,
+      0.095762334298,
+    ],
+    ['side mill', 50, 3, 45, 10, 0.2, 56, 0.108326792058, 0.369253065102, 0.057883498375],
+    [
+      'high feed',
+      32,
+      1,
+      10,
+      20,
+      1.0,
+      43.342563639235,
+      0.1731310264,
+      5.775972226303,
+      0.107295452319,
+    ],
+  ])(
+    '%s: Dcap, hex, restore and hm',
+    (_name, dc, ap, kr, ae, fz, dcap, hex, back, hm) => {
+      const D = cuttingDiameterAtDepth(mmToNm(dc), mmToNm(ap), kr);
+      expect(D / 1_000_000).toBeCloseTo(dcap, 9);
+      expect(maxChipThickness(mmToNm(fz), mmToNm(ae), D, kr) / 1_000_000).toBeCloseTo(
+        hex,
+        11,
+      );
+      expect(restoringFeed(mmToNm(fz), mmToNm(ae), D, kr) / 1_000_000).toBeCloseTo(
+        back,
+        11,
+      );
+      expect(meanChipThickness(mmToNm(fz), mmToNm(ae), D, kr) / 1_000_000).toBeCloseTo(
+        hm,
+        11,
+      );
+    },
+  );
+
+  it('turns the CoroMill 345 at 1061 rev/min at Dcap, not 1263 at its tip', () => {
+    // Vc 250 at 6 mm deep: worked at 63 mm the outer edge would run 19% fast.
+    const D = cuttingDiameterAtDepth(mmToNm(63), mmToNm(6), 45);
+    expect(spindleSpeed(250, D as ReturnType<typeof mmToNm>, 'metric')).toBeCloseTo(
+      1061.032953946,
+      8,
+    );
+    expect(spindleSpeed(250, mmToNm(63), 'metric')).toBeCloseTo(1263.1344689833, 8);
+  });
+
+  it('is Dc exactly at 90°, whatever the depth', () => {
+    expect(cuttingDiameterAtDepth(mmToNm(10), mmToNm(30), 90)).toBe(mmToNm(10));
+  });
+
+  it('reads a 0° as the lead angle it almost certainly is', () => {
+    // An American lead angle is measured from the axis: a square shoulder is
+    // 0° lead and 90° entering. The app's refusal says the same.
+    expect(() => cuttingDiameterAtDepth(mmToNm(10), mmToNm(2), 0)).toThrow(
+      /lead angle of 0°/,
+    );
+  });
+
+  it.each([-5, 90.0001, 135, Number.NaN, Infinity])(
+    'refuses an entering angle of %f',
+    (kr) => {
+      expect(() => cuttingDiameterAtDepth(mmToNm(10), mmToNm(2), kr)).toThrow(
+        /more than 0° and no more than 90°/,
+      );
+      expect(() => chipThinning(mmToNm(1), mmToNm(10), kr)).toThrow(/entering angle/);
+    },
+  );
 });
 
 describe('invariants across the whole domain', () => {
@@ -234,11 +384,28 @@ describe('invariants across the whole domain', () => {
     );
   });
 
-  it('chip thickness never exceeds feed per tooth, for any engagement', () => {
+  it('a mean chip is never thicker than the maximum, nor that than fz × sin κr', () => {
+    // hm is the mean of the chip whose largest value is hex, over the arc the
+    // tooth cuts, so 0 < hm ≤ hex ≤ fz × sin κr at any width up to the diameter.
     fc.assert(
-      fc.property(fz, dc, fc.integer({ min: 1, max: 200_000 }), (f, d, ae) => {
-        expect(meanChipThickness(f, nm(ae), d)).toBeLessThanOrEqual(f + 1e-9);
-      }),
+      fc.property(
+        fz,
+        dc,
+        fc.double({ min: 0.001, max: 1, noNaN: true }),
+        fc.double({ min: 1, max: 90, noNaN: true }),
+        (f, d, share, kr) => {
+          const ae = share * d;
+          const hm = meanChipThickness(f, ae, d, kr);
+          const hex = maxChipThickness(f, ae, d, kr);
+          expect(hm).toBeGreaterThan(0);
+          expect(hm).toBeLessThanOrEqual(hex * (1 + 1e-12));
+          expect(hex).toBeLessThanOrEqual(
+            f * Math.sin((kr * Math.PI) / 180) * (1 + 1e-12),
+          );
+          // The restoring feed undoes the thinning exactly.
+          expect(restoringFeed(f, ae, d, kr) * (hex / f)).toBeCloseTo(f, 6);
+        },
+      ),
       { numRuns: 400 },
     );
   });
@@ -665,5 +832,70 @@ describe('inch units', () => {
     const drill = drillingMrr(vc, dc, fn, 'inch');
     const turn = turningMrr(vc, nm(Math.round(dc / 4)), fn, 'inch');
     expect(drill).toBeCloseTo(turn, 12);
+  });
+});
+
+/**
+ * Sandvik Coromant, "Entering angle and chip thickness in milling" (retrieved
+ * 2026-10-06, https://www.sandvik.coromant.com/en-us/knowledge/milling/entering-angle-and-chip-thickness):
+ * the feed per tooth for a maximum chip of 0.1, 0.15 and 0.2 mm at five
+ * entering angles, printed to two places, with the modification factors
+ * 1.0, 1.0, 1.1, 1.4 and 5.8. The rule-3 published check for the restoring
+ * feed: fz = hex / sin κr gives every printed figure.
+ */
+describe("Sandvik's entering-angle table", () => {
+  it.each([
+    [90, 1.0, [0.1, 0.15, 0.2]],
+    [75, 1.0, [0.1, 0.16, 0.21]],
+    [65, 1.1, [0.11, 0.17, 0.22]],
+    [45, 1.4, [0.14, 0.21, 0.28]],
+    [10, 5.8, [0.58, 0.86, 1.15]],
+  ] as const)('at %i°, factor %f: %o', (kr, factor, printed) => {
+    [0.1, 0.15, 0.2].forEach((hex, i) => {
+      // A full-width cut, so only the entering angle thins the chip, and the
+      // data sheet's feed is read as the chip it means.
+      const fz = restoringFeed(mmToNm(hex), mmToNm(10), mmToNm(10), kr) / 1_000_000;
+      expect(roundHalfEven(fz, 2)).toBe(printed[i]);
+    });
+    expect(roundHalfEven(1 / chipThinning(mmToNm(10), mmToNm(10), kr), 1)).toBe(factor);
+  });
+});
+
+describe('the thinning as an exact fraction, where one exists', () => {
+  const ratio = (r: { num: bigint; den: bigint } | null) =>
+    r === null ? null : [r.num, r.den];
+  const same = (r: { num: bigint; den: bigint } | null, num: bigint, den: bigint) =>
+    r !== null && r.num * den === num * r.den;
+
+  it('is (2√(ae(D − ae))/D)² at a square shoulder: 0.36 at a tenth of the diameter', () => {
+    expect(same(chipThinningSquared(1_000_000, 10_000_000, 90), 36n, 100n)).toBe(true);
+  });
+
+  it('carries sin² 45° = 1/2 and the exact Dcap: 16/81 for ae 10 on Dcap 90', () => {
+    expect(same(chipThinningSquared(10_000_000, 90_000_000, 45), 16n, 81n)).toBe(true);
+    // tan 45° is 1 exactly: 50 + 2 × 20 = 90 mm, not 90 plus float noise.
+    expect(cuttingDiameterAtDepth(mmToNm(50), mmToNm(20), 45)).toBe(90_000_000);
+  });
+
+  it('makes Dcap at 45° a whole number of nanometres at every depth', () => {
+    // Math.tan(π/4) is 0.9999999999999999: Dc 1, ap 1.1 would come to
+    // 3 200 000.0000000005 nm, and a fractional Dcap loses the exact tie rule.
+    for (let dc = 1; dc <= 60; dc++) {
+      for (let ap10 = 1; ap10 <= 200; ap10++) {
+        const D = cuttingDiameterAtDepth(mmToNm(dc), nm(ap10 * 100_000), 45);
+        expect(D).toBe(dc * 1_000_000 + 2 * ap10 * 100_000);
+      }
+    }
+  });
+
+  it('is sin² κr alone at full width, wherever that is rational', () => {
+    expect(same(chipThinningSquared(10_000_000, 13_464_101.6, 30), 1n, 4n)).toBe(true);
+    expect(same(chipThinningSquared(10_000_000, 13_464_101.6, 60), 3n, 4n)).toBe(true);
+  });
+
+  it('is null where sin² κr or Dcap is irrational', () => {
+    expect(ratio(chipThinningSquared(1_000_000, 10_000_000, 10))).toBeNull();
+    expect(ratio(chipThinningSquared(1_000_000, 13_464_101.6, 30))).toBeNull();
+    expect(ratio(chipThinningSquared(1_000_000, 10_000_000.5, 90))).toBeNull();
   });
 });

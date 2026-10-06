@@ -32,7 +32,7 @@ changes the answer to "what exists" or "what is next".
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
 | Pages built | 29 (28 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 727 passing |
+| Tests | 804 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
@@ -236,10 +236,23 @@ the headroom is for the chart and the drill chart that follow.
 
 ### Feeds and speeds
 
-`/machining/feeds-and-speeds-calculator` covers milling AND turning, sharing unit
-handling and display, with turning using its OWN removal-rate formula rather
-than the milling one relabelled — seven separate apps in the review corpus drew
-turning complaints.
+`/machining/feeds-and-speeds-calculator` covers milling, turning, drilling and
+boring, sharing unit handling and display, with turning using its OWN
+removal-rate formula rather than the milling one relabelled — seven separate apps
+in the review corpus drew turning complaints. (This said "milling and turning"
+until 2026-10-07; drilling and boring arrived with D74.)
+
+**The chip, and the entering angle (2026-10-07, D103).** Milling shows the
+maximum chip hex (Sandvik Coromant) and the exact mean chip hm (Kennametal's
+patent formula), takes an entering angle κr and works the spindle speed and the
+chip at Dcap = Dc + 2 × ap / tan κr, and shows the feed that restores a thinned
+chip, never applying it. The mean chip used to be the approximation
+fz × √(ae/Dc), which put slotting power about 11% low. The page now follows
+the D72 split: `calc/feeds-speeds-display.ts` builds every figure and the
+working as strings, `tests/calc/feeds-speeds-display.test.ts` checks them, and
+the page computes nothing. A chip exactly on a rounding tie is rounded from its
+exact square (390 of 2.1 million 45° cuts had printed a step out). Tapping is
+still to come (roadmap W5).
 
 IT HAS NO MATERIAL DROPDOWN, and that is the point. Cutting speed is not a
 property of a material: it is a property of a material AND an insert substrate,
