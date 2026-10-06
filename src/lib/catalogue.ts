@@ -267,6 +267,17 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'calculator',
   },
   {
+    href: '/machining/bolt-circle-calculator',
+    title: 'Bolt circle — every hole from the datum',
+    short: 'Bolt circle',
+    summary:
+      'X and Y for every hole of a bolt circle, partial arc or turned grid, with hole-to-hole moves that add up to the positions exactly, a drawing and a CSV.',
+    detail:
+      'Checked against Omni Calculator’s published example. Works offline once loaded.',
+    vertical: 'machining',
+    kind: 'calculator',
+  },
+  {
     href: '/machining/drill-size-chart',
     title: 'Drill size chart — the whole index, on one sheet',
     summary:

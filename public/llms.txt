@@ -341,6 +341,31 @@ Jurisdiction: none. ISO metric and Unified inch.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
+### Bolt circle calculator
+URL: https://quickoper.com/machining/bolt-circle-calculator
+Computes: X and Y from the datum for every hole of a bolt circle, a partial arc,
+or a rectangular grid turned about its first hole; the hole-to-hole
+(incremental) moves; the angle between holes and the chord; a drawing; a CSV.
+Inputs: bolt circle diameter, number of holes (1-500), start angle, arc (blank
+for a whole circle), direction (counterclockwise or clockwise), centre X and Y;
+or columns, rows, X and Y spacing, turn angle, first hole X and Y. Millimetres
+or inches.
+Key figures: X = Xc + R x cos(theta), Y = Yc + R x sin(theta), theta = theta0
++/- (n - 1) x pitch, pitch = 360/N degrees for a whole circle or arc/(N - 1) for
+a partial arc, chord = D x sin(pitch/2). 0 degrees is at 3 o'clock, counting
+counterclockwise; a grid is numbered row by row. Six holes are exactly R apart,
+four R x sqrt(2), three R x sqrt(3). Every figure is rounded once, half-even,
+to 4 decimals, and each move is the difference of two positions AS SHOWN, so
+the moves add up to every position exactly; moves rounded one at a time drift,
+up to 0.0007 in over 500 holes on a 6 in circle. Five holes on a 100 mm circle
+from 0 degrees give (50.0000, 0.0000), (15.4508, 47.5528), (-40.4508, 29.3893),
+(-40.4508, -29.3893), (15.4508, -47.5528), the same as Omni Calculator's
+published example; the move from hole 3 to 4 is -58.7786 while the chord is
+58.7785.
+Jurisdiction: none. Geometry.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/finance/verify
+
 ### Drill size chart (metric, fractional, number and letter)
 URL: https://quickoper.com/machining/drill-size-chart
 Computes: nothing on demand. It PUBLISHES four drill series as printable tables,

@@ -1,0 +1,775 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+/**
+ * Bolt circle and hole grid calculator.
+ *
+ * ─── The one decision worth reading ─────────────────────────────────────────
+ *
+ * The hole-to-hole moves are the differences of the positions AS SHOWN, not
+ * the true distances rounded one at a time. A machinist keys the moves into an
+ * incremental program and expects to land on the table's positions; separately
+ * rounded moves wander off them (0.0007 in over 500 holes on a 6 in circle).
+ * So a move can read one step away from the chord beside it — Omni's own
+ * example shows it, 58.7785 against a −58.7786 move — and that is correct.
+ * The arithmetic lives in `calc/hole-pattern.ts` and `hole-pattern-display.ts`;
+ * this page maps the display object onto the DOM and computes nothing.
+ */
+
+const RETRIEVED = '2026-10-06';
+
+const SOURCES = [
+  {
+    label:
+      'Omni Calculator — Bolt Circle Calculator: worked example, 5 holes on a 50 mm radius from 0°, positions to four decimals',
+    url: 'https://www.omnicalculator.com/math/bolt-circle',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'International yard and pound agreement (1959) — 1 inch = 25.4 mm exactly. NIST Special Publication 811',
+    url: 'https://www.nist.gov/pml/special-publication-811',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      "Niven's theorem — the only rational sines of rational angles in degrees are 0, ±1/2 and ±1",
+    url: 'https://en.wikipedia.org/wiki/Niven%27s_theorem',
+    retrieved: RETRIEVED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'Where is 0°, and which way does it count?',
+    a: 'At 3 o’clock, counting counterclockwise, with X to the right and Y up: the same convention as the sine and cosine in every textbook. Set the direction to clockwise and the holes run the other way from the same first hole. Hole 1 sits at the start angle, so a start of 90° puts it at 12 o’clock. Controls and drawings differ, so check hole 1 and hole 2 against yours before cutting.',
+  },
+  {
+    q: 'Why does a hole-to-hole move read one step more than the gap between the holes?',
+    a: 'Because a move here is the difference of two positions as the table shows them, each rounded to four decimals on its own. Five holes on a 100 mm circle are 58.7785 mm apart, yet the move from hole 3 to hole 4 reads −58.7786, the difference of 29.3893 and −29.3893. Keyed into an incremental program, those moves land on every position in the table exactly. Moves rounded one at a time drift instead: over 500 holes on a 6 inch circle, by up to 0.0007 inch.',
+  },
+  {
+    q: 'How do I lay out a partial bolt circle?',
+    a: 'Enter the arc from the first hole to the last. N holes over an arc have N − 1 spaces, so five holes over 90° are 22.5° apart and the last one lands on 90°. Leave the arc blank for a whole circle: a 360° arc is refused, because its last hole would sit on top of the first.',
+  },
+  {
+    q: 'Can the circle sit somewhere other than the datum?',
+    a: 'Yes. Give its centre, or a grid’s first hole, as X and Y from the datum. Every position in the table is then from the datum, ready to use as absolute coordinates, and the first move runs from the datum to hole 1. An offset that is a whole number of display steps moves every shown position by exactly that amount.',
+  },
+  {
+    q: 'How many holes can it lay out?',
+    a: 'Up to 500 in one pattern, and nothing more than 100 m from the datum. Every length is carried in whole nanometres, so no position drifts however large the pattern, and every figure is shown to four decimals.',
+  },
+  {
+    q: 'Does this work offline?',
+    a: 'Yes. Every calculation runs in your browser and nothing you type is sent anywhere. Once the page has loaded it keeps working without a connection.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Bolt circle calculator',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/machining/bolt-circle-calculator`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'X and Y for every hole of a bolt circle, partial arc or turned grid, from the datum, with hole-to-hole moves that add up exactly, the chord, a drawing and a CSV.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Bolt circle calculator',
+        item: `${SITE.url}/machining/bolt-circle-calculator`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+
+const field =
+  'border-line-strong bg-surface text-ink focus-visible:outline-brand w-full rounded-control border px-3 py-2 font-numeric text-base focus-visible:outline-2 focus-visible:outline-offset-2';
+const label = 'block text-sm font-semibold text-ink-soft';
+const hint = 'text-ink-mute mt-1 text-xs';
+---
+
+<BaseLayout
+  title="Bolt circle calculator"
+  description="X and Y for every hole of a bolt circle, partial arc or turned grid, from the datum, with hole-to-hole moves that add up exactly. Shows the chord, a drawing, the formula and the working, and downloads as CSV."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Bolt circle
+    </nav>
+
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      Bolt circle calculator
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      Every hole of a bolt circle, a partial arc or a turned grid, as X and Y from the
+      datum, with hole-to-hole moves that add up to the positions exactly.
+    </p>
+
+    <!-- ── Calculator ──────────────────────────────────────────────────── -->
+    <section class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border">
+      <form id="bc-form" class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
+        <fieldset class="col-span-2">
+          <legend class={label}>Pattern</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="kind" value="circle" checked /> Bolt circle</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="kind" value="grid" /> Grid</label
+            >
+          </div>
+        </fieldset>
+        <fieldset class="col-span-2">
+          <legend class={label}>Units</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="mm" checked /> Millimetres</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="in" /> Inches</label
+            >
+          </div>
+        </fieldset>
+
+        <!-- Bolt circle -->
+        <div data-kind="circle">
+          <label class={label} for="bc-diameter">Diameter</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-diameter"
+            name="diameter"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            value="100"
+          />
+          <p class={hint}>Of the circle the hole centres sit on.</p>
+        </div>
+        <div data-kind="circle">
+          <label class={label} for="bc-holes">Holes</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-holes"
+            name="holes"
+            type="number"
+            inputmode="numeric"
+            step="1"
+            min="1"
+            max="500"
+            value="6"
+          />
+          <p class={hint}>Up to 500.</p>
+        </div>
+        <div data-kind="circle">
+          <label class={label} for="bc-start">Start angle</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-start"
+            name="start"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            value="0"
+          />
+          <p class={hint}>Hole 1, in degrees from 3 o’clock.</p>
+        </div>
+        <div data-kind="circle">
+          <label class={label} for="bc-arc">Arc</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-arc"
+            name="arc"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            placeholder="whole"
+          />
+          <p class={hint}>First hole to last. Blank for a whole circle.</p>
+        </div>
+        <fieldset class="col-span-2" data-kind="circle">
+          <legend class={label}>Direction</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="direction" value="ccw" checked /> Counterclockwise</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="direction" value="cw" /> Clockwise</label
+            >
+          </div>
+        </fieldset>
+        <div data-kind="circle">
+          <label class={label} for="bc-cx">Centre X</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-cx"
+            name="cx"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            value="0"
+          />
+        </div>
+        <div data-kind="circle">
+          <label class={label} for="bc-cy">Centre Y</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-cy"
+            name="cy"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            value="0"
+          />
+        </div>
+
+        <!-- Grid -->
+        <div data-kind="grid" class="hidden">
+          <label class={label} for="bc-columns">Columns</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-columns"
+            name="columns"
+            type="number"
+            inputmode="numeric"
+            step="1"
+            min="1"
+            value="3"
+          />
+          <p class={hint}>Along X before turning.</p>
+        </div>
+        <div data-kind="grid" class="hidden">
+          <label class={label} for="bc-rows">Rows</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-rows"
+            name="rows"
+            type="number"
+            inputmode="numeric"
+            step="1"
+            min="1"
+            value="2"
+          />
+          <p class={hint}>Up to 500 holes in all.</p>
+        </div>
+        <div data-kind="grid" class="hidden">
+          <label class={label} for="bc-sx">Spacing X</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-sx"
+            name="sx"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            value="10"
+          />
+        </div>
+        <div data-kind="grid" class="hidden">
+          <label class={label} for="bc-sy">Spacing Y</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-sy"
+            name="sy"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            value="20"
+          />
+        </div>
+        <div data-kind="grid" class="hidden">
+          <label class={label} for="bc-turn">Turn</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-turn"
+            name="turn"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            value="0"
+          />
+          <p class={hint}>Degrees, about the first hole.</p>
+        </div>
+        <div data-kind="grid" class="hidden">
+          <label class={label} for="bc-fx">First hole X</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-fx"
+            name="fx"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            value="0"
+          />
+        </div>
+        <div data-kind="grid" class="hidden">
+          <label class={label} for="bc-fy">First hole Y</label>
+          <input
+            class={`${field} mt-1`}
+            id="bc-fy"
+            name="fy"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            value="0"
+          />
+        </div>
+      </form>
+
+      <output
+        id="bc-result"
+        class="border-line block border-t px-5 py-5"
+        for="bc-form"
+        aria-live="polite"></output>
+    </section>
+
+    <p id="bc-error" class="text-negative mt-3 hidden text-sm" role="alert"></p>
+
+    <!-- ── The holes ───────────────────────────────────────────────────── -->
+    <section class="mt-10">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="font-display text-ink text-2xl font-semibold">Every hole</h2>
+        <button
+          id="bc-csv"
+          type="button"
+          class="border-line-strong text-ink-soft hover:text-brand focus-visible:outline-brand rounded-control border px-3 py-1 font-mono text-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >Download CSV</button
+        >
+      </div>
+      <p class="text-ink-soft mt-2 max-w-prose">
+        Positions are from the datum. Each move runs from the hole before, and the first
+        from the datum, so the moves work as an incremental program and the positions as
+        an absolute one.
+      </p>
+      <div class="border-line rounded-panel mt-4 overflow-x-auto border">
+        <table class="w-full text-sm">
+          <thead class="bg-sunken text-ink-mute">
+            <tr id="bc-head"></tr>
+          </thead>
+          <tbody id="bc-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── How this was calculated ─────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        How this was calculated
+      </h2>
+      <div
+        id="bc-working"
+        class="border-line bg-sunken rounded-panel font-numeric mt-4 overflow-x-auto border p-4 text-sm leading-relaxed whitespace-pre-wrap"
+      >
+      </div>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        Lengths are carried in whole nanometres and every figure is rounded once, half to
+        even, from the value as computed. Angles are kept exact to a millionth of a
+        degree, and the multiples of 30° and 45° take their sines and cosines from a
+        table, exact wherever they are 0, ±1/2 or ±1.
+      </p>
+    </section>
+
+    <!-- ── Explanation ─────────────────────────────────────────────────── -->
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        Where every hole goes, and how to check it
+      </h2>
+      <p>
+        A bolt circle is a ring of holes, evenly spaced, on a circle whose diameter the
+        drawing gives. The flange, the hub, the motor face and the wheel all use one. Each
+        hole is a point on that circle, so its position is plain trigonometry: X is the
+        radius times the cosine of the hole's angle, Y the radius times its sine, plus
+        wherever the circle's centre sits. Hole 1 is at the start angle and each hole
+        after it one pitch further on, and the pitch is 360° divided by the number of
+        holes.
+      </p>
+      <p>
+        The arithmetic is not the hard part. Conventions are. This page puts 0° at 3
+        o'clock and counts counterclockwise, with X to the right and Y up, which is the
+        textbook convention and the one Omni Calculator's bolt circle page uses too. Some
+        drawings start at 12 o'clock and some programs count clockwise, and the same six
+        holes then come out as a different list. So the start angle and the direction are
+        settings, and the drawing beside the table numbers the holes, so hole 1 and hole 2
+        can be checked by eye before anything is cut.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Check it with calipers: the chord
+      </h3>
+      <p>
+        The straight-line distance between neighbouring holes is the chord, D × sin(180° ÷
+        N), and three cases are worth knowing by heart. Six holes are 60° apart and
+        exactly one radius apart: on a 100 mm circle, 50.0000 mm centre to centre. Four
+        holes are 90° apart and R√2 apart, 70.7107 mm on the same circle. Three holes are
+        120° apart and R√3 apart, 86.6025 mm. Measuring across two neighbouring holes is
+        the quickest check that a pattern came out the size it should.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Why a move can read one step more than the gap
+      </h3>
+      <p>
+        Take Omni's own example, five holes on a 100 mm circle. Holes 3 and 4 are a chord
+        apart, 100 × sin 36° = 58.7785 mm. But the table shows hole 3 at Y 29.3893 and
+        hole 4 at Y −29.3893, each rounded to four decimals on its own, and the move
+        between them here reads <strong>−58.7786</strong>.
+      </p>
+      <p>
+        That is deliberate. A move on this page is the difference of two positions as
+        shown, so a machinist who keys the moves into an incremental program lands exactly
+        on every position in the table, however many holes there are. The other way, each
+        move rounded from the true distance, drifts. Over 500 holes on a 6 inch circle,
+        those separately rounded moves wander up to 0.0007 inch from the positions the
+        table prints. Nothing here can drift, because every figure is a whole number of
+        display steps before any move is worked out.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Partial arcs: N holes, N − 1 spaces
+      </h3>
+      <p>
+        A pattern that covers part of a circle is set by its arc, from the first hole to
+        the last. Five holes over 90° have four spaces between them, so they are 22.5°
+        apart and the fifth lands on 90°. Dividing the arc by the number of holes instead
+        gives 18°, and the last hole stops at 72°. A 360° arc is refused: its last hole
+        would sit on top of the first. A whole circle is the arc left blank.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">Grids, turned</h3>
+      <p>
+        A rectangular grid is set from its first hole: columns along X at one spacing,
+        rows up Y at another, numbered row by row. Turning it rotates the whole grid about
+        that first hole, so column i and row j land at X = i × sx × cos φ − j × sy × sin φ
+        and Y = i × sx × sin φ + j × sy × cos φ from it. Turned 30°, a 3 by 2 grid at 10
+        by 20 puts its last hole at X 7.3205, Y 27.3205.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        A worked example, checked against a published one
+      </h3>
+      <p>
+        Five holes on a 100 mm circle from 0° are 72° apart, at 0°, 72°, 144°, 216° and
+        288°. Hole 2 is at X = 50 × cos 72° = 15.4508 and Y = 50 × sin 72° = 47.5528. The
+        five positions this page gives are 50.0000, 0.0000; 15.4508, 47.5528; −40.4508,
+        29.3893; −40.4508, −29.3893; and 15.4508, −47.5528. Omni Calculator publishes the
+        same example and prints the same five pairs to the last digit, and a test on this
+        site holds that agreement.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">Exact where it matters</h3>
+      <p>
+        On a 100.0002 mm circle, hole 2 of six sits at X = 25.00005 mm, exactly halfway
+        between two four-decimal figures. This site rounds a tie to the even figure,
+        25.0000. A computer's cosine of 60° is 0.5000000000000001, a hair over a half, and
+        it would have printed 25.0001. Niven's theorem says that for any angle in whole or
+        fractional degrees, the only sines and cosines that are fractions at all are 0,
+        ±1/2 and ±1, which happen only at multiples of 30°. Only those angles can put a
+        hole exactly on a tie, so they take their values from a table. The multiples of
+        45° do too, so a hole at 45° always shows the same X and Y.
+      </p>
+    </section>
+
+    <!-- ── App ─────────────────────────────────────────────────────────── -->
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-12 border p-5"
+    >
+      <h2 class="font-display text-ink text-xl font-semibold">
+        This, but in your pocket on the shop floor
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        The same arithmetic is going into a metric-first Android app: bolt circles and
+        grids, thread and tap drill, feeds and speeds, offline, one payment, no
+        subscription. It is in development and this page is free forever either way.
+      </p>
+      <a
+        class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+        href="/machining/app">What it will do, and what it will cost &rarr;</a
+      >
+    </section>
+
+    <!-- ── FAQ ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        The positions are geometry and need no standard. Omni Calculator is cited as the
+        published example this page is tested against, and Niven's theorem for why only
+        some angles are worked from a table.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated positions. Controls and drawings differ in where they put 0°
+      and which way they count, so check hole 1 and hole 2 against your drawing and your
+      machine before cutting anything you cannot scrap.
+    </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each showing its working"
+      links={[
+        {
+          href: '/machining/tap-drill-calculator',
+          label: 'Tap drill calculator',
+          note: 'the drill for each threaded hole, and the engagement it really gives',
+        },
+        {
+          href: '/machining/drill-size-chart',
+          label: 'Drill size chart',
+          note: 'every metric, fractional, number and letter drill on one sheet',
+        },
+      ]}
+    />
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    patternDisplay,
+    type DisplayUnits,
+    type PatternDisplay,
+  } from '../../lib/calc/hole-pattern-display';
+
+  /** Resolve an element or fail loudly at load, as the tap drill page does. */
+  function must<T extends HTMLElement>(id: string): T {
+    const el = document.getElementById(id);
+    if (el === null) throw new Error(`bolt circle: #${id} is missing from the page`);
+    return el as T;
+  }
+
+  const form = must<HTMLFormElement>('bc-form');
+  const resultEl = must('bc-result');
+  const headEl = must('bc-head');
+  const tableEl = must('bc-table');
+  const workingEl = must('bc-working');
+  const errorEl = must('bc-error');
+  const csvBtn = must('bc-csv');
+
+  let csvRows: readonly (readonly string[])[] = [];
+
+  const value = (name: string): string =>
+    (form.elements.namedItem(name) as HTMLInputElement).value.trim();
+  const num = (name: string): number => Number(value(name));
+  const pick = (name: string): string =>
+    (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
+
+  /** Show the fields for the chosen pattern, and only those. */
+  function showFields(kind: string): void {
+    form.querySelectorAll<HTMLElement>('[data-kind]').forEach((el) => {
+      el.classList.toggle('hidden', el.dataset['kind'] !== kind);
+    });
+  }
+
+  /**
+   * The drawing, from the figure the display module worked out.
+   *
+   * Machine Y runs up and SVG y runs down, so every y is negated here, once.
+   * Only numbers reach the markup; no text the user typed does.
+   */
+  function drawing(d: PatternDisplay): string {
+    const f = d.figure;
+    const xs = f.holes.map((h) => h.x).concat(f.origin.x);
+    const ys = f.holes.map((h) => -h.y).concat(-f.origin.y);
+    if (f.circle !== null) {
+      xs.push(f.circle.cx - f.circle.r, f.circle.cx + f.circle.r);
+      ys.push(-f.circle.cy - f.circle.r, -f.circle.cy + f.circle.r);
+    }
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const span = Math.max(maxX - minX, maxY - minY, 1e-6);
+    const pad = span * 0.12;
+    const dot = span * 0.025;
+    const font = span * 0.055;
+    const box = `${minX - pad} ${minY - pad} ${maxX - minX + 2 * pad} ${maxY - minY + 2 * pad}`;
+    const many = f.holes.length > 24;
+    const parts: string[] = [];
+    if (f.circle !== null) {
+      parts.push(
+        `<circle cx="${f.circle.cx}" cy="${-f.circle.cy}" r="${f.circle.r}" fill="none" stroke="currentColor" stroke-width="${span * 0.004}" stroke-dasharray="${span * 0.02} ${span * 0.015}" />`,
+      );
+    }
+    const o = { x: f.origin.x, y: -f.origin.y };
+    parts.push(
+      `<path d="M ${o.x - dot * 2} ${o.y} H ${o.x + dot * 2} M ${o.x} ${o.y - dot * 2} V ${o.y + dot * 2}" stroke="currentColor" stroke-width="${span * 0.004}" />`,
+    );
+    f.holes.forEach((h, i) => {
+      const cls = i === 0 ? 'text-brand' : 'text-ink';
+      parts.push(
+        `<circle class="${cls}" cx="${h.x}" cy="${-h.y}" r="${dot}" fill="currentColor" />`,
+      );
+      if (!many || i < 2) {
+        parts.push(
+          `<text class="${cls}" x="${h.x + dot * 1.4}" y="${-h.y - dot * 1.4}" font-size="${font}" fill="currentColor">${h.n}</text>`,
+        );
+      }
+    });
+    return `<svg class="text-ink-mute mx-auto block h-auto w-full max-w-xs" viewBox="${box}" role="img" aria-label="Drawing of the hole pattern, hole 1 highlighted">${parts.join('')}</svg>`;
+  }
+
+  function render(): void {
+    const kind = pick('kind');
+    const units = pick('units') as DisplayUnits;
+    showFields(kind);
+    errorEl.classList.add('hidden');
+    try {
+      // Everything below is presentation. The numbers, their units and their
+      // rounding come from `calc/hole-pattern-display.ts`, which the tests
+      // check as strings.
+      const arc = value('arc');
+      const d: PatternDisplay =
+        kind === 'grid'
+          ? patternDisplay({
+              kind: 'grid',
+              units,
+              columns: num('columns'),
+              rows: num('rows'),
+              spacingX: num('sx'),
+              spacingY: num('sy'),
+              turnDeg: num('turn'),
+              firstX: num('fx'),
+              firstY: num('fy'),
+            })
+          : patternDisplay({
+              kind: 'circle',
+              units,
+              diameter: num('diameter'),
+              holes: num('holes'),
+              startDeg: num('start'),
+              arcDeg: arc === '' ? null : Number(arc),
+              direction: pick('direction') === 'cw' ? 'cw' : 'ccw',
+              centreX: num('cx'),
+              centreY: num('cy'),
+            });
+
+      const facts = d.summary
+        .map(
+          (s) => `<div>
+            <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">${s.label}</p>
+            <p class="mt-1 font-numeric text-2xl font-semibold text-ink">${s.value}</p>
+          </div>`,
+        )
+        .join('');
+      resultEl.innerHTML = `
+        <div class="grid gap-6 sm:grid-cols-2">
+          <div class="grid content-start gap-4">${facts}</div>
+          <div>${drawing(d)}</div>
+        </div>`;
+
+      const circle = kind === 'circle';
+      const cols = [
+        'Hole',
+        ...(circle ? ['Angle °'] : ['Col', 'Row']),
+        `X ${units}`,
+        `Y ${units}`,
+        `Move X`,
+        `Move Y`,
+      ];
+      headEl.innerHTML = cols
+        .map(
+          (c, i) =>
+            `<th class="${i === 0 ? 'px-3 py-2 text-left font-mono text-xs tracking-wide uppercase' : 'px-3 py-2 text-right font-mono text-xs tracking-wide uppercase'}">${c}</th>`,
+        )
+        .join('');
+      tableEl.innerHTML = d.rows
+        .map((r) => {
+          const cells = [
+            ...(circle ? [r.angle ?? ''] : [String(r.column ?? ''), String(r.row ?? '')]),
+            r.x,
+            r.y,
+            r.dx,
+            r.dy,
+          ];
+          return `<tr class="${r.n === 1 ? 'bg-brand-soft' : ''}">
+            <td class="border-line border-t px-3 py-2 font-semibold">${r.n}</td>
+            ${cells.map((c) => `<td class="border-line border-t px-3 py-2 text-right font-numeric">${c}</td>`).join('')}
+          </tr>`;
+        })
+        .join('');
+      csvRows = d.csv;
+      workingEl.textContent = d.working;
+    } catch (err) {
+      errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
+      errorEl.classList.remove('hidden');
+      resultEl.innerHTML = '';
+      headEl.innerHTML = '';
+      tableEl.innerHTML = '';
+      workingEl.textContent = '';
+      csvRows = [];
+    }
+  }
+
+  form.addEventListener('input', render);
+  // A radio fires `input` before `change`; render on both so the fields shown
+  // and the answer always match the controls (the tap drill page's lesson, #92).
+  form.addEventListener('change', render);
+  csvBtn.addEventListener('click', () => {
+    if (csvRows.length === 0) return;
+    const blob = new Blob([csvRows.map((r) => r.join(',')).join('\n') + '\n'], {
+      type: 'text/csv',
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'hole-positions.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  render();
+</script>

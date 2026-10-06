@@ -30,7 +30,7 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 27 (26 substantive — `/404` is not) |
+| Pages built | 28 (27 substantive — `/404` is not) |
 | Working calculators | 4 |
 | Tests | 498 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
@@ -274,6 +274,26 @@ M16, M20, M24 and M30 have no drill on it, and neither does the 17/32 in a
 drill calculator searches the same catalogue and stops at the same place — that
 ceiling is worth revisiting, and it is a `drill-series.ts` change, not a page one.
 
+### Bolt circles and grids
+
+`/machining/bolt-circle-calculator` (2026-10-06, D100) lays out a bolt circle,
+a partial arc or a turned grid as X and Y from the datum, with the hole-to-hole
+moves, the chord, a drawing and a CSV. The same vanilla-TypeScript island
+pattern as the tap drill page: `calc/hole-pattern.ts` places the holes,
+`calc/hole-pattern-display.ts` turns them into the strings the page shows,
+and `tests/calc/hole-pattern-display.test.ts` checks those strings.
+
+- **The published check (rule 3):** Omni Calculator's worked example, 5 holes
+  on a 50 mm radius, all ten coordinates to four decimals.
+- **Moves are differences of the positions as shown**, in whole display steps,
+  so in incremental mode they land on every position exactly. Separately
+  rounded moves would drift up to 0.0007 in over 500 holes on a 6 in circle.
+- **Exact angles where they can matter:** the multiples of 30° and 45° come
+  from a table (Niven's theorem), so a tie such as 25.00005 mm is rounded
+  half-even rather than decided by float noise.
+- Written from the research spec, then cross-checked against the Android
+  core's tests (Gate 7): conventions and figures agree.
+
 ### The conversion surface
 
 `/machining/app` describes the app; `/apps` is the site-level index linked from
@@ -348,7 +368,7 @@ confirms it, so `MAX_PENDING` is 1.
 
 ## Next
 
-**The content threshold is met.** The build produces 27 pages, of which 26 are
+**The content threshold is met.** The build produces 28 pages, of which 27 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -402,7 +422,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **26** — none to go |
+| 15+ substantive pages | **27** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |
