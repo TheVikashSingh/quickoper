@@ -922,6 +922,15 @@ describe('tapping: the feed is the pitch', () => {
     expect(roundHalfEven(perMin(m12, 25.4e6), 4)).toBe(34.4488);
   });
 
+  it("gives a 3/4-10 at S200 508 mm/min, 20 in/min (the spec's golden table)", () => {
+    // calculations.md §3, worked in Python with decimal arithmetic; the spec
+    // attributes "20." to Haas, whose figure this site did not find in the
+    // guide's text, so it is cited to the spec here.
+    const f = tappingFeed(200, { kind: 'tpi', tpi: 10 });
+    expect(perMin(f, 1e6)).toBe(508);
+    expect(perMin(f, 25.4e6)).toBe(20);
+  });
+
   it("keeps an inch tap's count: 1/13 in stays 25 400 000 / 13 nm", () => {
     expect(tapPitch({ kind: 'tpi', tpi: 13 })).toEqual({ num: 25_400_000, den: 13 });
     // The pipe taps' 11.5 threads per inch, exactly.
