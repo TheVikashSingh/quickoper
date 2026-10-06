@@ -595,3 +595,80 @@ export function meanChipThickness(
   const x = aeNm / diameterNm;
   return (fzNm * sinKappa(kappaDeg) * x * 2) / Math.acos(1 - 2 * x);
 }
+
+// ─── Tapping: the feed is the pitch ─────────────────────────────────────────
+//
+// `calculations.md` §3, "Tapping: the feed is the pitch". Sandvik Coromant's
+// tapping formulas (threading formulas page, images read 2026-10-06):
+//
+//     n  = vc × 1000 / (π × D)     metric     n = vc × 12 / (π × D)     inch
+//     vf = P × n
+//
+// with D the tap's nominal diameter and P its pitch. The page's definitions
+// call the pitch p and the power P; a feed of power times speed means
+// nothing, so the P in the feed is the pitch.
+//
+// A control is given S as a whole number of rev/min, and in synchronised
+// (rigid) tapping the feed must be the pitch times the speed the spindle
+// really turns at. Haas's G84 guide works every example that way — "S500",
+// then "F = P*RPM = 1.75*500" — and says F and S "work together to time the
+// Z-Axis feed movement with the spindle position". So vf is worked from S, the
+// rounded n, and F ÷ S is the pitch exactly. Worked from n instead, an
+// M10 × 1.5 at 10 m/min would show S318 beside F477.4648: a 1.5015 mm thread.
+
+/**
+ * A tap's thread: a metric pitch in whole nanometres, or an inch tap's
+ * threads per inch, kept as the count it is. 1/TPI inch is a whole number of
+ * nanometres only when TPI divides 25 400 000 (20 does, 13 does not).
+ */
+export type TapThread =
+  | { readonly kind: 'pitch'; readonly pitchNm: Nanometres }
+  | { readonly kind: 'tpi'; readonly tpi: number };
+
+/** An exact length or rate, num / den nanometres (per minute, for a rate). */
+export interface Ratio {
+  readonly num: number;
+  readonly den: number;
+}
+
+/**
+ * Threads per inch as a whole number over a power of ten: 13 is 13/1, 11.5
+ * (the 1 to 2 inch pipe taps) is 115/10. More than three decimals is refused
+ * as a slip; a count is never that fine.
+ */
+function tpiRatio(tpi: number): Ratio {
+  if (!Number.isFinite(tpi) || tpi <= 0) {
+    throw new RangeError('Enter the threads per inch as a number above zero.');
+  }
+  for (const scale of [1, 10, 100, 1000]) {
+    const whole = Math.round(tpi * scale);
+    if (Math.abs(whole - tpi * scale) < 1e-9 * scale) return { num: whole, den: scale };
+  }
+  throw new RangeError('Threads per inch has more than three decimals: check the count.');
+}
+
+/** The pitch as an exact fraction of nanometres: P / 1, or 25 400 000 / TPI. */
+export function tapPitch(thread: TapThread): Ratio {
+  if (thread.kind === 'pitch') {
+    assertPositive('pitchNm', thread.pitchNm);
+    return { num: thread.pitchNm, den: 1 };
+  }
+  const t = tpiRatio(thread.tpi);
+  return { num: NM_PER_INCH * t.den, den: t.num };
+}
+
+/**
+ * The synchronised tapping feed, nm/min, exactly: vf = P × S.
+ *
+ * `spindleRpm` is S, the whole rev/min the control is given — never the
+ * unrounded n.
+ */
+export function tappingFeed(spindleRpm: number, thread: TapThread): Ratio {
+  if (!Number.isInteger(spindleRpm) || spindleRpm < 1) {
+    throw new RangeError(
+      `S must be a whole number of rev/min, 1 or more, got ${spindleRpm}`,
+    );
+  }
+  const p = tapPitch(thread);
+  return { num: spindleRpm * p.num, den: p.den };
+}

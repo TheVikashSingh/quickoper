@@ -40,12 +40,16 @@ import {
   spindleSpeed,
   SQUARE_SHOULDER_DEG,
   tableFeed,
+  tapPitch,
+  tappingFeed,
   turningMrr,
+  type Ratio,
+  type TapThread,
   type UnitSystem,
 } from './feeds-speeds';
 import { inchToNm, mmToNm, nm, type Nanometres } from './tap-drill';
 
-export type Operation = 'milling' | 'turning' | 'drilling' | 'boring';
+export type Operation = 'milling' | 'turning' | 'drilling' | 'boring' | 'tapping';
 
 export interface FeedsInput {
   readonly op: Operation;
@@ -65,6 +69,11 @@ export interface FeedsInput {
   readonly d0: number;
   /** Milling: the entering angle in degrees; null (blank) for a square shoulder. */
   readonly kappa: number | null;
+  /**
+   * Tapping: a metric tap's pitch in millimetres, or an inch tap's threads per
+   * inch — whichever units the page is in, since a thread is what it is.
+   */
+  readonly thread: { readonly kind: 'pitch' | 'tpi'; readonly value: number };
 }
 
 export interface Stat {
@@ -85,14 +94,18 @@ export interface FeedsDisplay {
   } | null;
   /** The "how this was calculated" block, verbatim. */
   readonly working: string;
-  /** What the power panel needs, unrounded. */
+  /**
+   * What the power panel needs, unrounded. Null when tapping: Sandvik prints
+   * tapping torque and power from a kc the form does not ask for, so there is
+   * no power line at all rather than an "unavailable" one (§3).
+   */
   readonly power: {
     readonly mrrCm3: number;
     /** The chip thickness the Kienzle force takes, nm. */
     readonly chipNm: number;
     /** How the power panel names that chip. */
     readonly chipLabel: string;
-  };
+  } | null;
 }
 
 /** Display steps: 0.0001 of the unit, in nanometres of it. Both exact. */
@@ -131,6 +144,11 @@ export function stepsOfSquare(num: bigint, den: bigint, units: UnitSystem): numb
       return Number(m);
     }
   }
+}
+
+/** Whole display steps of an exact fraction of nanometres: half-even, ties exact. */
+export function stepsOfRatio(r: Ratio, units: UnitSystem): number {
+  return Number(halfEvenDivide(BigInt(r.num), BigInt(r.den) * BigInt(STEP_NM[units])));
 }
 
 /** A plain number at four fixed places: rev/min, cm³/min. */
@@ -201,7 +219,83 @@ const DIAMETER_WHAT: Readonly<Record<Operation, string>> = {
   turning: 'the workpiece diameter',
   drilling: 'the drill diameter',
   boring: 'the final bore',
+  tapping: 'the tap diameter',
 };
+
+/**
+ * Tapping: S from the tap's cutting speed and nominal diameter, and the feed
+ * worked from S, so F ÷ S is the pitch exactly (calculations.md §3).
+ *
+ * The fn and vf lines are written as Haas tabulates them, with the 25.4 where
+ * a tap of one system is fed on a machine set in the other.
+ */
+function tappingDisplay(input: FeedsInput): FeedsDisplay {
+  const { units: u, vc } = input;
+  const metric = u === 'metric';
+  const L = metric ? 'mm' : 'in';
+  const perRev = metric ? 'mm/rev' : 'in/rev';
+  const perMin = metric ? 'mm/min' : 'in/min';
+  const dNm = lengthNm(input.diameter, DIAMETER_WHAT.tapping, u);
+  const rpm = spindleSpeed(vc, dNm, u);
+  const S = roundHalfEvenWhole(rpm);
+  if (S < 1) {
+    throw new RangeError(
+      'At this speed and diameter the spindle would turn at less than 1 rev/min: check the cutting speed.',
+    );
+  }
+  const byPitch = input.thread.kind === 'pitch';
+  const thread: TapThread = byPitch
+    ? { kind: 'pitch', pitchNm: lengthNm(input.thread.value, 'the pitch', 'metric') }
+    : { kind: 'tpi', tpi: input.thread.value };
+  const fn = formatSteps(stepsOfRatio(tapPitch(thread), u));
+  const vf = formatSteps(stepsOfRatio(tappingFeed(S, thread), u));
+  const t = typed(input.thread.value);
+
+  const feedLines = byPitch
+    ? metric
+      ? [`fn = P = ${fn} ${perRev}`, `vf = P × S = ${t} × ${S} = ${vf} ${perMin}`]
+      : [
+          `fn = P / 25.4 = ${t} / 25.4 = ${fn} ${perRev}`,
+          `vf = P × S / 25.4 = ${t} × ${S} / 25.4 = ${vf} ${perMin}`,
+        ]
+    : metric
+      ? [
+          `fn = 25.4 / TPI = 25.4 / ${t} = ${fn} ${perRev}`,
+          `vf = S / TPI × 25.4 = ${S} / ${t} × 25.4 = ${vf} ${perMin}`,
+        ]
+      : [
+          `fn = 1 / TPI = 1 / ${t} = ${fn} ${perRev}`,
+          `vf = S / TPI = ${S} / ${t} = ${vf} ${perMin}`,
+        ];
+
+  const working = [
+    `n  = ${metric ? 'Vc × 1000' : 'Vc × 12'} / (π × D)   D the tap's nominal diameter (Sandvik Coromant)`,
+    `   = ${typed(vc)} × ${metric ? '1000' : '12'} / (π × ${fixed(dNm, u)} ${L})`,
+    `   = ${four(rpm)} rev/min, so S${S}`,
+    '',
+    ...feedLines,
+    '',
+    'vf is worked from S, the whole rev/min the control is given, so F ÷ S is the',
+    'pitch exactly, as a synchronised (rigid) tapping cycle needs (Haas, G84).',
+    "With a floating holder, the holder's maker gives the feed.",
+  ].join('\n');
+
+  return {
+    stats: [
+      {
+        label: 'Spindle speed',
+        value: String(S),
+        unit: 'rev/min',
+        note: 'S, a whole number',
+      },
+      { label: 'Feed', value: vf, unit: perMin, note: 'pitch × S' },
+      { label: 'Feed per rev', value: fn, unit: perRev, note: 'the pitch' },
+    ],
+    restore: null,
+    working,
+    power: null,
+  };
+}
 
 /**
  * Everything the feeds and speeds page shows, computed and formatted.
@@ -220,6 +314,7 @@ export function feedsDisplay(input: FeedsInput): FeedsDisplay {
     throw new RangeError('Enter the cutting speed as a number above zero.');
   }
   const vc = input.vc;
+  if (op === 'tapping') return tappingDisplay(input);
   const dcNm = lengthNm(input.diameter, DIAMETER_WHAT[op], u);
   const feedNm = lengthNm(
     input.feed,
