@@ -278,6 +278,17 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'calculator',
   },
   {
+    href: '/machining/true-position-calculator',
+    title: 'True position — in or out, with the bonus',
+    short: 'True position',
+    summary:
+      'How far a hole or pin is from its true position, as a diameter, and whether it passes: regardless of size, or with the MMC or LMC bonus from the measured size.',
+    detail:
+      'Checked against the published examples of GD&T Basics and Gene Cogorno. Works offline once loaded.',
+    vertical: 'machining',
+    kind: 'calculator',
+  },
+  {
     href: '/machining/drill-size-chart',
     title: 'Drill size chart — the whole index, on one sheet',
     summary:

@@ -1,0 +1,738 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+/**
+ * True position calculator.
+ *
+ * ─── The one decision worth reading ─────────────────────────────────────────
+ *
+ * No pass or fail at MMC or LMC until the feature's size limits and its
+ * measured size are given. A position check that leaves the size out answers
+ * "regardless of size" whatever the frame says: it fails a hole its bonus
+ * would pass, and passes one that is out of size. The page's own opening
+ * example is the first case. The arithmetic lives in `calc/true-position.ts`
+ * and `true-position-display.ts`; this page maps the display object onto the
+ * DOM and computes nothing.
+ */
+
+const RETRIEVED = '2026-10-06';
+
+const SOURCES = [
+  {
+    label:
+      'GD&T Basics — True Position: a worked example, .003 and .002 in off against a .008 in tolerance, and the bonus at MMC for a hole and for a pin',
+    url: 'https://www.gdandtbasics.com/true-position/',
+    retrieved: RETRIEVED,
+  },
+  {
+    label: 'GD&T Basics — Least Material Condition: the largest hole, the smallest pin',
+    url: 'https://www.gdandtbasics.com/least-material-condition/',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'Tec-Ease, GD&T Tip “Bonus Tolerance”: the bonus is the difference between the MMC size and the size of the unrelated actual mating envelope',
+    url: 'https://www.tec-ease.com/gdt-tips-view.php?q=211',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'Gene R. Cogorno, Technical Training Consultants — “Zero Positional Tolerance at Maximum Material Condition”, from Geometric Dimensioning and Tolerancing for Mechanical Design, 2nd ed., McGraw-Hill 2011, p. 121: Table 7-3 and the plated part',
+    url: 'http://www.ttc-cogorno.com/Newsletters/130108ZeroPositionalTol.pdf',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'ASME Y14.5, Dimensioning and Tolerancing — the standard a position tolerance is read to',
+    url: 'https://www.asme.org/codes-standards/find-codes-standards/y14-5-dimensioning-tolerancing',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'International yard and pound agreement (1959) — 1 inch = 25.4 mm exactly. NIST Special Publication 811',
+    url: 'https://www.nist.gov/pml/special-publication-811',
+    retrieved: RETRIEVED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'Why is the deviation doubled?',
+    a: 'Because a position tolerance is a diameter. Ø0.1 is a cylinder 0.1 mm across, centred on the true position, so an axis passes when it is no more than 0.05 mm from the true position. Doubling the distance, 2 × √(dx² + dy²), gives the diameter of the smallest zone that would hold the axis, which compares straight with the number in the frame. An axis 0.03 mm off in X and 0.04 mm off in Y is 0.05 mm away: a position of Ø0.1, exactly on the limit of Ø0.1, which passes.',
+  },
+  {
+    q: 'How does the MMC bonus work?',
+    a: 'At MMC the tolerance in the frame applies when the feature is at its maximum material size: the smallest hole or the largest pin. The further the feature is made from that size, the more room its axis gets, and that extra is the bonus. A hole 10.000 to 10.100 mm at Ø0.2 MMC, made at 10.048, earns a bonus of 0.048 and may be off by Ø0.248. At LMC it runs the other way: the largest hole or the smallest pin is where the tolerance applies.',
+  },
+  {
+    q: 'Why is there no pass or fail at MMC until I give the size?',
+    a: 'Because without the size the bonus is unknown, and a check that leaves it out is a regardless-of-size check whatever the frame says. That check fails holes their bonus would pass, as the opening example on this page shows, and it passes holes that are out of size, which fail whatever their position. So at MMC or LMC the page waits for the size limits and the measured size.',
+  },
+  {
+    q: 'Which size do I measure for the bonus?',
+    a: 'An envelope, not a two-point reading. At MMC a hole’s size is its mating size, the largest perfect pin that fits in it, and a pin’s is the smallest perfect ring that fits over it. At LMC it is the opposite envelope. A bore gauge in an out-of-round hole can read larger than the mating size, and would count more bonus than the hole has.',
+  },
+  {
+    q: 'Can a position tolerance be zero?',
+    a: 'Only at MMC or LMC. Cogorno: “Zero tolerance is never used without an MMC or LMC modifier.” At zero MMC the whole position tolerance is the bonus, so a hole made at its smallest size must be exactly on position. Regardless of size, zero would allow no position error at all, so the page refuses it.',
+  },
+  {
+    q: 'What does it leave out?',
+    a: 'Datum feature shift, the extra a datum feature of size can give at MMC; tolerance zones that are a width rather than a diameter; and spherical zones. Every calculation runs in your browser and nothing you type is sent anywhere, so once the page has loaded it works without a connection.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'True position calculator',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/machining/true-position-calculator`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'How far a hole or pin is from its true position, as the diameter a position tolerance is written in, and whether it passes, regardless of size or with the MMC or LMC bonus.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'True position calculator',
+        item: `${SITE.url}/machining/true-position-calculator`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+
+const field =
+  'border-line-strong bg-surface text-ink focus-visible:outline-brand w-full rounded-control border px-3 py-2 font-numeric text-base focus-visible:outline-2 focus-visible:outline-offset-2';
+const sign =
+  'border-line-strong text-ink-soft hover:text-brand focus-visible:outline-brand rounded-control border px-2 font-numeric text-base focus-visible:outline-2 focus-visible:outline-offset-2';
+const label = 'block text-sm font-semibold text-ink-soft';
+const hint = 'text-ink-mute mt-1 text-xs';
+
+/** A length that can be negative: a field and a key to change its sign. */
+const SIGNED = {
+  coordinates: [
+    {
+      id: 'tp-drawn-x',
+      name: 'drawnX',
+      label: 'Drawn X',
+      value: '50',
+      hint: null,
+    },
+    { id: 'tp-drawn-y', name: 'drawnY', label: 'Drawn Y', value: '30', hint: null },
+    {
+      id: 'tp-measured-x',
+      name: 'measuredX',
+      label: 'Measured X',
+      value: '50.062',
+      hint: null,
+    },
+    {
+      id: 'tp-measured-y',
+      name: 'measuredY',
+      label: 'Measured Y',
+      value: '30.089',
+      hint: null,
+    },
+  ],
+  deviations: [
+    {
+      id: 'tp-dx',
+      name: 'dx',
+      label: 'Off in X',
+      value: '0.062',
+      hint: null,
+    },
+    { id: 'tp-dy', name: 'dy', label: 'Off in Y', value: '0.089', hint: null },
+  ],
+};
+---
+
+<BaseLayout
+  title="True position calculator"
+  description="How far a hole or pin is from its true position, and whether it passes: regardless of size, or with the MMC or LMC bonus worked from the measured size. Shows the working, to four decimals."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / True position
+    </nav>
+
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      True position calculator
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      How far a hole or pin is from where the drawing puts it, and whether it passes:
+      regardless of size, or with the MMC or LMC bonus.
+    </p>
+
+    <!-- ── Calculator ──────────────────────────────────────────────────── -->
+    <section class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border">
+      <form id="tp-form" class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
+        <fieldset class="col-span-2">
+          <legend class={label}>Units</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="mm" checked /> Millimetres</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="in" /> Inches</label
+            >
+          </div>
+        </fieldset>
+        <fieldset class="col-span-2">
+          <legend class={label}>Enter</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="entry" value="coordinates" checked /> Positions</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="entry" value="deviations" /> Deviations</label
+            >
+          </div>
+          <p class={hint}>Drawn is the true position; deviations are measured − drawn.</p>
+        </fieldset>
+
+        {
+          (['coordinates', 'deviations'] as const).map((entry) =>
+            SIGNED[entry].map((f) => (
+              <div data-entry={entry} class={entry === 'deviations' ? 'hidden' : ''}>
+                <label class={label} for={f.id}>
+                  {f.label}
+                </label>
+                <div class="mt-1 flex gap-1">
+                  <input
+                    class={field}
+                    id={f.id}
+                    name={f.name}
+                    type="number"
+                    inputmode="decimal"
+                    step="any"
+                    value={f.value}
+                  />
+                  <button
+                    type="button"
+                    class={sign}
+                    data-negate={f.name}
+                    aria-label={`Change the sign of ${f.label}`}
+                  >
+                    ±
+                  </button>
+                </div>
+                {f.hint && <p class={hint}>{f.hint}</p>}
+              </div>
+            )),
+          )
+        }
+
+        <div>
+          <label class={label} for="tp-tolerance">Tolerance Ø</label>
+          <input
+            class={`${field} mt-1`}
+            id="tp-tolerance"
+            name="tolerance"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0"
+            value="0.2"
+          />
+          <p class={hint}>Blank: position only.</p>
+        </div>
+        <fieldset class="col-span-2 sm:col-span-3">
+          <legend class={label}>Applies</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="modifier" value="rfs" /> Regardless of size</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="modifier" value="mmc" checked /> At MMC</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="modifier" value="lmc" /> At LMC</label
+            >
+          </div>
+        </fieldset>
+
+        <fieldset data-sized>
+          <legend class={label}>Feature</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="feature" value="hole" checked /> Hole</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="feature" value="pin" /> Pin</label
+            >
+          </div>
+        </fieldset>
+        <div data-sized>
+          <label class={label} for="tp-smallest">Smallest size</label>
+          <input
+            class={`${field} mt-1`}
+            id="tp-smallest"
+            name="smallest"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0"
+            value="10"
+          />
+        </div>
+        <div data-sized>
+          <label class={label} for="tp-largest">Largest size</label>
+          <input
+            class={`${field} mt-1`}
+            id="tp-largest"
+            name="largest"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0"
+            value="10.1"
+          />
+        </div>
+        <div data-sized>
+          <label class={label} for="tp-measured">Measured size</label>
+          <input
+            class={`${field} mt-1`}
+            id="tp-measured"
+            name="measured"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0"
+            value="10.048"
+          />
+          <p class={hint}>Its mating size.</p>
+        </div>
+      </form>
+
+      <output
+        id="tp-result"
+        class="border-line block border-t px-5 py-5"
+        for="tp-form"
+        aria-live="polite"></output>
+    </section>
+
+    <p id="tp-error" class="text-negative mt-3 hidden text-sm" role="alert"></p>
+
+    <!-- ── How this was calculated ─────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        How this was calculated
+      </h2>
+      <div
+        id="tp-working"
+        class="border-line bg-sunken rounded-panel font-numeric mt-4 overflow-x-auto border p-4 text-sm leading-relaxed whitespace-pre-wrap"
+      >
+      </div>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        Lengths are carried in whole nanometres. The pass or fail is decided on the
+        squares, 4 × (dx² + dy²) against the allowed diameter squared, in exact integer
+        arithmetic, so a position on the limit passes and one a nanometre over does not.
+        The position is rounded once, half to even, from the exact square root.
+      </p>
+    </section>
+
+    <!-- ── Explanation ─────────────────────────────────────────────────── -->
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        How far off a hole is, and whether it passes
+      </h2>
+      <p>
+        True position is where a feature would sit if it were perfect: the exact location
+        the drawing's basic dimensions give. No real hole is there. A position tolerance
+        says how far off it may be, and it says so as a diameter: Ø0.2 is a cylinder 0.2
+        mm across, centred on the true position, and the hole's axis has to lie inside it.
+        This page works out how far the axis is from the true position, states that as a
+        diameter too, and compares the two.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Why the distance is doubled
+      </h3>
+      <p>
+        An axis dx off in X and dy off in Y is √(dx² + dy²) from the true position. It is
+        inside a zone of diameter t when that distance is at most t ÷ 2, which is the same
+        as twice the distance being at most t. So the deviation is reported as 2 × √(dx² +
+        dy²), the diameter of the smallest zone that would hold the axis, and it compares
+        straight with the frame. An axis 0.03 mm off one way and 0.04 mm the other is 0.05
+        mm from where it should be, a position of Ø0.1. Compared with the undoubled 0.05,
+        a Ø0.1 tolerance would seem to have room to spare; it has none.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        The bonus at MMC and LMC
+      </h3>
+      <p>
+        A tolerance at MMC, maximum material condition, applies when the feature has the
+        most material it can: the smallest hole or the largest pin the size limits allow.
+        Made anywhere else within its limits, the feature earns more room, and that extra
+        is the bonus. Tec-Ease puts it as the difference between the MMC size and the size
+        of the unrelated actual mating envelope. For a hole at MMC the bonus is the
+        measured size minus the smallest; for a pin, the largest minus the measured. At
+        LMC, least material condition, the tolerance applies at the largest hole or the
+        smallest pin, and the bonus counts the other way: the largest size minus the
+        measured for a hole, the measured minus the smallest for a pin.
+      </p>
+      <p>
+        The opening example shows why it matters. A hole drawn at X 50, Y 30 is found at X
+        50.062, Y 30.089. That is 0.062 and 0.089 mm off, a position of Ø0.2169. Against
+        the frame's Ø0.2 alone it is over, by 0.0169 mm. But the frame says Ø0.2 at MMC,
+        the hole's limits are 10.000 to 10.100 mm, and it measures 10.048. That is 0.048
+        above its smallest size, so it may be off by Ø0.248, and Ø0.2169 is within that by
+        0.0311 mm. The same hole fails a check that leaves out its size, and passes the
+        one its drawing asks for.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        No pass or fail without the size
+      </h3>
+      <p>
+        A calculator that asks only for the deviations and the tolerance gives a
+        regardless-of-size answer, whatever the frame says. It can fail a hole the bonus
+        would pass, as above. Worse, it can pass a hole that is out of size, and a feature
+        outside its size limits fails on size whatever its position, with no bonus at all.
+        So at MMC or LMC this page gives no verdict until it has the smallest and largest
+        sizes and the size measured, and a feature outside them fails on size. Regardless
+        of size, it says on the answer that no bonus was counted and the size was not
+        checked.
+      </p>
+      <p>
+        The size that counts is an envelope, not a two-point reading. At MMC a hole's size
+        is the largest perfect pin that fits in it. A bore gauge in an out-of-round hole
+        can read larger than that, and the extra would be counted as bonus the hole does
+        not have.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Worked examples, checked against published ones
+      </h3>
+      <p>
+        GD&amp;T Basics works a hole .003 in off in X and .002 in off in Y: 2 × √(.003² +
+        .002²) = .0072111 in, which they print to three places as .007 and pass against a
+        .008 tolerance. This page prints 0.0072 and says it is within by 0.0008 in.
+      </p>
+      <p>
+        Gene Cogorno's GD&amp;T textbook tolerances the same pair of holes two ways. Drawn
+        Ø.520 to .540 at Ø.020 MMC and made at .535, a hole earns a bonus of .015 and may
+        be off by Ø.035. Drawn Ø.500 to .540 at zero MMC, the same hole earns .035, and
+        the total is again Ø.035. Then the part is plated too heavily and the holes
+        measure .518. The first drawing rejects them as too small. The second gives them a
+        bonus of .018, and holes within Ø.010 of position pass, and fit. Tests on this
+        site hold every one of those figures.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">Exact at the edge</h3>
+      <p>
+        The verdict is not decided on rounded figures. It compares 4 × (dx² + dy²) with
+        the allowed diameter squared, in whole nanometres, exactly. 0.03 and 0.04 mm off
+        against Ø0.1 is exactly on the limit, and passes. Move one axis a nanometre, to
+        0.040001, and the position is 1.6 nm over. Both figures still read 0.1000, and the
+        page says over, by less than 0.0001 mm, rather than printing a pass.
+      </p>
+      <p>
+        The position itself is rounded once, from the exact square root. An axis 0.108474
+        and 0.00046 mm off is a position of 0.21694995 mm, which is 0.2169. A calculator
+        that rounds to a whole nanometre first gets 216 950 nm, a tie, and prints 0.2170.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">What it leaves out</h3>
+      <p>
+        Datum feature shift, the extra room a datum feature of size can give at MMC, is
+        not counted. Neither are tolerance zones that are a width rather than a diameter,
+        or spherical zones. The page checks one feature against one frame, from the
+        numbers you give it.
+      </p>
+    </section>
+
+    <!-- ── App ─────────────────────────────────────────────────────────── -->
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-12 border p-5"
+    >
+      <h2 class="font-display text-ink text-xl font-semibold">
+        This, but in your pocket on the shop floor
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        The same arithmetic is going into a metric-first Android app: true position with
+        the MMC and LMC bonus, bolt circles, thread and tap drill, feeds and speeds,
+        offline, one payment, no subscription. It is in development and this page is free
+        forever either way.
+      </p>
+      <a
+        class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+        href="/machining/app">What it will do, and what it will cost &rarr;</a
+      >
+    </section>
+
+    <!-- ── FAQ ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        The position is geometry on the zone ASME Y14.5 defines. GD&amp;T Basics and
+        Cogorno are the published examples this page is tested against; GD&amp;T Basics
+        and Tec-Ease give the bonus rules.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated figures from the numbers you enter. An inspection follows the
+      drawing's own datums and the standard it cites, so check against your inspection
+      plan before accepting or scrapping a part.
+    </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each showing its working"
+      links={[
+        {
+          href: '/machining/bolt-circle-calculator',
+          label: 'Bolt circle calculator',
+          note: 'where each hole of a pattern should be, from the datum',
+        },
+        {
+          href: '/machining/tap-drill-calculator',
+          label: 'Tap drill calculator',
+          note: 'the drill for each threaded hole, and the engagement it really gives',
+        },
+      ]}
+    />
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    truePositionDisplay,
+    type TruePositionDisplay,
+  } from '../../lib/calc/true-position-display';
+  import type { DisplayUnits } from '../../lib/calc/hole-pattern-display';
+  import type { Feature, Modifier } from '../../lib/calc/true-position';
+
+  /** Resolve an element or fail loudly at load, as the other calculators do. */
+  function must<T extends HTMLElement>(id: string): T {
+    const el = document.getElementById(id);
+    if (el === null) throw new Error(`true position: #${id} is missing from the page`);
+    return el as T;
+  }
+
+  const form = must<HTMLFormElement>('tp-form');
+  const resultEl = must('tp-result');
+  const workingEl = must('tp-working');
+  const errorEl = must('tp-error');
+
+  const input = (name: string): HTMLInputElement =>
+    form.elements.namedItem(name) as HTMLInputElement;
+  /** A required number: blank is NaN, which the display refuses in words. */
+  const num = (name: string): number => {
+    const v = input(name).value.trim();
+    return v === '' ? Number.NaN : Number(v);
+  };
+  /** An optional number: blank is null. */
+  const maybe = (name: string): number | null => {
+    const v = input(name).value.trim();
+    return v === '' ? null : Number(v);
+  };
+  const pick = (name: string): string =>
+    (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
+
+  /** Text colour for each verdict tone, spelled out so the stylesheet keeps them. */
+  const TONE: Readonly<Record<TruePositionDisplay['tone'], string>> = {
+    pass: 'text-positive',
+    fail: 'text-negative',
+    none: 'text-ink',
+  };
+
+  /**
+   * The drawing: the zone round the true position, and where the axis is.
+   *
+   * Machine Y runs up and SVG y runs down, so y is negated here, once. Only
+   * numbers reach the markup; no text the user typed does.
+   */
+  function drawing(d: TruePositionDisplay): string {
+    const f = d.figure;
+    const reach =
+      Math.max(f.zoneR ?? 0, f.allowedR ?? 0, Math.hypot(f.x, f.y), 1e-6) * 1.3;
+    const line = reach * 0.012;
+    const parts: string[] = [
+      `<path d="M ${-reach} 0 H ${reach} M 0 ${-reach} V ${reach}" stroke="currentColor" stroke-width="${line / 2}" />`,
+    ];
+    if (f.allowedR !== null) {
+      parts.push(
+        `<circle cx="0" cy="0" r="${f.allowedR}" fill="none" stroke="currentColor" stroke-width="${line}" />`,
+      );
+    }
+    if (f.zoneR !== null && f.zoneR > 0) {
+      parts.push(
+        `<circle cx="0" cy="0" r="${f.zoneR}" fill="none" stroke="currentColor" stroke-width="${line}" stroke-dasharray="${line * 4} ${line * 3}" />`,
+      );
+    }
+    const dot =
+      f.inside === true
+        ? 'text-positive'
+        : f.inside === false
+          ? 'text-negative'
+          : 'text-brand';
+    parts.push(
+      `<path class="${dot}" d="M 0 0 L ${f.x} ${-f.y}" stroke="currentColor" stroke-width="${line}" />`,
+      `<circle class="${dot}" cx="${f.x}" cy="${-f.y}" r="${reach * 0.035}" fill="currentColor" />`,
+    );
+    return `<svg class="text-ink-mute mx-auto block h-auto w-full max-w-xs" viewBox="${-reach} ${-reach} ${2 * reach} ${2 * reach}" role="img" aria-label="Drawing of the tolerance zone round the true position, and where the axis is">${parts.join('')}</svg>`;
+  }
+
+  /** Name what the drawing shows, and only that. */
+  function legend(d: TruePositionDisplay): string {
+    const f = d.figure;
+    const parts = [
+      f.zoneR !== null && f.zoneR > 0 ? 'Dashed: the zone in the frame.' : '',
+      f.allowedR !== null ? 'Solid: with the bonus.' : '',
+      'The dot is the axis; the cross, the true position.',
+    ];
+    return parts.filter((p) => p !== '').join(' ');
+  }
+
+  function render(): void {
+    const units = pick('units') as DisplayUnits;
+    const entry = pick('entry');
+    const modifier = pick('modifier') as Modifier;
+    form.querySelectorAll<HTMLElement>('[data-entry]').forEach((el) => {
+      el.classList.toggle('hidden', el.dataset['entry'] !== entry);
+    });
+    form.querySelectorAll<HTMLElement>('[data-sized]').forEach((el) => {
+      el.classList.toggle('hidden', modifier === 'rfs');
+    });
+    errorEl.classList.add('hidden');
+    try {
+      // Everything below is presentation. The numbers, their units and their
+      // rounding come from `calc/true-position-display.ts`, which the tests
+      // check as strings.
+      const common = {
+        units,
+        tolerance: maybe('tolerance'),
+        modifier,
+        feature: pick('feature') as Feature,
+        smallest: maybe('smallest'),
+        largest: maybe('largest'),
+        measured: maybe('measured'),
+      };
+      const d =
+        entry === 'deviations'
+          ? truePositionDisplay({
+              ...common,
+              entry: 'deviations',
+              dx: num('dx'),
+              dy: num('dy'),
+            })
+          : truePositionDisplay({
+              ...common,
+              entry: 'coordinates',
+              drawnX: num('drawnX'),
+              drawnY: num('drawnY'),
+              measuredX: num('measuredX'),
+              measuredY: num('measuredY'),
+            });
+
+      const facts = d.summary
+        .map(
+          (s) => `<div>
+            <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">${s.label}</p>
+            <p class="mt-1 font-numeric text-xl font-semibold text-ink">${s.value}</p>
+          </div>`,
+        )
+        .join('');
+      const alone =
+        d.withoutBonus === null
+          ? ''
+          : `<p class="mt-2 font-sans text-sm text-ink-mute">${d.withoutBonus}</p>`;
+      resultEl.innerHTML = `
+        <div class="grid gap-6 sm:grid-cols-2">
+          <div>
+            <p class="font-display text-3xl font-semibold ${TONE[d.tone]}">${d.headline}</p>
+            <p class="mt-2 font-sans text-sm text-ink-soft">${d.detail}</p>
+            ${alone}
+            <div class="mt-4 grid grid-cols-2 gap-4">${facts}</div>
+          </div>
+          <div>
+            ${drawing(d)}
+            <p class="mt-2 text-center font-sans text-xs text-ink-mute">${legend(d)}</p>
+          </div>
+        </div>`;
+      workingEl.textContent = d.working;
+    } catch (err) {
+      errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
+      errorEl.classList.remove('hidden');
+      resultEl.innerHTML = '';
+      workingEl.textContent = '';
+    }
+  }
+
+  form.addEventListener('input', render);
+  // A radio fires `input` before `change`; render on both so the fields shown
+  // and the answer always match the controls (the tap drill page's lesson, #92).
+  form.addEventListener('change', render);
+  // Some phone keyboards for decimals have no minus key, as the app found, so
+  // every length that can be negative has its own sign key.
+  form.querySelectorAll<HTMLButtonElement>('[data-negate]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const field = input(button.dataset['negate'] ?? '');
+      const v = field.value.trim();
+      if (v === '') return;
+      field.value = v.startsWith('-') ? v.slice(1) : `-${v}`;
+      render();
+    });
+  });
+  render();
+</script>

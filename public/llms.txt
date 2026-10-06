@@ -366,6 +366,33 @@ Jurisdiction: none. Geometry.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
+### True position calculator
+URL: https://quickoper.com/machining/true-position-calculator
+Computes: how far a feature's axis is from its true position, as the diameter a
+position tolerance is written in, 2 x sqrt(dx^2 + dy^2), and whether it is
+within the tolerance: regardless of feature size, or at MMC or LMC with the
+bonus worked from the measured size.
+Inputs: drawn and measured X and Y, or the deviations; the tolerance diameter
+(blank for the position alone); regardless of size, MMC or LMC; hole or pin;
+the smallest and largest sizes and the measured size. Millimetres or inches.
+Key figures: hole at MMC, bonus = measured - smallest; pin at MMC, largest -
+measured; hole at LMC, largest - measured; pin at LMC, measured - smallest.
+Allowed = tolerance + bonus. At MMC or LMC there is no pass or fail until the
+size limits and the measured size are given, and a feature outside its limits
+fails on size with no bonus. A zero tolerance is accepted only at MMC or LMC.
+The verdict is exact, 4(dx^2 + dy^2) <= allowed^2 in whole nanometres: 0.03 and
+0.04 mm off is a position of exactly 0.1 mm and passes a 0.1 mm tolerance;
+0.03 and 0.040001 mm off is 1.6 nm over and fails. GD&T Basics' example, .003
+and .002 in off, is a position of 0.0072 in (they print .007), within .008.
+Cogorno's Table 7-3: holes .520-.540 at .020 MMC made at .535 earn a .015
+bonus, .035 in all; holes .500-.540 at zero MMC, made the same, earn .035,
+.035 in all. The position is rounded once, half-even, from the exact root:
+0.108474 and 0.00046 mm off is 0.21694995 mm, shown 0.2169.
+Not counted: datum feature shift, zones that are a width, spherical zones.
+Jurisdiction: none. Geometry on the ASME Y14.5 position tolerance zone.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/finance/verify
+
 ### Drill size chart (metric, fractional, number and letter)
 URL: https://quickoper.com/machining/drill-size-chart
 Computes: nothing on demand. It PUBLISHES four drill series as printable tables,
