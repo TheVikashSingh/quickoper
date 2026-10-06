@@ -4058,6 +4058,47 @@ still said a tie goes to "the larger one", which D71 replaced with half-even;
 described `/machining/app` as asking whether the app is worth building, which
 STATE.md records as dropped.
 
+### D98 — Forming taps, by the makers' own rule, and the character that drew 3√¾
+
+The Android app has offered forming (roll) taps since its roadmap 3.2; the
+tap drill page now does too, with a Cutting / Forming choice.
+
+**The rule is the makers', not a derivation.** A forming tap pushes the hole's
+wall into the thread, so the hole must be bigger, and the makers publish how
+much bigger: d = D − 0.0068 × % × P. That is the cutting expression with
+K = 0.68 in place of 3√3/4, so the page computes both through one function
+with the constant chosen by the kind of tap. Harvey Performance and Sandvik
+Coromant print the rule. Guhring's forming tables print no rule, but 59 of their
+figures, read on 2026-09-28, are this rule rounded to two decimals, and every
+one is a test. Four sit exactly on the half-hundredth (19.065 → 19.07, 5.575 →
+5.58, 18.895 → 18.90, 7.405 → 7.41): Guhring rounds half up, and the test's
+limit is the half-hundredth itself, plus float noise, and no more. Sandvik's two
+worked examples, 0.2279 in for 1/4-20 at 65 % and 7.422 mm for M8 × 1.25 at
+68 %, come out exact. Harvey's #1 for 1/4-20 at 65 % and the 5.6 mm Emuge's
+cold-forming chart names for M6 are what the page picks.
+
+**65 % to open, 55–75 % as the usual band.** 65 % is where Harvey's and
+Sandvik's examples are set. 55 % is the lowest table Guhring prints and 75 % the
+top of Harvey's advice. The cutting band, 60–80 %, would put the 5.6 mm Emuge
+names for M6 (58.82 %) outside it. The page states both bands and refuses
+outside neither: the percentage is the user's to choose. Switching the
+kind swaps 75 and 65 only while the field still holds an example; a typed
+percentage stays.
+
+**What the kind changes, and what it does not.** The drill nearest a target is
+the same whichever tap it is for; only the percentage reported for it differs.
+So `snapToSeries`, `rankBySuitability` and the neighbour table take the kind for
+the percentage and nothing else, and the refusals (D73, D78) apply unchanged.
+A test breaks each of those paths on purpose: the neighbour table's percentage
+was the one a first pass left unguarded.
+
+**3 × √3 / 4, not 3√3⁄4.** The working box and two prose sentences wrote the
+cutting constant with the fraction slash, U+2044. The app found that a phone's
+font joins the digits either side of that character into a built fraction and
+drew "3√¾", which reads as 3 × √(3/4) = 2.598 beside a constant of 1.299. A
+phone's browser may draw with the same font. Every occurrence on the site is
+now an ordinary slash, and a test checks the working has none.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

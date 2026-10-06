@@ -23,8 +23,8 @@
 import { drillsFor, type SeriesName } from './drill-series';
 import {
   basicMinorDiameterNm,
-  ENGAGEMENT_K,
   drillDiameterFor,
+  engagementConstant,
   engagementPercentExact,
   inchToNm,
   mmToNm,
@@ -35,6 +35,7 @@ import {
   tpiToPitchNm,
   type Drill,
   type Nanometres,
+  type TapKind,
 } from './tap-drill';
 
 export type DisplayUnits = 'mm' | 'in';
@@ -83,6 +84,8 @@ export interface NeighbourRow {
 }
 
 export interface TapDrillDisplay {
+  /** Which rule the answer was worked by, carried so the page can say so. */
+  kind: TapKind;
   drillLabel: string;
   /** Which series the drill comes from, so the page can say "letter drill". */
   drillSeries: Drill['series'];
@@ -109,16 +112,30 @@ export interface TapDrillInput {
   engagementPercent: number;
   units: DisplayUnits;
   series: SeriesName;
+  /** A cutting tap unless said otherwise: the page opened on one before forming existed. */
+  kind?: TapKind;
 }
 
 /** How many neighbouring drills the table shows, centred on the target. */
 const NEIGHBOURHOOD = 7;
 
 /**
- * K as the working box prints it, taken from the exported constant rather than
- * typed, so the number shown cannot drift from the number used.
+ * The first line of the working, with K as the box prints it: taken from the
+ * exported constant rather than typed, so the number shown cannot drift from
+ * the number used.
+ *
+ * Written "3 × √3 / 4" with an ordinary slash. The Android app first wrote it
+ * with the fraction slash (U+2044), and the phone's font joined the digits on
+ * either side into a fraction: it drew "3√¾", which reads as 3 × √(3/4) =
+ * 2.598 beside a constant of 1.299. A browser on a phone may draw with that
+ * same font, so the site does not use the character either.
  */
-const K_SHOWN = roundHalfEven(ENGAGEMENT_K, 6);
+function formulaLine(kind: TapKind): string {
+  const k = roundHalfEven(engagementConstant(kind), 6);
+  return kind === 'forming'
+    ? `%thread = 100 × (D − d) / (K × P)   K = ${k}, the forming-tap makers' d = D − 0.0068 × % × P`
+    : `%engagement = 100 × (D − d) / (K × P)   K = 3 × √3 / 4 = ${k}`;
+}
 
 /**
  * Everything the result panel needs, computed and formatted.
@@ -128,6 +145,7 @@ const K_SHOWN = roundHalfEven(ENGAGEMENT_K, 6);
  */
 export function tapDrillDisplay(input: TapDrillInput): TapDrillDisplay {
   const { major, pitch, engagementPercent, units, series } = input;
+  const kind: TapKind = input.kind ?? 'cutting';
 
   const majorNm: Nanometres = units === 'mm' ? mmToNm(major) : inchToNm(major);
   const pitchNm: Nanometres = units === 'mm' ? mmToNm(pitch) : tpiToPitchNm(pitch);
@@ -135,13 +153,13 @@ export function tapDrillDisplay(input: TapDrillInput): TapDrillDisplay {
     throw new RangeError('Pitch must be smaller than the diameter.');
   }
 
-  const targetNm = drillDiameterFor(majorNm, pitchNm, engagementPercent);
+  const targetNm = drillDiameterFor(majorNm, pitchNm, engagementPercent, kind);
   if (targetNm <= 0) {
     throw new RangeError('That engagement leaves no drill diameter.');
   }
 
   const drills = drillsFor(series);
-  const choice = snapToSeries(majorNm, pitchNm, targetNm, drills);
+  const choice = snapToSeries(majorNm, pitchNm, targetNm, drills, kind);
   if (!choice) {
     throw new RangeError('No drill index selected.');
   }
@@ -214,14 +232,20 @@ export function tapDrillDisplay(input: TapDrillInput): TapDrillDisplay {
     .map(({ d, delta }) => ({
       label: d.label,
       length: formatLength(d.nm, units),
-      engagementPercent: roundHalfEven(engagementPercentExact(majorNm, pitchNm, d.nm), 2),
+      engagementPercent: roundHalfEven(
+        engagementPercentExact(majorNm, pitchNm, d.nm, kind),
+        2,
+      ),
       delta: formatDelta(delta, units),
       // The drill itself, not its diameter: 1/4" and E are one hole, and only
       // the name the result panel gives is the recommended row.
       chosen: d === choice.drill,
     }));
 
+  const k = roundHalfEven(engagementConstant(kind), 6);
+
   return {
+    kind,
     drillLabel: choice.drill.label,
     drillSeries: choice.drill.series,
     drillLength: formatLength(choice.drill.nm, units),
@@ -232,7 +256,7 @@ export function tapDrillDisplay(input: TapDrillInput): TapDrillDisplay {
     minorLength: formatLength(basicMinorDiameterNm(majorNm, pitchNm), units),
     neighbours,
     working:
-      `%engagement = 100 × (D − d) / (K × P)   K = 3√3⁄4 = ${K_SHOWN}
+      `${formulaLine(kind)}
 
 ` +
       `D  major diameter  = ${formatLength(majorNm, units)}
@@ -245,7 +269,7 @@ export function tapDrillDisplay(input: TapDrillInput): TapDrillDisplay {
 
 ` +
       `100 × (${lengthValue(majorNm, units)} − ${lengthValue(choice.drill.nm, units)})` +
-      ` / (${K_SHOWN} × ${lengthValue(pitchNm, units)}) = ${roundHalfEven(choice.engagementPercent, 2)}%` +
+      ` / (${k} × ${lengthValue(pitchNm, units)}) = ${roundHalfEven(choice.engagementPercent, 2)}%` +
       (choice.drill.note === undefined
         ? ''
         : `

@@ -317,8 +317,9 @@ engagement, breaking an exact tie half-even, plus the engagement that drill
 ACTUALLY produces, the basic minor diameter, and the surrounding drill sizes with
 their engagements.
 Inputs: thread major diameter, pitch (or threads per inch), target engagement
-percentage, unit system, drill index to search: metric; inch (fractional, number
-and letter drills together); fractional only; or both racks.
+percentage, tap (cutting or forming), unit system, drill index to search: metric;
+inch (fractional, number and letter drills together); fractional only; or both
+racks.
 Key figures: engagement = 100 x (D - d) / (K x P) where K = 3*sqrt(3)/4 =
 1.2990381..., from the ISO 68-1 basic profile where H = (sqrt(3)/2) x P.
 100 / K = 76.98%, which is why the shop rule "drill = major - pitch" lands just
@@ -330,6 +331,12 @@ M12 on the published 10.2 mm drill gives 79.18%; #8-32 on a #29 gives 68.97%.
 Inch threads search the inch index, the rack the published inch charts pick from:
 at 75%, 1/4-20 gets a #7 (75.44%) and #8-32 a #29 (68.97%). Against fractional
 drills alone #8-32 would get 9/64 in at 57.58%.
+Forming (roll) taps use the makers' own rule d = D - 0.0068 x % x P, i.e. K = 0.68
+in the same expression, printed by Harvey Performance and Sandvik Coromant and
+followed by Guhring's forming tables (59 of their figures are this rule rounded
+to two decimals). A forming tap opens at 65%, usual band 55-75%, and needs a
+bigger hole: M6 x 1 at 65% gets 5.6 mm (58.82%) where a cutting tap gets 5.2 mm;
+1/4-20 at 65% targets 0.2279 in (Sandvik's worked figure) and gets a #1 (64.71%).
 Jurisdiction: none. ISO metric and Unified inch.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
