@@ -4255,6 +4255,36 @@ the size range would print figures the spec does not define; both were left.
 as the spec has them; sizes and coordinates within 100 m, the bolt circle's
 reach, which keeps every length a safe integer.
 
+### D102 — One heading font across the site: the operator saw two sites
+
+The machining pages had a heading face of their own, a narrow technical sans
+(`'Arial Narrow'` first, the system sans where it is absent), set in the visual
+pass as the one exception to the house serif (D88: "machining is the exception
+that earns a sans"). On 2026-10-06 the operator, looking at quickoper.com and
+then at the machining pages, said the font "doesn't look same". It did not: the
+homepage, the finance pages, `/about`, the wordmark and the share image are all
+Georgia, and only the machining pages changed it. To a visitor moving between
+them that read as a second site, not as a deliberate identity. The exception
+was an agent's design call; the operator's view of their own brand outranks it.
+
+So `--font-display` is no longer overridden for machining, and every heading
+and the wordmark use the house serif. Body text (the system sans) and figures
+(mono) were already the same everywhere, so this one deletion makes the type
+identical across the site.
+
+**What stays different, and why.** The machining colours — ground-steel greys
+and Dykem blue — are kept. The operator raised the type, not the colours, and
+the colour is what tells a visitor which subject they are in; the homepage's
+two cards are keyed to it.
+
+**Checked.** Georgia is wider than Arial Narrow, so every machining page was
+loaded at 375 px wide after the change: headings wrap, nothing scrolls
+sideways. Nothing in the stylesheet was tuned to the narrow face; the
+override was the only machining font rule.
+
+Supersedes D88's "machining is the exception that earns a sans" and the "no
+serif" line of STATE.md's machining section.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

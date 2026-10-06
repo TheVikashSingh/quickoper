@@ -784,9 +784,8 @@
    sophisticated without reading corporate; and it is the one thing an engraved
    note and a scribed steel plate genuinely share.
 
-   Georgia stays. The serif is the house voice; machining is the exception that
-   earns a sans, not the other way round — so --font-display is NOT overridden
-   here and inherits the root serif.
+   Georgia stays. The serif is the house voice, on every page: machining had
+   its own narrow sans until D102, and nothing overrides --font-display now.
 
    HOW THE VALUES WERE DERIVED, because the technique matters more than the
    numbers: every L is carried over from the finance palette and only the HUE
@@ -930,13 +929,9 @@
   --color-masthead-line: oklch(38% 0.05 255);
   --color-masthead-accent: oklch(80% 0.13 255);
 
-  /* Type: no serif. A drawing is annotated in a technical sans, and figures
-     belong in mono. Condensed faces are tried first because that is what
-     engineering annotation looks like; the chain falls back to system sans
-     where they are absent, so this still costs zero bytes. */
-  --font-display:
-    'Arial Narrow', 'Helvetica Neue Condensed', 'Liberation Sans Narrow', ui-sans-serif,
-    system-ui, sans-serif;
+  /* Type: the house serif, like every other page. Machining had a narrow
+     technical sans of its own until the operator saw it as a second site
+     (D102); --font-display is deliberately NOT overridden here. */
 }
 
 @media (prefers-color-scheme: dark) {
