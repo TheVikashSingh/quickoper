@@ -227,7 +227,7 @@ the values change, scoped on `:root[data-vertical='machining']` and set by a
 `vertical` prop on BaseLayout. No component knows which vertical it renders in.
 
 **The calculator island is vanilla TypeScript, not Preact.** `/machining/tap-drill-calculator/`
-ships **5.39 KB** against the 19.5 KB budget (3.40 KB before the number and
+ships **5.42 KB** against the 19.5 KB budget (3.40 KB before the number and
 letter drill table joined it, D97), where the Preact finance
 calculators sit at 17–18.7 KB. A form and a table do not need a framework, and
 the headroom is for the chart and the drill chart that follow.
