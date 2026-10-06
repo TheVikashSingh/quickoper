@@ -445,17 +445,17 @@ downstream, and that clock does not start until the domain resolves.
 
 ## Working agreement
 
-- The agent owns branches, code, commits, pushes, PRs and CI. **Since 2026-09-10 it
-  also enables auto-merge on pull requests that touch no `CODEOWNERS` path** —
-  `gh pr merge --squash --auto`, which squashes on green and never before.
-- **The operator still owns the merge click on anything `CODEOWNERS` lists:**
-  `src/lib/calc/`, `src/data/`, `tests/calc/`, `CLAUDE.md`, `.github/`,
-  `wrangler.toml`. CI can prove code matches a fixture but not that the fixture
-  matches reality, which is why those paths are listed.
-- **That boundary is currently honoured by the agent, not enforced by the server.**
-  `require_code_owner_reviews` is `false` and `required_approving_review_count`
-  is `0`, so `CODEOWNERS` states an intent branch protection does not implement.
-  D89 records it and carries the one command that closes it.
+- The agent owns branches, code, commits, pushes, PRs and CI. **Since 2026-10-06 it
+  enables auto-merge on every pull request it opens** — `gh pr merge --squash --auto`,
+  which squashes on green and never before — including changes to `src/lib/calc/`,
+  `src/data/` and `tests/calc/`. The operator asked for it after merging #92 by hand
+  (D99). The end-of-turn report lists every merge.
+- **The operator still owns the merge click on two things:** the legal pages
+  (`/privacy`, `/terms`), and the rails — `CLAUDE.md`, `.github/`, `wrangler.toml`.
+- **None of this is enforced by the server.** `require_code_owner_reviews` is
+  `false` and `required_approving_review_count` is `0`; the boundary above is
+  honoured by the agent. D89 carries the command that would enforce a review on
+  the `CODEOWNERS` paths, if the operator ever wants one back.
 - Branch protection is server-side with `enforce_admins: true`, so it binds the
   operator's account too — which is the point, since the agent authenticates
   with the operator's token.
