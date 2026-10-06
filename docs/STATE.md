@@ -30,9 +30,9 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 28 (27 substantive — `/404` is not) |
+| Pages built | 29 (28 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 498 passing |
+| Tests | 727 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
@@ -294,6 +294,25 @@ and `tests/calc/hole-pattern-display.test.ts` checks those strings.
 - Written from the research spec, then cross-checked against the Android
   core's tests (Gate 7): conventions and figures agree.
 
+### True position
+
+`/machining/true-position-calculator` (2026-10-06, D101) says how far a hole or
+pin is from its true position, as the diameter a position tolerance is written
+in, and whether it passes: regardless of size, or at MMC or LMC with the bonus
+from the measured size. The same island pattern: `calc/true-position.ts`
+decides, `calc/true-position-display.ts` words it, and
+`tests/calc/true-position-display.test.ts` checks the strings.
+
+- **The published checks (rule 3):** GD&T Basics' .003 and .002 in example,
+  and Cogorno's Table 7-3 and plated part (two drawings of one hole).
+- **No pass or fail at MMC or LMC without the size.** A feature out of size
+  fails on size and earns no bonus; zero tolerance only at MMC or LMC.
+- **Exact:** the verdict is decided on the squares in BigInt, and the position
+  is rounded once from an integer-root bracket.
+- Written from the research spec, then cross-checked against the Android
+  core's tests (Gate 7). No table or CSV: one feature against one frame has no
+  schedule (D101).
+
 ### The conversion surface
 
 `/machining/app` describes the app; `/apps` is the site-level index linked from
@@ -368,7 +387,7 @@ confirms it, so `MAX_PENDING` is 1.
 
 ## Next
 
-**The content threshold is met.** The build produces 28 pages, of which 27 are
+**The content threshold is met.** The build produces 29 pages, of which 28 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -422,7 +441,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **27** — none to go |
+| 15+ substantive pages | **28** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |

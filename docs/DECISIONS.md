@@ -4181,6 +4181,80 @@ refusal found it.
 the origin's distance plus the pattern's reach (by the triangle inequality no
 hole can be further out).
 
+### D101 — True position: no verdict without the size, decided on exact squares
+
+The app's free true position tool, on the site, written from
+`machinist-calc-research` 03-spec/calculations.md §6 rather than from the
+Kotlin, then compared with the Android core's own tests (Gate 7): every
+published figure and convention compared agrees. The comparison brought three
+of the app's behaviours across: a blank tolerance shows the position alone, a
+negative figure after a minus is bracketed in the working (−24.97 − (−25)),
+and every length that can be negative has a ± key, because some phone
+keyboards for decimals have no minus.
+
+**The published checks.** Rule 3 wants a real published result. GD&T Basics
+works a hole .003 in off in X and .002 in Y against .008: Ø.0072111 in, which
+they print as .007, and the page prints 0.0072. Cogorno's GD&T textbook, as
+reprinted in his newsletter, tolerances one hole two ways (Table 7-3): Ø.520 to
+.540 at Ø.020 MMC and Ø.500 to .540 at zero MMC, both made at .535, give the
+same Ø.035 in all; plated to .518, the first drawing rejects the hole as too
+small and the second gives it .018, which Ø.010 of position passes. Tests hold
+every figure. The newsletter is linked over http: its host refused https
+connections when checked, and the http PDF is the publisher's own.
+
+**No pass or fail without the size.** The trap the competitor teardown found: a
+pass or fail from the deviations and the tolerance alone is a
+regardless-of-size answer, whatever the frame says. At MMC or LMC the page
+gives no verdict until it has both size limits and the measured size; a
+feature outside its limits fails on size and earns no bonus; regardless of
+size, the answer says no bonus was counted and the size not checked. The
+opening example is chosen to show the cost of the trap: Ø0.2169 is over Ø0.2
+alone and within the Ø0.248 its bonus gives, and the page prints both.
+
+**The verdict is integer arithmetic.** It compares 4(dx² + dy²) with the
+allowed diameter squared, in whole nanometres and in BigInt: at 100 mm off
+against Ø200 mm the squares pass 2^53, and both float routes, `Math.hypot` and
+the squares in doubles, call a position 1e-8 nm over the limit a pass. A test
+holds that case. So a position on the limit passes and one 1.6 nm over fails,
+and the page says over, by less than 0.0001 mm, where both figures read the
+same.
+
+**Rounded once, from a bracket.** The integer square root puts the position
+between two whole nanometres, exactly one when it is a perfect square. Every
+rounding boundary at four decimals is a whole nanometre (50 past each 100 in
+millimetres, 1270 past each 2540 in inches), so the bracket decides the
+rounding, and the margin either side of the limit is bracketed the same way.
+Rounded to a whole nanometre first, dx 108 474 nm and dy 460 nm would print
+0.2170; the position is 0.21694995 mm and the page prints 0.2169.
+
+**Printed arithmetic, reduced to one condition.** The spec asks that every line
+of the working add up as printed, and that the working say so where one does
+not. The app checks line by line because it shows a length in the other unit
+from the one typed. With one unit on the page it comes down to one condition:
+when every input is a whole number of display steps, a difference or sum of
+inputs prints exactly, the position is worked from the very deviations shown,
+and a margin is the difference of its two printed figures unless the position
+sits exactly on a half step, which it cannot (√(a² + b²) is a whole number or
+irrational, never an odd number of quarters). So the note appears exactly when
+an input has more places than are shown, and a property test parses the
+printed lines of 3000 random workings to hold the claim.
+
+**Measured independently.** A 60-digit Decimal reference in Python, written
+before the module, gave the golden values; 20 000 random cases through the
+display module then matched it in every verdict, position, bonus, allowed
+figure and sentence. Every guard was broken on purpose, 37 of them, and a test
+failed each time.
+
+**No table and no CSV.** Rule 10's schedule has no counterpart for one feature
+checked against one frame. The drawing (the zone, the zone with the bonus, the
+axis) and the same position judged with no bonus carry "more than a number".
+A table of several holes is not in the app, and a table of the bonus across
+the size range would print figures the spec does not define; both were left.
+
+**Limits.** 100 mm off in X or Y, a 100 mm tolerance and a 100 mm size range,
+as the spec has them; sizes and coordinates within 100 m, the bolt circle's
+reach, which keeps every length a safe integer.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
