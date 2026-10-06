@@ -1,16 +1,19 @@
-# Anything touching a published number requires a human merge.
+# Who owns what. GitHub requests the operator's review on these paths; the merge
+# policy itself lives in CLAUDE.md, "Workflow" (D89, D99).
 #
-# CI can prove the code matches the fixture. It cannot prove the fixture matches reality.
-# A confidently, consistently, testably wrong figure passes every automated gate — and is
-# the one failure mode this project treats as fatal.
-#
-# Everything not listed here auto-merges once CI is green.
+# Since 2026-10-06 the agent auto-merges its own pull requests on green CI, the
+# arithmetic included, at the operator's request. CI can prove the code matches the
+# fixture. It cannot prove the fixture matches reality, so the agent's own checking
+# stands in for the review: cited sources, guards broken on purpose, the page opened
+# in a browser, and every merge listed for the operator to read.
 
 /src/lib/calc/      @TheVikashSingh
 /src/data/          @TheVikashSingh
 /tests/calc/        @TheVikashSingh
 
-# Governance and safety rails
+# Still merged by the operator, never auto-merged: the legal pages and the rails.
+/src/pages/privacy.astro  @TheVikashSingh
+/src/pages/terms.astro    @TheVikashSingh
 /CLAUDE.md          @TheVikashSingh
 /.github/           @TheVikashSingh
 /wrangler.toml      @TheVikashSingh

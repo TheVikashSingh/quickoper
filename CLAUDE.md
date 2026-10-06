@@ -233,18 +233,22 @@ is not automatically last. Therefore:
   a shared branch, never delete a branch or tag, never run `wrangler deploy`, never modify
   branch protection or workflow permissions.
 - Open a PR. CI must pass: typecheck, Vitest, secret scan, JS byte budget.
-- **Merging is `CODEOWNERS`-shaped, not agent-versus-operator.** Since 2026-09-10 the
-  agent enables GitHub auto-merge (`gh pr merge --squash --auto`) on a pull request that
-  touches **no path listed in `CODEOWNERS`**. It squashes itself once the required checks
-  go green, and never before them.
-- **A pull request touching any `CODEOWNERS` path is never auto-merged** — `src/lib/calc/`,
-  `src/data/`, `tests/calc/`, `CLAUDE.md`, `.github/`, `wrangler.toml`. Open it, say so,
-  and leave the merge to the operator. CI can prove the code matches the fixture; it cannot
-  prove the fixture matches reality, and that is the whole reason those paths are listed.
-- **Honour that boundary as a rule of this file, not as something the server enforces.**
-  Branch protection currently has `require_code_owner_reviews: false` and
-  `required_approving_review_count: 0`, so nothing stops an agent auto-merging a change to
-  `calc/`. See D89.
+- **The agent auto-merges its own pull requests, including the arithmetic.** Since
+  2026-10-06 (the operator: "next time you auto merge") the agent enables GitHub
+  auto-merge (`gh pr merge --squash --auto`) on every pull request it opens, including
+  those touching `src/lib/calc/`, `src/data/` and `tests/calc/`. It squashes itself once
+  the required checks go green, and never before them. See D99, which supersedes D89's
+  carve-out for those three paths.
+- **Because nobody reviews, the agent's own checking is the review.** Every expected value
+  cites a published source or is derived and says so; every new guard is broken on
+  purpose to watch a test fail; the page is opened in a browser before it ships; and the
+  end-of-turn report lists every merged pull request so the operator can read it later.
+  CI can prove the code matches the fixture; it cannot prove the fixture matches reality.
+- **Still the operator's merge, never auto-merged:** the legal pages (`/privacy`,
+  `/terms`), because they are legal declarations; and the rails themselves —
+  `CLAUDE.md`, `.github/` and `wrangler.toml` — because a release path the agent can
+  rewrite and merge alone is not a release path (D89). Open the pull request, say so,
+  and leave it.
 - Explain trade-offs in the PR body, not just what changed.
 - One tool per session. Long sessions produce inconsistent output and unreviewable diffs.
 

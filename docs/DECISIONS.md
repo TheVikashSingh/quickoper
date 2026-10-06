@@ -3480,6 +3480,9 @@ at 0.53 KB.
 
 ### D89 — Auto-merge, and a CODEOWNERS file that enforces nothing
 
+*Partly superseded by D99 (2026-10-06): the agent now auto-merges the three
+arithmetic paths too, at the operator's request. The rails stay the operator's.*
+
 The operator asked for the agent to merge its own pull requests. The rule
 forbidding that was in `CLAUDE.md`, `docs/STATE.md` and this file's working
 agreement, so it was raised rather than quietly followed or quietly broken. The
@@ -4098,6 +4101,39 @@ font joins the digits either side of that character into a built fraction and
 drew "3√¾", which reads as 3 × √(3/4) = 2.598 beside a constant of 1.299. A
 phone's browser may draw with the same font. Every occurrence on the site is
 now an ordinary slash, and a test checks the working has none.
+
+### D99 — The agent merges its own arithmetic, and keeps its hands off the rails
+
+D89 scoped auto-merge by `CODEOWNERS`: everything merged itself on green except
+`src/lib/calc/`, `src/data/`, `tests/calc/` and the rails, which waited for the
+operator. On 2026-10-06 the operator merged #92, the number and letter drills,
+by hand and asked for the next ones not to wait: "next time you auto merge".
+The operator is one person with two or three hours a day, and the merge click
+was the queue.
+
+**What changes.** The agent now enables auto-merge on every pull request it
+opens, the arithmetic included. #94, forming taps, was the first `calc/` change
+merged that way.
+
+**What stays the operator's, and why.** The legal pages, `/privacy` and
+`/terms`, are legal declarations, and the agent does not make those. The
+rails — `CLAUDE.md`, `.github/` and `wrangler.toml` — stay too, for D89's own
+reason: a release path the agent can rewrite and merge alone is not a release
+path. This entry is in a pull request the operator merges for exactly that
+reason.
+
+**What replaces the review.** D89's point still holds: CI proves the code
+matches its fixture, not that the fixture matches the world. The agent's own
+checking carries that now, and it is written into `CLAUDE.md` so it is not a
+mood: expected values cite a published source or say they are derived; new
+guards are broken on purpose to watch a test fail; the page is opened in a
+browser; and every merged pull request is listed at the end of the turn for the
+operator to read later. #92 and #94 were built that way: 59 Guhring figures
+and three makers' drill tables as tests, every guard mutation-checked.
+
+**Rejected: deleting `CODEOWNERS`.** It still asks GitHub to request the
+operator's review on those paths, which costs nothing and keeps the record of
+whose they are.
 
 ### D28 — Static prose belongs to the page, not to the island
 
