@@ -258,10 +258,10 @@ export const CATALOGUE: readonly Entry[] = [
   },
   {
     href: '/machining/feeds-and-speeds-calculator',
-    title: 'Feeds and speeds — milling and turning, treated the same',
+    title: 'Feeds and speeds — milling, turning, drilling and boring',
     short: 'Feeds and speeds',
     summary:
-      'Spindle speed, feed in both mm/rev and mm/min, removal rate, chip thinning and cutting power, with every substituted value shown.',
+      'Spindle speed, feed in both mm/rev and mm/min, removal rate, the real chip at any entering angle and cutting power, with every substituted value shown.',
     detail: 'No material dropdown. Your cutting data comes from your tooling sheet.',
     vertical: 'machining',
     kind: 'calculator',

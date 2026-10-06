@@ -4285,6 +4285,76 @@ override was the only machining font rule.
 Supersedes D88's "machining is the exception that earns a sans" and the "no
 serif" line of STATE.md's machining section.
 
+### D103 — Feeds and speeds: the real chip, the entering angle, and a page that computes nothing
+
+Roadmap W5's first half: the app's chip-thickness work (its roadmap 2.1 and
+2.1b) on the site, written from `machinist-calc-research` 03-spec/calculations.md
+§3, "Chip thickness" and "Entering angle κr", rather than from the Kotlin, then
+compared with the Android core's tests (Gate 7): every figure and rule agrees,
+and the comparison brought two of the app's behaviours across — the chip lines
+of the working print their substituted values (sin κr, ae/D, the engaged arc
+in degrees), and a typed 0° is answered as the lead angle it almost certainly
+is.
+
+**A wrong figure was live.** The page's mean chip was hm ≈ fz × √(ae/Dc),
+labelled approximate. It is the narrow-cut limit of the real mean — 0.3162
+against 0.3108 at a tenth of the diameter — but in a full slot it gave fz
+itself, where the real mean is (2/π) × fz, 0.637 of it. Kennametal's own patent
+(US 12,202,058 B2) prints both and calls the √ form "an approximation formula".
+The Kienzle force rises as the chip thins, so the power it fed for slotting was
+about 11% low at mc 0.25 (π/2 to the power −0.25). Now hm is the patent's
+formula with the exact 360/π where it prints 114.6, checked against the spec's
+golden table to ten places and against a numerical average of fz × sin φ over
+the arc the tooth cuts.
+
+**What is new.** The maximum chip hex and the feed that restores it, from
+Sandvik Coromant's milling formulas; and the entering angle κr, with the speed
+and the chip worked at Dcap = Dc + 2 × ap / tan κr, as Sandvik works them. The
+width check stays at Dc: only the tip leaves a flat floor. The restoring feed is
+shown, never applied, with a warning on an angled cutter that a data sheet may
+already have raised its feed for κr, and by how much raising it again would
+overshoot (1/sin κr: 1.4142 at 45°).
+
+**The published checks (rule 3).** Sandvik's entering-angle page prints the
+feed for a 0.1, 0.15 and 0.2 mm chip at 90°, 75°, 65°, 45° and 10°, and its
+modification factors; fz = hex / sin κr reproduces all fifteen feeds and all
+five factors to the places printed, and a test holds them. Sandvik's CoroMill
+345 (345-063C6-13M: DC 63.00 mm, KAPR 45°, APMX 6.00 mm, read on its product
+page) cuts at Dcap 75 mm at full depth and turns at 1061 rev/min at 250 m/min,
+not the 1263 its tip diameter gives. Every Sandvik formula used was read off
+its formula images in a browser on 2026-10-06; the pages are a JavaScript
+application, so the link gate sees only their shell.
+
+**A page that computes nothing.** The page used to convert, round and write its
+working in its own script — the arrangement D72 moved the tap drill page away
+from. Now `calc/feeds-speeds-display.ts` builds every figure and the working,
+the page maps them onto the DOM, and the tests check the strings, for all four
+operations. Figures print at four fixed places; the spindle speed stays the
+whole number a control takes, with every feed worked from the unrounded n.
+
+**The vf line multiplies out as printed** (the app's PR #60, calculations.md
+§1): n is printed to the fewest places, four to six, at which fn × n multiplied
+exactly as printed gives the vf printed — `0.4000 × 3183.09886 = 1273.2395` —
+and where none does, the line says so. A sweep of 2880 cuts holds the rule
+both ways.
+
+**Ties, decided exactly.** A search found the restoring feed printed a step out
+on 390 of 2.1 million 45° cuts: a 50 mm 45° cutter 20 mm deep with ae 10 thins
+the chip to exactly 4/9 of fz, so fz 0.001 mm is restored by exactly 0.00225 mm,
+and the floats printed 0.0023 where half-even says 0.0022. Wherever (hex/fz)²
+is rational — sin² κr is rational only at multiples of 30° and 45° (Niven), and
+below full width the diameter must be too, Dc at 90° and Dc + 2 × ap at 45°,
+where tan 45° is now 1 rather than Math.tan's 0.9999999999999999 — hex and the
+restoring feed are rounded from their exact squares in BigInt. hm needs no such
+care: it carries an arccos and π, and cannot land on a tie. A recheck of
+540 000 cuts at 30°, 45°, 60° and 90° found none a step out. 20 000 random
+milling cuts then matched an independent Python reference in every figure but
+two, both exact ties where the reference's own floats were the ones a step out.
+
+**Measured.** 26 guards broken on purpose, each caught by a test.
+
+Tapping, the other half of W5, follows separately.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

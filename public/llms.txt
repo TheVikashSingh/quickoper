@@ -292,15 +292,30 @@ Verification: https://quickoper.com/finance/verify
 ### Feeds and speeds calculator
 URL: https://quickoper.com/machining/feeds-and-speeds-calculator
 Computes: spindle speed, feed per revolution AND table feed, material removal
-rate, mean chip thickness, and net cutting power for milling and for turning.
+rate, net cutting power and machine power, for milling, turning, drilling and
+boring; for milling also the maximum and mean chip thickness at any entering
+angle, and the feed per tooth that restores a thinned chip.
 Inputs: cutting speed Vc, cutting diameter Dc, feed per tooth (milling) or feed
-per revolution (turning), tooth count, radial depth ae, axial depth ap, unit
-system; optionally kc1.1, mc, spindle efficiency and machine rating for power.
-Key figures: n = Vc x 1000 / (pi x Dc) metric, Vc x 12 / (pi x Dc) inch.
-fn = fz x z. vf = fn x n. Milling removal rate Q = ae x ap x vf / 1000; turning
-Q = Vc x ap x fn, a DIFFERENT formula, not the milling one relabelled. Kienzle
-kc = kc1.1 x h^-mc. Pc = ae x ap x vf x kc / (60e6 x efficiency). Mean chip
-thickness approximated as fz x sqrt(ae/Dc).
+per revolution (the others), tooth count, radial depth ae, axial depth ap, the
+milling entering angle (blank for 90 degrees), the starting bore for boring,
+unit system; optionally kc1.1, mc, spindle efficiency and machine rating.
+Key figures: n = Vc x 1000 / (pi x D) metric, Vc x 12 / (pi x D) inch, with D
+the cutting diameter at depth: Dcap = Dc + 2 x ap / tan(kr) on an angled
+milling cutter (Sandvik Coromant), so a 63 mm 45-degree cutter 6 mm deep cuts at
+75 mm and turns at 1061 rev/min at 250 m/min, not 1263. fn = fz x z. vf = fn x n.
+Milling Q = ae x ap x vf / 1000; turning and boring Q = Vc x ap x fn, a DIFFERENT
+formula; drilling Q = Dc x fn x Vc / 4. Maximum chip hex = fz x sin(kr) at or
+above half the diameter, fz x sin(kr) x 2 x sqrt(D x ae - ae^2) / D below it
+(Sandvik Coromant); mean chip hm = fz x sin(kr) x (ae/D) x (360/pi) /
+arccos_degrees(1 - 2 x ae/D) (Kennametal US 12,202,058 B2, which prints 114.6
+for 360/pi): (2/pi) x fz in a full slot. The feed that restores the chip is
+fz / (hex/fz), shown and never applied: 1.667 x fz at a width of 10% of the
+cutter. Kienzle kc = kc1.1 x hm^-mc. Net power Pc = Q x kc / 60000 (Q in
+cm3/min), with no efficiency in it; machine power Pm = Pc / efficiency, the
+figure to compare with a spindle rating. Every figure is rounded once,
+half-even, to four places; a chip exactly on a rounding tie is rounded from
+its exact value. Until 2026-10-07 the mean chip was the approximation
+fz x sqrt(ae/Dc), which put slotting power about 11% low.
 NO MATERIAL DATABASE. This tool never supplies a cutting speed or a feed per
 tooth. Those are properties of a material AND an insert grade, coating,
 geometry, coolant and machine, published differently by every tooling maker, so
