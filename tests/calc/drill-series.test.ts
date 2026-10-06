@@ -6,18 +6,22 @@ import {
   PENDING_SERIES,
   drillsFor,
 } from '../../src/lib/calc/drill-series';
+import { LETTER_DRILLS, NUMBER_DRILLS } from '../../src/lib/calc/number-letter-drills';
 import {
   NM_PER_INCH,
   snapToSeries,
   drillDiameterFor,
+  inchToNm,
   mmToNm,
+  tpiToPitchNm,
 } from '../../src/lib/calc/tap-drill';
 
 /**
- * The catalogues are GENERATED, so these tests check the generator against the
- * series definition rather than against a transcribed list. That is the whole
- * reason number and letter drills are absent: there is no definition to check
- * them against, only a table someone typed.
+ * The metric and fractional catalogues are GENERATED, so these tests check the
+ * generator against the series definition rather than against a transcribed
+ * list. Number and letter drills have no definition to check against; their
+ * table and its provenance are tested in `number-letter-drills.test.ts`, and
+ * this file checks how the indexes are assembled from all four.
  */
 
 describe('metric series', () => {
@@ -88,7 +92,7 @@ describe('fractional series', () => {
 
 describe('drillsFor', () => {
   it('returns each catalogue ascending', () => {
-    for (const series of ['metric', 'fractional', 'both'] as const) {
+    for (const series of ['metric', 'inch', 'fractional', 'both'] as const) {
       const drills = drillsFor(series);
       for (let i = 1; i < drills.length; i++) {
         expect(drills[i]!.nm).toBeGreaterThanOrEqual(drills[i - 1]!.nm);
@@ -96,10 +100,34 @@ describe('drillsFor', () => {
     }
   });
 
-  it('combines both catalogues without losing any drill', () => {
-    expect(drillsFor('both').length).toBe(
-      METRIC_DRILLS.length + FRACTIONAL_DRILLS.length,
+  it('combines the catalogues without losing any drill', () => {
+    expect(drillsFor('inch').length).toBe(
+      FRACTIONAL_DRILLS.length + NUMBER_DRILLS.length + LETTER_DRILLS.length,
     );
+    expect(drillsFor('inch').length).toBe(138);
+    expect(drillsFor('both').length).toBe(
+      METRIC_DRILLS.length +
+        FRACTIONAL_DRILLS.length +
+        NUMBER_DRILLS.length +
+        LETTER_DRILLS.length,
+    );
+    expect(drillsFor('both').length).toBe(289);
+  });
+
+  it('keeps metric drills out of the inch index', () => {
+    expect(drillsFor('inch').some((d) => d.series === 'metric')).toBe(false);
+  });
+
+  /**
+   * Two holes have two names: 1/2" is 12.7 mm, and 1/4" is letter E. The name
+   * listed first is the one snapToSeries reports, so the order is pinned:
+   * metric, fractional, number, letter.
+   */
+  it('lists one hole under two names in a fixed order', () => {
+    const both = drillsFor('both').map((d) => d.label);
+    expect(both.indexOf('12.7 mm')).toBe(both.indexOf('1/2"') - 1);
+    const inch = drillsFor('inch').map((d) => d.label);
+    expect(inch.indexOf('1/4"')).toBe(inch.indexOf('E') - 1);
   });
 });
 
@@ -138,6 +166,44 @@ describe('the catalogue serves real threads', () => {
     }
   });
 
+  /**
+   * The inch index reproduces the published inch tap drill chart.
+   *
+   * Drill column: the Unified rows of `tests/fixtures/golden-tap-drill.csv`,
+   * verified 2026-09-13 against the Dormer/Precision Twist Drill and Guhring
+   * charts (D96). At 75 %, the basis the inch charts are worked at, the inch
+   * index gives each thread exactly its published drill — not within one size.
+   */
+  it.each([
+    ['#4-40', 0.112, 40, '#43'],
+    ['#6-32', 0.138, 32, '#36'],
+    ['#8-32', 0.164, 32, '#29'],
+    ['#10-24', 0.19, 24, '#25'],
+    ['1/4-20', 0.25, 20, '#7'],
+    ['3/8-16', 0.375, 16, '5/16"'],
+  ] as const)(
+    '%s (%s in, %i tpi) at 75 percent gets the published %s',
+    (_thread, major, tpi, expected) => {
+      const majorNm = inchToNm(major);
+      const pitchNm = tpiToPitchNm(tpi);
+      const target = drillDiameterFor(majorNm, pitchNm, 75);
+      expect(snapToSeries(majorNm, pitchNm, target, drillsFor('inch'))?.drill.label).toBe(
+        expected,
+      );
+    },
+  );
+
+  it('cannot serve #8-32 from the fractional drills alone', () => {
+    // Why the inch index exists: against fractions only, 75 % lands on 9/64",
+    // which gives 57.58 % — derived here, 100 × (0.164 − 0.140625) / (K / 32).
+    const majorNm = inchToNm(0.164);
+    const pitchNm = tpiToPitchNm(32);
+    const target = drillDiameterFor(majorNm, pitchNm, 75);
+    const choice = snapToSeries(majorNm, pitchNm, target, drillsFor('fractional'));
+    expect(choice?.drill.label).toBe('9/64"');
+    expect(choice?.engagementPercent).toBeCloseTo(57.58, 2);
+  });
+
   it('never recommends a drill outside the catalogue', () => {
     const series = drillsFor('both');
     const known = new Set(series.map((d) => d.nm));
@@ -161,12 +227,18 @@ describe('the catalogue serves real threads', () => {
 
 describe('missing series are declared, not hidden', () => {
   it('names the catalogues that are not shipped and why', () => {
-    // A calculator that silently omits the number drills recommends a 13/64"
-    // where a #7 was right, and the user cannot tell. The UI reads this list.
+    // Both pages read this list and print it above their results. An omission
+    // a machinist cannot see is a recommendation they cannot question.
     expect(PENDING_SERIES.length).toBeGreaterThan(0);
     for (const s of PENDING_SERIES) {
       expect(s.name).toBeTruthy();
       expect(s.reason).toMatch(/verif/i);
     }
+  });
+
+  it('no longer lists number or letter drills, which now ship', () => {
+    // If they were still listed, both pages would tell a machinist a series is
+    // missing that the index in front of them contains.
+    expect(PENDING_SERIES.map((s) => s.name).join(' ')).not.toMatch(/number|letter/i);
   });
 });

@@ -4,6 +4,7 @@ import RelatedTools from '../../components/RelatedTools.astro';
 import { sourceRef } from '../../lib/schema';
 import { SITE } from '../../lib/site';
 import { PENDING_SERIES } from '../../lib/calc/drill-series';
+import { NUMBER_LETTER_SOURCES } from '../../lib/calc/number-letter-drills';
 
 /**
  * Tap drill calculator.
@@ -56,6 +57,9 @@ const SOURCES = [
     url: 'https://www.asme.org/codes-standards',
     retrieved: LAST_VERIFIED,
   },
+  // Number and letter drill diameters: every figure is printed by at least two
+  // of these three makers (number-letter-drills.ts, D97).
+  ...NUMBER_LETTER_SOURCES,
 ].map((s) => sourceRef.parse(s));
 
 const FAQ = [
@@ -69,11 +73,11 @@ const FAQ = [
   },
   {
     q: 'Which drill does it pick, and can it come out larger than the target?',
-    a: 'It picks the nearest drill in your index to the computed target, and where two are equally near it takes the larger one. So yes, it can be larger, and often is: M8 × 1.25 at 75% wants 6.7822 mm and gets the 6.8 mm drill, which gives 73.9%. That is what every published chart specifies, and it is why the engagement you get is reported beside the engagement you asked for rather than assumed to match. What protects you is not the direction of the rounding — it is that the drill comes from an index of sizes that exist, and that its true engagement is always shown.',
+    a: 'It picks the nearest drill in your index to the computed target. Where the target lands exactly midway between two drills the tie is broken half-even, which is how the published charts come out: M8 × 1.25 up to 6.8 mm, M12 × 1.75 down to 10.2 mm. So yes, it can be larger, and often is: M8 × 1.25 at 75% wants 6.7822 mm and gets the 6.8 mm drill, which gives 73.9%. That is what every published chart specifies, and it is why the engagement you get is reported beside the engagement you asked for rather than assumed to match. What protects you is not the direction of the rounding — it is that the drill comes from an index of sizes that exist, and that its true engagement is always shown.',
   },
   {
-    q: 'Where are the number and letter drills?',
-    a: 'Not shipped yet, and the page says so rather than hiding it. Metric and fractional inch sizes are generated from their own definitions, so there is no transcription to get wrong. Number and letter drills are eighty-odd decimal values copied from a table, and they arrive once a person has checked them against a manufacturer catalogue.',
+    q: 'Does it know number and letter drills?',
+    a: "Yes. Choose the inch index and it searches fractional, number (#80 to #1) and letter (A to Z) drills together, which is the rack the published inch charts pick from: 1/4-20 at 75% gets a #7 and 75.44%, #8-32 a #29 and 68.97%. Number and letter sizes are a table rather than a rule, so every one of the 106 figures is one that Guhring, Pan American Tool and Dormer print. All three print the same figure for 104 sizes. For J and M two of the three agree, the page uses their figure, and it shows the third maker's whenever J or M is the answer.",
   },
   {
     q: 'Is the minor diameter the same as the tap drill?',
@@ -95,7 +99,7 @@ const structuredData = [
     url: `${SITE.url}/machining/tap-drill-calculator`,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     description:
-      'Metric-first tap drill sizing. Returns a drill from a real index and the thread engagement that drill actually produces, with the surrounding sizes shown.',
+      'Metric-first tap drill sizing. Returns a drill from a real index of metric, fractional, number and letter drills, and the thread engagement that drill actually produces, with the surrounding sizes shown.',
   },
   {
     '@context': 'https://schema.org',
@@ -134,7 +138,7 @@ const label = 'block text-sm font-semibold text-ink-soft';
 
 <BaseLayout
   title="Tap drill calculator"
-  description="Metric-first tap drill sizing that reports the thread engagement your actual drill produces, not the one you asked for. Shows the surrounding sizes, the formula and the source standard."
+  description="Metric-first tap drill sizing that reports the thread engagement your actual drill produces, not the one you asked for. Searches metric, fractional, number and letter drills, and shows the surrounding sizes, the formula and the source standard."
   vertical="machining"
   structuredData={structuredData}
 >
@@ -226,10 +230,13 @@ const label = 'block text-sm font-semibold text-ink-soft';
               ><input type="radio" name="series" value="metric" checked /> Metric</label
             >
             <label class="flex items-center gap-2"
-              ><input type="radio" name="series" value="both" /> Both</label
+              ><input type="radio" name="series" value="inch" /> Inch: fractional, number, letter</label
             >
             <label class="flex items-center gap-2"
-              ><input type="radio" name="series" value="fractional" /> Fractional inch only</label
+              ><input type="radio" name="series" value="fractional" /> Fractional only</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="series" value="both" /> Both racks</label
             >
           </div>
         </fieldset>
@@ -399,6 +406,30 @@ const label = 'block text-sm font-semibold text-ink-soft';
         are what make a silent substitution impossible.
       </p>
       <h3 class="font-display text-ink text-xl font-semibold">
+        Inch threads need the whole inch rack
+      </h3>
+      <p>
+        The published inch charts pick from three series at once: fractional drills,
+        number drills (#80 to #1) and letter drills (A to Z). The small Unified threads
+        live almost entirely on number drills, and the fractions alone cannot serve them.
+        Searched against fractional drills only, #8-32 at 75% lands on 9/64 inch and gives <strong
+          >57.58%</strong
+        > engagement, below the usual 60–80% band. The inch index finds the #29 every chart
+        names, at 68.97%. #4-40 goes the same way: 3/32 inch and 56.20% from the fractions alone,
+        the published #43 and 70.82% from the whole rack.
+      </p>
+      <p>
+        So the drill index follows the units until you choose one yourself, and inches
+        search fractional, number and letter drills together. Number and letter sizes are
+        not arithmetic — #29 is 0.1360 inch because the table says so — so each of the 106
+        figures here is one that Guhring, Pan American Tool and Dormer print, read from
+        their charts and compared size by size. All three print the same figure for 104
+        sizes. For J and M two makers agree and the third prints its own, so the page uses
+        the figure two of them print and shows the third whenever J or M is the answer.
+        For 5/16-24 at 65% that is J, at 65.59%; Guhring's 0.2772 inch would make it
+        65.22%.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
         Minor diameter is not the tap drill
       </h3>
       <p>
@@ -417,10 +448,18 @@ const label = 'block text-sm font-semibold text-ink-soft';
         What this does not have yet
       </h2>
       <p class="text-ink-soft mt-2 max-w-prose text-sm">
-        A calculator that silently omits half the rack will recommend a 13/64″ where a #7
-        was the right answer, and you would have no way to know. So:
+        Every drill it recommends comes from the index you chose, and a gap in an index is
+        an answer you cannot see. So the gaps are listed here:
       </p>
       <ul class="mt-3 space-y-2">
+        <li class="text-sm">
+          <span class="text-ink font-semibold">Anything above 13 mm or 1/2 inch</span>
+          <span class="text-ink-mute">
+            {' '}
+            — both indexes stop at a jobber-set size, so M16 and larger, and 5/8-11, are refused
+            rather than sent to the largest drill. Above that, work from your tap maker's table.
+          </span>
+        </li>
         {
           PENDING_SERIES.map((s) => (
             <li class="text-sm">
@@ -494,10 +533,11 @@ const label = 'block text-sm font-semibold text-ink-soft';
         }
       </ul>
       <p class="text-ink-mute mt-3 max-w-prose text-sm">
-        Standards are cited for the thread geometry and the drill series definitions. The
-        diameters this tool searches are generated from those definitions rather than
-        transcribed from a table, which is why there is no list of individual values to
-        get wrong. Links point at the ISO classification and the ASME catalogue rather
+        Standards are cited for the thread geometry and the drill series definitions.
+        Metric and fractional diameters are generated from those definitions rather than
+        transcribed from a table. Number and letter drills are a table, so each figure is
+        one that at least two of the three makers listed print, read from their charts on
+        2026-09-27. Links point at the ISO classification and the ASME catalogue rather
         than at per-standard pages, because those are renumbered across revisions — the
         designation in each label is the durable reference.
       </p>
@@ -512,7 +552,7 @@ const label = 'block text-sm font-semibold text-ink-soft';
 
     <RelatedTools
       vertical="machining"
-      hubNote="the other shop-floor tools, each generated from its series definitions rather than transcribed"
+      hubNote="the other shop-floor tools, each showing its working"
       links={[
         {
           href: '/machining/drill-size-chart',
@@ -530,7 +570,11 @@ const label = 'block text-sm font-semibold text-ink-soft';
 </BaseLayout>
 
 <script>
-  import { tapDrillDisplay, type DisplayUnits } from '../../lib/calc/tap-drill-display';
+  import {
+    tapDrillDisplay,
+    type DisplayUnits,
+    type TapDrillDisplay,
+  } from '../../lib/calc/tap-drill-display';
   import type { SeriesName } from '../../lib/calc/drill-series';
 
   /**
@@ -554,6 +598,14 @@ const label = 'block text-sm font-semibold text-ink-soft';
   const csvBtn = must('td-csv');
 
   let csvRows: string[][] = [];
+
+  /** Said under the drill, because "E" on its own reads like a typo. */
+  const SERIES_WORD: Record<TapDrillDisplay['drillSeries'], string> = {
+    metric: '',
+    fractional: ' · fractional',
+    number: ' · number drill',
+    letter: ' · letter drill',
+  };
 
   const num = (name: string): number =>
     Number((form.elements.namedItem(name) as HTMLInputElement).value);
@@ -593,7 +645,7 @@ const label = 'block text-sm font-semibold text-ink-soft';
           <div>
             <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Use this drill</p>
             <p class="mt-1 font-numeric text-3xl font-semibold text-brand">${d.drillLabel}</p>
-            <p class="text-sm text-ink-mute">${d.drillLength}</p>
+            <p class="text-sm text-ink-mute">${d.drillLength}${SERIES_WORD[d.drillSeries]}</p>
           </div>
           <div>
             <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">You will get</p>
@@ -606,6 +658,11 @@ const label = 'block text-sm font-semibold text-ink-soft';
             <p class="text-sm text-ink-mute">no drill is this size</p>
           </div>
         </div>
+        ${
+          d.drillNote === null
+            ? ''
+            : `<p class="mt-4 text-sm text-ink-soft">${d.drillLabel}: ${d.drillNote} This uses the figure two of the three print.</p>`
+        }
         <p class="mt-4 text-sm text-ink-soft">
           Basic minor diameter <span class="font-numeric">${d.minorLength}</span> — the thread root, <strong>not</strong> the drill.
         </p>`;
@@ -651,7 +708,7 @@ const label = 'block text-sm font-semibold text-ink-soft';
   form.querySelectorAll('input[name="units"]').forEach((el) =>
     el.addEventListener('change', () => {
       if (seriesTouched) return;
-      const want = pick('units') === 'mm' ? 'metric' : 'fractional';
+      const want = pick('units') === 'mm' ? 'metric' : 'inch';
       const target = form.querySelector<HTMLInputElement>(
         `input[name="series"][value="${want}"]`,
       );

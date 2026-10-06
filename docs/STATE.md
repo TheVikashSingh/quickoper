@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-09-09, after the URL migration.
+**Updated:** 2026-10-06, number and letter drills on the drill chart and the tap drill calculator (D97).
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -32,9 +32,9 @@ changes the answer to "what exists" or "what is next".
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
 | Pages built | 27 (26 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 430 passing |
+| Tests | 498 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
-| Worst-page JS | 18.68 KB of 19.5 KB (0.82 KB spare) — `/finance/uk-early-repayment-charge-calculator` |
+| Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
 
 ---
@@ -227,7 +227,8 @@ the values change, scoped on `:root[data-vertical='machining']` and set by a
 `vertical` prop on BaseLayout. No component knows which vertical it renders in.
 
 **The calculator island is vanilla TypeScript, not Preact.** `/machining/tap-drill-calculator/`
-ships **2.74 KB** against the 19.5 KB budget, where the Preact finance
+ships **5.39 KB** against the 19.5 KB budget (3.40 KB before the number and
+letter drill table joined it, D97), where the Preact finance
 calculators sit at 17–18.7 KB. A form and a table do not need a framework, and
 the headroom is for the chart and the drill chart that follow.
 
@@ -252,8 +253,9 @@ defaulting them, for the same reason.
 
 ### The drill size chart
 
-`/machining/drill-size-chart` publishes both generated catalogues as a printable
-table: 151 metric sizes and 32 fractional inch, both units on every row. It is
+`/machining/drill-size-chart` publishes all four shop series as printable
+tables: 151 metric sizes, 32 fractional inch, 80 number drills and 26 letter
+drills, both units on every row. It is
 the first machining page that ships **no JavaScript at all** — 0.53 KB, the
 content floor. There is no units toggle because both units are already printed,
 which is what a chart on a wall has to do, and the CSV is a build-time endpoint
@@ -262,8 +264,9 @@ at `/machining/drill-size-chart.csv` rather than a blob built in the browser.
 `src/lib/calc/drill-chart.ts` formats the rows once and both the page and the
 CSV consume it, so the printed table and the downloaded file cannot drift apart.
 
-TWO OMISSIONS ARE STATED ABOVE THE TABLES, not below them. The transcribed
-series (number, letter, DIN 338 R40) were already declared by `PENDING_SERIES`.
+TWO OMISSIONS ARE STATED ABOVE THE TABLES, not below them. The one series still
+unchecked, DIN 338 R40, is declared by `PENDING_SERIES` (number and letter drills
+were on that list until D97).
 The second was found by hand-checking the page against
 `03-spec/data/golden-tap-drill.csv`: the catalogue stops at 13 mm and 1/2 in, so
 M16, M20, M24 and M30 have no drill on it, and neither does the 17/32 in a
@@ -303,20 +306,30 @@ naming here.
 
 ### What ships and what deliberately does not
 
-The drill catalogues are GENERATED from their series definitions — metric at
-0.05 mm steps to 3 mm then 0.1 mm, fractional inch at n/64 — so there is no
-transcribed table to get wrong.
+The metric and fractional catalogues are GENERATED from their series
+definitions — metric at 0.05 mm steps to 3 mm then 0.1 mm, fractional inch at
+n/64 — so there is no transcribed table to get wrong.
 
-Three things are therefore absent, and the page says so rather than hiding it:
+**Number (#80–#1) and letter (A–Z) drills ship since 2026-10-06 (D97)**, from
+`src/data/number-letter-drills.csv`: what Guhring, Pan American Tool and Dormer
+each print for every size, read and compared on 2026-09-27. All three agree on
+104 of 106; for J and M two do, and the third is a note wherever the drill
+appears. The file is the Android app's table byte for byte, and
+`tests/calc/number-letter-drills.test.ts` pins its SHA-256. The module that
+reads it refuses to load unless two makers agree on every figure, so a bad edit
+fails the build rather than reaching a page. The tap drill calculator searches
+them through the new inch index (fractional, number and letter together), and
+every Unified row of the golden fixture now renders its published drill exactly.
 
-- **Number (#80–#1) and letter (A–Z) drills** — eighty-odd transcribed decimals.
+Two things are still absent, and the pages say so rather than hiding it:
+
 - **The DIN 338 R40 preferred series** — the exact standard, as distinct from the
   shop index generated here.
 - **Named thread presets** (M4, M6, M8…) — a preset list is a table of reference
   values. Users enter a pitch directly until those values are verified.
 
-All three are gated behind the same rule: this site does not ship a reference
-figure nobody has checked against a primary source. `tests/fixtures/golden-tap-drill.csv`
+Both are gated behind the same rule: this site does not ship a reference figure
+nobody has checked against a primary source. `tests/fixtures/golden-tap-drill.csv`
 carries `verified_against` / `verified_on` columns, and `MAX_PENDING` in
 `tests/calc/tap-drill-verification.test.ts` is a ratchet that may only be
 lowered. **17 of 18 rows are verified** (2026-09-13, against Dormer/Precision

@@ -251,7 +251,7 @@ export const CATALOGUE: readonly Entry[] = [
     short: 'Tap drill',
     summary:
       'Enter a thread, get the drill from a real index and the thread engagement that drill genuinely produces. Metric-first, with the whole neighbourhood shown rather than one rounded number.',
-    detail: 'Metric and fractional inch. Works offline once loaded.',
+    detail: 'Metric, fractional, number and letter drills. Works offline once loaded.',
     vertical: 'machining',
     kind: 'calculator',
   },
@@ -269,7 +269,7 @@ export const CATALOGUE: readonly Entry[] = [
     href: '/machining/drill-size-chart',
     title: 'Drill size chart — the whole index, on one sheet',
     summary:
-      'Every metric drill from 0.5 to 13.0 mm and every fractional inch drill from 1/64 to 1/2, with both units on every row. Generated from the series definitions, so no diameter on it is a value anyone transcribed.',
+      'Every metric drill from 0.5 to 13.0 mm, every fractional inch drill from 1/64 to 1/2, and every number and letter drill, with both units on every row. The number and letter sizes are the figures three makers print.',
     detail: 'No JavaScript, prints on A4, and says which series it does not carry.',
     vertical: 'machining',
     kind: 'reference',

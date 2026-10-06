@@ -23,8 +23,10 @@ import {
   chartRows,
   INCH_DECIMALS,
   MM_DECIMALS,
+  type ChartRow,
 } from '../../src/lib/calc/drill-chart';
 import { FRACTIONAL_DRILLS, METRIC_DRILLS } from '../../src/lib/calc/drill-series';
+import { LETTER_DRILLS, NUMBER_DRILLS } from '../../src/lib/calc/number-letter-drills';
 
 const find = (label: string) => {
   const row = chartRows('both').find((r) => r.label === label);
@@ -33,25 +35,29 @@ const find = (label: string) => {
 };
 
 describe('chart rows', () => {
-  it('carries every drill in both catalogues and loses none', () => {
+  it('carries every drill in all four catalogues and loses none', () => {
     expect(chartRows('metric')).toHaveLength(METRIC_DRILLS.length);
     expect(chartRows('fractional')).toHaveLength(FRACTIONAL_DRILLS.length);
+    expect(chartRows('number')).toHaveLength(NUMBER_DRILLS.length);
+    expect(chartRows('letter')).toHaveLength(LETTER_DRILLS.length);
     expect(chartRows('both')).toHaveLength(
-      METRIC_DRILLS.length + FRACTIONAL_DRILLS.length,
+      METRIC_DRILLS.length +
+        FRACTIONAL_DRILLS.length +
+        NUMBER_DRILLS.length +
+        LETTER_DRILLS.length,
     );
   });
 
-  it('is ascending by diameter, both catalogues interleaved', () => {
+  it('is ascending by diameter, all four catalogues interleaved', () => {
     const diameters = chartRows('both').map((r) => r.nm);
     expect(diameters).toEqual([...diameters].sort((a, b) => a - b));
-    // Interleaving is the point of the combined view: 1/64" (0.397 mm) sorts
-    // below 0.5 mm, so the first row is fractional even though metric leads
-    // the source array.
+    // Interleaving is the point of the combined view: #80 (0.0135") and #79
+    // (0.0145") sort below 1/64" (0.015625"), which sorts below 0.5 mm.
     expect(
       chartRows('both')
-        .slice(0, 2)
+        .slice(0, 6)
         .map((r) => r.label),
-    ).toEqual(['1/64"', '0.5 mm']);
+    ).toEqual(['#80', '#79', '1/64"', '#78', '#77', '0.5 mm']);
   });
 
   // 1/4" = 6.35 mm exactly (1 in = 25.4 mm, 1959 agreement).
@@ -68,6 +74,15 @@ describe('chart rows', () => {
     expect(find('6.8 mm').mm).toBe('6.800');
   });
 
+  // #29 is 0.1360" by all three makers; 0.1360 × 25.4 = 3.4544 mm. Z is
+  // 0.4130"; 0.4130 × 25.4 = 10.4902 mm.
+  it('converts a number or letter drill to millimetres', () => {
+    expect(find('#29').inch).toBe('0.1360');
+    expect(find('#29').mm).toBe('3.454');
+    expect(find('Z').inch).toBe('0.4130');
+    expect(find('Z').mm).toBe('10.490');
+  });
+
   it('prints fixed decimals so a printed column aligns', () => {
     for (const row of chartRows('both')) {
       expect(row.mm.split('.')[1]).toHaveLength(MM_DECIMALS);
@@ -75,25 +90,59 @@ describe('chart rows', () => {
     }
   });
 
-  it('renders two rows to the same figure only where the drills truly coincide', () => {
-    // 1/2" IS 12.7 mm — exactly, by the 1959 inch. Both marks exist and both
-    // rows stay, because a machinist looking for "12.7" and one looking for
-    // "1/2" are looking for the same drill and neither should come up empty.
+  const collisions = (rows: readonly ChartRow[], column: 'mm' | 'inch') => {
+    const seen = new Map<string, string[]>();
+    for (const row of rows) {
+      seen.set(row[column], [...(seen.get(row[column]) ?? []), row.label]);
+    }
+    return [...seen].filter(([, labels]) => labels.length > 1);
+  };
+
+  it('renders two rows to the same millimetre figure only where the drills coincide', () => {
+    // 1/2" IS 12.7 mm, and 1/4" IS letter E (0.2500" by every maker) —
+    // exactly, by the 1959 inch. Both marks exist and both rows stay, because
+    // a machinist looking for either name is looking for the same drill.
     //
     // Asserting the exact set rather than "no duplicates" keeps the check
     // meaningful: change the decimals and merge two genuinely different sizes,
     // and this fails naming them.
-    const byMm = new Map<string, string[]>();
-    for (const row of chartRows('both')) {
-      byMm.set(row.mm, [...(byMm.get(row.mm) ?? []), row.label]);
-    }
-    const collisions = [...byMm].filter(([, labels]) => labels.length > 1);
-    expect(collisions).toEqual([['12.700', ['12.7 mm', '1/2"']]]);
+    expect(collisions(chartRows('both'), 'mm')).toEqual([
+      ['6.350', ['1/4"', 'E']],
+      ['12.700', ['12.7 mm', '1/2"']],
+    ]);
   });
+
+  it('shares an inch figure across series only for the four pairs it names', () => {
+    // The two identities above, plus two pairs a micrometre apart: #13 is
+    // 0.1850" (4.699 mm) and 4.7 mm is 0.18504"; #12 is 0.1890" (4.8006 mm)
+    // and 4.8 mm is 0.18898". Four decimals of an inch cannot split those; the
+    // millimetre column does, and the page says so.
+    expect(collisions(chartRows('both'), 'inch')).toEqual([
+      ['0.1850', ['#13', '4.7 mm']],
+      ['0.1890', ['4.8 mm', '#12']],
+      ['0.2500', ['1/4"', 'E']],
+      ['0.5000', ['12.7 mm', '1/2"']],
+    ]);
+  });
+
+  it.each(['metric', 'fractional', 'number', 'letter'] as const)(
+    'prints every %s drill differently from its neighbours in both columns',
+    (series) => {
+      expect(collisions(chartRows(series), 'mm')).toEqual([]);
+      expect(collisions(chartRows(series), 'inch')).toEqual([]);
+    },
+  );
 
   it('labels each row with the catalogue it comes from', () => {
     expect(find('6.8 mm').series).toBe('metric');
     expect(find('1/4"').series).toBe('fractional');
+    expect(find('#29').series).toBe('number');
+    expect(find('J').series).toBe('letter');
+  });
+
+  it('carries the maker note on J and M and on no other row', () => {
+    const noted = chartRows('both').filter((r) => r.note !== '');
+    expect(noted.map((r) => r.label)).toEqual(['J', 'M']);
   });
 });
 
@@ -108,8 +157,16 @@ describe('chart CSV', () => {
 
   it('quotes the inch mark rather than emitting a bare double quote', () => {
     // 1/4" unquoted would be `1/4"` — a field a spreadsheet parses wrongly.
-    expect(csv).toContain('"1/4""",fractional,6.350,0.2500');
-    expect(csv).toContain('6.8 mm,metric,6.800,0.2677');
+    expect(lines).toContain('"1/4""",fractional,6.350,0.2500,');
+    expect(lines).toContain('6.8 mm,metric,6.800,0.2677,');
+  });
+
+  it("carries J's note into the spreadsheet", () => {
+    // 0.2770 × 25.4 = 7.0358 mm. The note is the table's own wording.
+    expect(lines).toContain(
+      'J,letter,7.036,0.2770,Guhring prints 0.2772 in; Pan American Tool and Dormer print 0.2770 in.',
+    );
+    expect(lines).toContain('#29,number,3.454,0.1360,');
   });
 
   it('ends with a newline', () => {
