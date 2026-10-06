@@ -4135,6 +4135,52 @@ and three makers' drill tables as tests, every guard mutation-checked.
 operator's review on those paths, which costs nothing and keeps the record of
 whose they are.
 
+### D100 — Bolt circles: moves from what is shown, exact angles where Niven allows
+
+The app's free bolt circle and grid tool, on the site, written from
+`machinist-calc-research` 03-spec/calculations.md §6 rather than from the
+Kotlin, then compared with the Android core's own tests (Gate 7): the
+conventions and every figure compared agree.
+
+**The published check.** Rule 3 wants one fixture matching a real published
+result. Omni Calculator's bolt circle page works 5 holes on a 50 mm radius from
+0° and prints all ten coordinates to four decimals; the page prints the same
+ten, and a test holds it.
+
+**Moves are the differences of the positions as shown.** Every position is a
+whole number of display steps, rounded once, half-even, from the value as
+computed, and a move is the difference of two of them. Keyed into an
+incremental program, the moves land on every position in the table exactly.
+Omni's own example shows the cost, and it is the right one: holes 3 and 4 are
+a chord of 58.7785 mm apart, and the move between them reads −58.7786, because
+their shown Y figures, ±29.3893, were each rounded on their own. The
+alternative, each move rounded from the true distance, was measured: over 500
+holes on a 6 inch circle it wanders 7 steps, 0.0007 in, from the table, in both
+a 60-digit reference and a floating-point recomputation in the test.
+
+**Rounded once, not to the nanometre first.** The app found that rounding to
+whole nanometres and then to four decimals put 0.50% of 200 000 chords a step
+out (its PR #58). Positions here leave the calculation as the value computed.
+
+**Exact angles, and only where it matters.** `Math.cos` of 60° is
+0.5000000000000001. On a 100.0002 mm circle, hole 2 of six sits at exactly
+25.00005 mm; half-even says 25.0000 and the float said 25.0001. By Niven's
+theorem the only rational sines and cosines of an angle in rational degrees are
+0, ±1/2 and ±1, at the multiples of 30°, so only those can sit exactly on a
+tie. They come from a table, and so do the multiples of 45°, whose float sine
+and cosine differ in the last bit and would print a 45° hole with unequal X
+and Y. To know an angle is such a multiple, angles are carried as exact
+fractions of a millionth of a degree, never as floats that drifted.
+
+**Caught before shipping.** Whole turns are taken off every angle so no input
+grows past a safe integer, and that first applied to the arc too: a 360° arc
+became 0° and was refused with the wrong reason. The test written for the 360°
+refusal found it.
+
+**Limits.** 500 holes, and nothing more than 100 m from the datum, checked as
+the origin's distance plus the pattern's reach (by the triangle inequality no
+hole can be further out).
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
