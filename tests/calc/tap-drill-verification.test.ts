@@ -38,10 +38,10 @@ import {
  * against a primary source by a person. Rows in that state must never reach a
  * shipped page.
  *
- * The count of PENDING rows is capped by `MAX_PENDING` below, and that number
- * may only ever be REDUCED. It is a ratchet: verification can progress, and
- * cannot silently regress. When it reaches zero the constant goes with it and
- * the gate becomes absolute.
+ * The count of PENDING rows was capped by a `MAX_PENDING` that could only ever
+ * be REDUCED: a ratchet, so verification could progress and never silently
+ * regress. It reached zero on 2026-10-07, so the constant went with it and the
+ * gate is absolute: a PENDING row fails the suite.
  *
  * ─── Why the count starts at the full table ─────────────────────────────────
  *
@@ -61,20 +61,19 @@ import {
  * made by a person. A row needs two makers that agree; M1.6 has one, so it
  * stays PENDING. Where makers differ (Emuge picks one drill larger on four
  * inch threads), the row says so.
+ *
+ * ─── 2026-10-07: 18 of 18 ──────────────────────────────────────────────────
+ *
+ * M1.6 found its second maker. GSR Gustav Stursberg, a tap maker in
+ * Remscheid, prints 1.25 mm for M1.6 x 0.35 in its DIN 13 core hole table
+ * (threadingtoolsguide.com, "Core hole dimensions - The tables"), the drill
+ * Dormer prints. Read from the page's own text; the research repo's
+ * `03-spec/tap-drill-verification.md` records both.
  */
 
 const CSV_PATH = fileURLToPath(
   new URL('../fixtures/golden-tap-drill.csv', import.meta.url),
 );
-
-/**
- * Rows still awaiting a human check against a primary source.
- *
- * MAY ONLY BE REDUCED. Raising it is the one change to this file that should
- * never pass review — it would mean unverified data was added, which is the
- * exact failure the gate exists to prevent.
- */
-const MAX_PENDING = 1;
 
 interface GoldenRow {
   thread: string;
@@ -147,22 +146,18 @@ describe('golden fixture integrity', () => {
   });
 });
 
-describe('the provenance ratchet', () => {
-  it('has no more unverified rows than the committed ceiling', () => {
+describe('the provenance gate', () => {
+  it('has no unverified rows', () => {
+    // Absolute since 2026-10-07: a new row arrives checked against two makers
+    // and dated, or it does not arrive.
     const pending = GOLDEN.filter((r) => !isVerified(r));
     const names = pending.map((r) => r.thread).join(', ');
     expect(
       pending.length,
       `${pending.length} rows await verification against a primary source: ${names}. ` +
-        'Check them against a manufacturer tap catalogue (Emuge, Guhring, OSG), ' +
-        'write the catalogue name into verified_against and the date into ' +
-        'verified_on, then LOWER MAX_PENDING to match.',
-    ).toBeLessThanOrEqual(MAX_PENDING);
-  });
-
-  it('never lets the ceiling drift above the table size', () => {
-    // Guards against MAX_PENDING being raised to silence the gate.
-    expect(MAX_PENDING).toBeLessThanOrEqual(GOLDEN.length);
+        "Check them against two makers' charts (Emuge, Guhring, OSG, Dormer, GSR), " +
+        'write the charts into verified_against and the date into verified_on.',
+    ).toBe(0);
   });
 });
 

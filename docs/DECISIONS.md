@@ -4403,6 +4403,25 @@ out of tapping clears a cutting speed the operator typed for the other side,
 with a note — a milling speed on a tap turns it many times too fast — and swaps
 an untyped one for the other side's example.
 
+### D105 — The last tap drill row checked, and the ratchet becomes a gate
+
+M1.6 × 0.35 → 1.25 mm was the one row of `tests/fixtures/golden-tap-drill.csv`
+left PENDING on 2026-09-13. Dormer's chart prints it, and Emuge's and Guhring's
+start above it, so it had one maker where D96 wants two: a row is verified
+only when two makers agree.
+
+The second maker turned up on 2026-10-07. GSR Gustav Stursberg, a tap maker in
+Remscheid founded in 1889, prints 1,25 mm for M 1,6 × 0,35 in its "Core hole
+dimensions for metric threads DIN 13" table, on its blog
+threadingtoolsguide.com. It was read from the page's own text, not a summary of
+it. The row now names both charts and says `checked by Claude`, like the other
+seventeen.
+
+With nothing left PENDING, `MAX_PENDING` is gone, as its own comment planned:
+the test fails on any PENDING row, so a new row arrives checked against two
+makers and dated, or not at all. The Android app vendors this file byte for
+byte, and makes the same change against the new checksum.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

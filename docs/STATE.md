@@ -32,7 +32,7 @@ changes the answer to "what exists" or "what is next".
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
 | Pages built | 29 (28 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 827 passing |
+| Tests | 826 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
@@ -400,12 +400,12 @@ Two things are still absent, and the pages say so rather than hiding it:
 
 Both are gated behind the same rule: this site does not ship a reference figure
 nobody has checked against a primary source. `tests/fixtures/golden-tap-drill.csv`
-carries `verified_against` / `verified_on` columns, and `MAX_PENDING` in
-`tests/calc/tap-drill-verification.test.ts` is a ratchet that may only be
-lowered. **17 of 18 rows are verified** (2026-09-13, against Dormer/Precision
-Twist Drill, Emuge and Guhring charts; each row names its sources and says it
-was checked by Claude). M1.6 stays PENDING until a second maker's chart
-confirms it, so `MAX_PENDING` is 1.
+carries `verified_against` / `verified_on` columns, and
+`tests/calc/tap-drill-verification.test.ts` fails on any row still PENDING.
+**All 18 rows are verified:** 17 on 2026-09-13 against Dormer/Precision Twist
+Drill, Emuge and Guhring charts, and M1.6 on 2026-10-07 against Dormer and GSR
+Gustav Stursberg (D105). Each row names its sources and says it was checked by
+Claude.
 
 ## Next
 
