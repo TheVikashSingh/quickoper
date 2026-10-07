@@ -113,6 +113,8 @@ const structuredData = [
 
 const field =
   'border-line-strong bg-surface text-ink focus-visible:outline-brand w-full rounded-control border px-3 py-2 font-numeric text-base focus-visible:outline-2 focus-visible:outline-offset-2';
+const sign =
+  'border-line-strong text-ink-soft hover:text-brand focus-visible:outline-brand rounded-control border px-2 font-numeric text-base focus-visible:outline-2 focus-visible:outline-offset-2';
 const label = 'block text-sm font-semibold text-ink-soft';
 const hint = 'text-ink-mute mt-1 text-xs';
 ---
@@ -195,15 +197,25 @@ const hint = 'text-ink-mute mt-1 text-xs';
         </div>
         <div data-kind="circle">
           <label class={label} for="bc-start">Start angle</label>
-          <input
-            class={`${field} mt-1`}
-            id="bc-start"
-            name="start"
-            type="number"
-            inputmode="decimal"
-            step="any"
-            value="0"
-          />
+          <div class="mt-1 flex gap-1">
+            <input
+              class={field}
+              id="bc-start"
+              name="start"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              value="0"
+            />
+            <button
+              type="button"
+              class={sign}
+              data-negate="start"
+              aria-label="Change the sign of Start angle"
+            >
+              ±
+            </button>
+          </div>
           <p class={hint}>Hole 1, in degrees from 3 o’clock.</p>
         </div>
         <div data-kind="circle">
@@ -232,27 +244,47 @@ const hint = 'text-ink-mute mt-1 text-xs';
         </fieldset>
         <div data-kind="circle">
           <label class={label} for="bc-cx">Centre X</label>
-          <input
-            class={`${field} mt-1`}
-            id="bc-cx"
-            name="cx"
-            type="number"
-            inputmode="decimal"
-            step="any"
-            value="0"
-          />
+          <div class="mt-1 flex gap-1">
+            <input
+              class={field}
+              id="bc-cx"
+              name="cx"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              value="0"
+            />
+            <button
+              type="button"
+              class={sign}
+              data-negate="cx"
+              aria-label="Change the sign of Centre X"
+            >
+              ±
+            </button>
+          </div>
         </div>
         <div data-kind="circle">
           <label class={label} for="bc-cy">Centre Y</label>
-          <input
-            class={`${field} mt-1`}
-            id="bc-cy"
-            name="cy"
-            type="number"
-            inputmode="decimal"
-            step="any"
-            value="0"
-          />
+          <div class="mt-1 flex gap-1">
+            <input
+              class={field}
+              id="bc-cy"
+              name="cy"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              value="0"
+            />
+            <button
+              type="button"
+              class={sign}
+              data-negate="cy"
+              aria-label="Change the sign of Centre Y"
+            >
+              ±
+            </button>
+          </div>
         </div>
 
         <!-- Grid -->
@@ -310,40 +342,70 @@ const hint = 'text-ink-mute mt-1 text-xs';
         </div>
         <div data-kind="grid" class="hidden">
           <label class={label} for="bc-turn">Turn</label>
-          <input
-            class={`${field} mt-1`}
-            id="bc-turn"
-            name="turn"
-            type="number"
-            inputmode="decimal"
-            step="any"
-            value="0"
-          />
+          <div class="mt-1 flex gap-1">
+            <input
+              class={field}
+              id="bc-turn"
+              name="turn"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              value="0"
+            />
+            <button
+              type="button"
+              class={sign}
+              data-negate="turn"
+              aria-label="Change the sign of Turn"
+            >
+              ±
+            </button>
+          </div>
           <p class={hint}>Degrees, about the first hole.</p>
         </div>
         <div data-kind="grid" class="hidden">
           <label class={label} for="bc-fx">First hole X</label>
-          <input
-            class={`${field} mt-1`}
-            id="bc-fx"
-            name="fx"
-            type="number"
-            inputmode="decimal"
-            step="any"
-            value="0"
-          />
+          <div class="mt-1 flex gap-1">
+            <input
+              class={field}
+              id="bc-fx"
+              name="fx"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              value="0"
+            />
+            <button
+              type="button"
+              class={sign}
+              data-negate="fx"
+              aria-label="Change the sign of First hole X"
+            >
+              ±
+            </button>
+          </div>
         </div>
         <div data-kind="grid" class="hidden">
           <label class={label} for="bc-fy">First hole Y</label>
-          <input
-            class={`${field} mt-1`}
-            id="bc-fy"
-            name="fy"
-            type="number"
-            inputmode="decimal"
-            step="any"
-            value="0"
-          />
+          <div class="mt-1 flex gap-1">
+            <input
+              class={field}
+              id="bc-fy"
+              name="fy"
+              type="number"
+              inputmode="decimal"
+              step="any"
+              value="0"
+            />
+            <button
+              type="button"
+              class={sign}
+              data-negate="fy"
+              aria-label="Change the sign of First hole Y"
+            >
+              ±
+            </button>
+          </div>
         </div>
       </form>
 
@@ -765,6 +827,20 @@ const hint = 'text-ink-mute mt-1 text-xs';
   // A radio fires `input` before `change`; render on both so the fields shown
   // and the answer always match the controls (the tap drill page's lesson, #92).
   form.addEventListener('change', render);
+  // Some phone keyboards for decimals have no minus key, as the app found, so
+  // every value that can be negative has its own sign key, as on the true
+  // position page.
+  form.querySelectorAll<HTMLButtonElement>('[data-negate]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const field = form.elements.namedItem(
+        button.dataset['negate'] ?? '',
+      ) as HTMLInputElement;
+      const v = field.value.trim();
+      if (v === '') return;
+      field.value = v.startsWith('-') ? v.slice(1) : `-${v}`;
+      render();
+    });
+  });
   csvBtn.addEventListener('click', () => {
     if (csvRows.length === 0) return;
     const blob = new Blob([csvRows.map((r) => r.join(',')).join('\n') + '\n'], {
