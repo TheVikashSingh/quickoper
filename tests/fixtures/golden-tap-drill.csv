@@ -1,5 +1,5 @@
 thread,system,major,pitch_or_tpi,tap_drill,drill_label,engagement_pct,claimed_source,verified_against,verified_on
-M1.6,metric,1.6,0.35,1.25,1.25 mm,76.98,ISO 2306 / DIN 336,PENDING,
+M1.6,metric,1.6,0.35,1.25,1.25 mm,76.98,ISO 2306 / DIN 336,Dormer-PTD tap drill chart rev 2008-04-01; GSR Gustav Stursberg core hole table DIN 13; checked by Claude,2026-10-07
 M2,metric,2,0.4,1.6,1.6 mm,76.98,ISO 2306 / DIN 336,Dormer-PTD tap drill chart rev 2008-04-01; Emuge wall chart ZS10021 RevB; checked by Claude,2026-09-13
 M2.5,metric,2.5,0.45,2.05,2.05 mm,76.98,ISO 2306 / DIN 336,Dormer-PTD tap drill chart rev 2008-04-01; Emuge wall chart ZS10021 RevB; checked by Claude,2026-09-13
 M3,metric,3,0.5,2.5,2.5 mm,76.98,ISO 2306 / DIN 336,Dormer-PTD tap drill chart rev 2008-04-01; Emuge wall chart ZS10021 RevB; Guhring catalogue p234-236 (% thread); checked by Claude,2026-09-13
