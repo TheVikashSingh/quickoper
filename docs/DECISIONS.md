@@ -4422,6 +4422,56 @@ the test fails on any PENDING row, so a new row arrives checked against two
 makers and dated, or not at all. The Android app vendors this file byte for
 byte, and makes the same change against the new checksum.
 
+### D106 — Countersinks and chamfers: the included angle, and exact only where it can tie
+
+The app's countersink and chamfer tool, on the site, written from
+`machinist-calc-research` 03-spec/calculations.md, "Cones", rather than from
+the Kotlin, then compared with the spec's golden values, which the Android
+core's tests also hold (Gate 7): every one agrees. One right triangle, worked
+three ways: a depth from a diameter (with where the cone meets a hole drilled
+first), a diameter from a depth, and a drill's point length (with how deep to
+drill for a full diameter).
+
+**The published checks.** Severance Tool Industries makes countersinks and
+prints the rule in its countersink angle guide, with the angle defined as
+"the included angle of the conical cutting surface". Its own calculator opens
+on 82° to Ø0.500 in over a 0.201 in pilot hole and prints "Depth: 0.1720", and
+back the other way "0.5000"; the inputs were read from the page's fields, not
+guessed from the answer. Omni Calculator prints 5000 mm at 36° as 7,694 mm and
+0.55 m at 75° as 0.358 m; the page prints 7694.2088 and 358.3870. Tests hold
+all four. Severance's depth over a pilot hole is where the cone meets the
+hole; a CNC tool depth runs to the tip. The page gives both, and says which is
+which, because a chart and a program disagree on exactly that.
+
+**The included angle.** A chamfer drawn at 45° is cut with a 90° tool; entered
+as 45, a 10 mm chamfer comes out 12.0711 mm deep instead of 5.0000. The field
+says "included", the hint says a 45° chamfer is a 90° tool, and the working
+prints θ and θ/2.
+
+**Exact only where a tie can happen.** For an angle in degrees, tan(θ/2) is
+rational only at 90° (Niven's theorem), where it is 1. There the depth is
+(D − d)/2 and the diameter d + 2 × depth, in whole nanometres, so Ø12.0001 is
+exactly 6.00005 mm deep and rounds half-even to 6.0000; a test holds it, and
+broken on purpose (90° worked in floating point) four tests fail, the
+reference among them. Every other angle gives an irrational length that no
+rounding boundary can equal. It is worked in floating point, good to about a
+millionth of a nanometre at 10 m, and handed over as the nanometre below it.
+No bracket from an exact root was possible here, as true position has, so the
+claim is checked instead: 3000 cones worked to 60 digits in Python's decimal
+module (`tests/fixtures/cone-reference.py`, with tan 45° set to exactly 1,
+because the series gives 1 to 70 digits and a true tie would then round by the
+noise) match in millimetres and in inches.
+
+**Limits.** Lengths up to 10 m, because Omni's published example is a 5 m
+countersink; angles above 0° and below 180°. A hole has to be wider than the
+tool's tip flat and narrower than the diameter at the surface, or the cone
+never meets it, and the page says so rather than printing a depth.
+
+**No table and no CSV.** One cone has no schedule; the drawing, a section to
+scale with the worked length in the accent colour, and the second depth (into
+the hole, or drill to) carry "more than a number", as D101 decided for one
+feature against one frame.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
