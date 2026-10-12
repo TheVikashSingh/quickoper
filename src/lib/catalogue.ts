@@ -289,6 +289,17 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'calculator',
   },
   {
+    href: '/machining/countersink-calculator',
+    title: 'Countersink and chamfer — depth, diameter, drill point',
+    short: 'Countersink & chamfer',
+    summary:
+      'How deep a countersink, chamfer or spot drill goes for a diameter, the diameter it cuts at a depth, and a drill’s point length, from the tool’s included angle.',
+    detail:
+      'Checked against the published examples of Severance Tool and Omni Calculator. Works offline once loaded.',
+    vertical: 'machining',
+    kind: 'calculator',
+  },
+  {
     href: '/machining/drill-size-chart',
     title: 'Drill size chart — the whole index, on one sheet',
     summary:

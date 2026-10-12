@@ -419,6 +419,34 @@ Jurisdiction: none. Geometry on the ASME Y14.5 position tolerance zone.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
+### Countersink and chamfer calculator
+URL: https://quickoper.com/machining/countersink-calculator
+Computes: how deep a countersink, chamfer or spot drill goes for a diameter at
+the surface, and where its cone meets a hole drilled first; the diameter a
+tool cuts at a depth; a drill's point length, and how deep to drill for a full
+diameter to a depth.
+Inputs: the tool's included angle; the diameter at the surface, the tip flat
+(blank for a sharp point) and a hole drilled first; or the tool depth and the
+tip flat; or the drill's diameter and the full-diameter depth. Millimetres or
+inches.
+Key figures: depth = (D - d) / (2 tan(theta/2)) and D = d + 2 x depth x
+tan(theta/2), Severance Tool Industries' rule, with theta the INCLUDED angle
+across both flanks: a 45 degree chamfer is cut with a 90 degree tool, and
+entered as 45 a 10 mm chamfer comes out 12.0711 mm deep instead of 5.0000.
+A 12 mm countersink at 90 degrees over a 6.4 mm hole: tool tip 6.0000 mm deep, the
+cone meeting the hole 2.8000 mm down. A 10 mm drill at 118 degrees has a
+3.0043 mm point; for a full diameter 20 mm deep, drill to 23.0043. Severance's
+own example, 82 degrees to 0.500 in over a 0.201 in pilot hole, is 0.1720 in
+deep; Omni Calculator's 5000 mm at 36 degrees is 7694.2088 mm (they print
+7,694). Every figure is rounded once, half-even, to 4 decimals; at 90 degrees,
+the one angle where tan(theta/2) is rational, the arithmetic is exact and a
+tie such as 6.00005 mm rounds to 6.0000.
+Not counted: screw head sizes, the hole under the cone, a tool cutting
+oversize, a drill's chisel edge (the point length runs to the sharp point).
+Jurisdiction: none. Geometry.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/finance/verify
+
 ### Drill size chart (metric, fractional, number and letter)
 URL: https://quickoper.com/machining/drill-size-chart
 Computes: nothing on demand. It PUBLISHES four drill series as printable tables,

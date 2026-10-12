@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-10-06, number and letter drills on the drill chart and the tap drill calculator (D97), and forming taps on the calculator (D98).
+**Updated:** 2026-10-12, the countersink and chamfer calculator (D106).
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -30,7 +30,7 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 29 (28 substantive — `/404` is not) |
+| Pages built | 30 (29 substantive — `/404` is not) |
 | Working calculators | 4 |
 | Tests | 826 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
@@ -335,6 +335,30 @@ decides, `calc/true-position-display.ts` words it, and
   core's tests (Gate 7). No table or CSV: one feature against one frame has no
   schedule (D101).
 
+### Countersinks and chamfers
+
+`/machining/countersink-calculator` (2026-10-12, D106) works a cone three
+ways: how deep a countersink, chamfer or spot drill goes for a diameter, and
+where its cone meets a hole drilled first; the diameter a tool cuts at a
+depth; and a drill's point length, with how deep to drill for a full diameter.
+The same island pattern: `calc/cone.ts` works the brackets,
+`calc/cone-display.ts` words them, and `tests/calc/cone-display.test.ts`
+checks the strings.
+
+- **The published checks (rule 3):** Severance Tool Industries' own
+  calculator, 82° to Ø0.500 in over a 0.201 in pilot hole, 0.1720 in deep, and
+  back to Ø0.5000; Omni Calculator's 5000 mm at 36° and 0.55 m at 75°.
+- **The angle is the included one,** on the field, in the working and in the
+  prose: a 45° chamfer entered as 45 comes out 2.41 times too deep.
+- **Exact where a tie can happen:** tan(θ/2) is rational only at 90° (Niven),
+  so 90° is worked in integers and a tie such as 6.00005 mm rounds half-even;
+  every other angle is irrational, checked against 3000 cones worked to 60
+  digits (`tests/fixtures/cone-reference.py`).
+- Written from the research spec, then cross-checked against the Android
+  core's golden values (Gate 7): every one agrees. The island is 10.91 KB, more
+  than the true position page's 8.81 because it borrows that page's rounding
+  module; within the budget, and the place to look if a page needs the room.
+
 ### The conversion surface
 
 `/machining/app` describes the app; `/apps` is the site-level index linked from
@@ -409,7 +433,7 @@ Claude.
 
 ## Next
 
-**The content threshold is met.** The build produces 29 pages, of which 28 are
+**The content threshold is met.** The build produces 30 pages, of which 29 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -463,7 +487,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **28** — none to go |
+| 15+ substantive pages | **29** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |

@@ -1,0 +1,646 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+/**
+ * Countersink and chamfer calculator: a cone's depth for a diameter, its
+ * diameter for a depth, and a drill's point length.
+ *
+ * ─── The one decision worth reading ─────────────────────────────────────────
+ *
+ * The angle is the tool's INCLUDED angle, across both flanks, and the page
+ * says so on the field, in the working and in the prose. A chamfer drawn at
+ * 45° is cut with a 90° tool; entered as 45 it comes out nearly two and a
+ * half times too deep. The arithmetic lives in `calc/cone.ts` and
+ * `cone-display.ts`; this page maps the display object onto the DOM and
+ * computes nothing.
+ */
+
+const RETRIEVED = '2026-10-12';
+
+const SOURCES = [
+  {
+    label:
+      'Severance Tool Industries — Countersink Angle Guide: depth = (D − d) / (2 × tan(angle / 2)), D = d + 2 × depth × tan(angle / 2), the angle "the included angle of the conical cutting surface", and a worked example, 82° to Ø0.500 in over a 0.201 in pilot hole',
+    url: 'https://severancetools.com/resources/countersink-angle-guide.html',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'Omni Calculator — Countersink Depth Calculator: two worked examples, 5000 mm at 36° and 0.55 m at 75°',
+    url: 'https://www.omnicalculator.com/construction/countersink-depth',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'International yard and pound agreement (1959) — 1 inch = 25.4 mm exactly. NIST Special Publication 811',
+    url: 'https://www.nist.gov/pml/special-publication-811',
+    retrieved: RETRIEVED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'Why does a 45° chamfer need a 90° tool?',
+    a: 'Because a drawing gives a chamfer’s angle from one side, and a tool is named by the angle across both of its flanks. A 45° chamfer leans 45° each side of the hole’s axis, which is a cone 90° across. Severance defines the countersink angle as the total angle measured across the full cone, not the half-angle from center. Entered as 45 instead of 90, a 10 mm chamfer comes out 12.0711 mm deep instead of 5.0000.',
+  },
+  {
+    q: 'Which depth do I program on a CNC?',
+    a: 'The tool depth: from the surface to the tool’s tip, which is where a machine’s tool length is set to. Over a hole drilled first, that tip is down in the hole, below the point where the cone meets the hole’s wall. The page gives both: Ø12 at 90° over a 6.4 mm hole puts a sharp tool’s tip 6.0000 mm down, and the cone meets the hole 2.8000 mm down.',
+  },
+  {
+    q: 'Why does my chart give a different depth?',
+    a: 'Check what it measures to. A chart for a pilot hole gives where the cone meets the hole, Severance’s depth with the pilot diameter as d; a CNC tool depth runs to the tip. A tool with a flat on its tip stops short of the sharp point by the flat’s half-width over tan(θ/2). And check the angle: 82° and 90° tools differ by about 15% in depth for the same diameter.',
+  },
+  {
+    q: 'What is the drill point length for?',
+    a: 'Drilling a hole that has to be full diameter to a depth. A drill’s point runs ahead of its full diameter, so to get Ø10 for 20 mm a 118° drill goes to 20 + 3.0043 = 23.0043 mm. The length is worked to the sharp point the angle describes, as drill charts and CAM tip compensation are; a real drill’s chisel edge stops a little short of it, so the full diameter goes slightly deeper than asked, never shallower.',
+  },
+  {
+    q: '82°, 90° or 100°?',
+    a: 'Match the screw. Severance’s guide gives 82° for US flat-head screws, 90° for metric flat-head screws, and 100° for aerospace rivets and fasteners; 60° for lathe centres and 120° for shallow chamfers. Using a 90° countersink for a US 82° screw leaves the head slightly proud.',
+  },
+  {
+    q: 'Does it work offline?',
+    a: 'Every calculation runs in your browser and nothing you type is sent anywhere, so once the page has loaded it works without a connection.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Countersink and chamfer calculator',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/machining/countersink-calculator`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'How deep a countersink, chamfer or spot drill goes for a diameter, the diameter it cuts at a depth, and a drill’s point length, from the tool’s included angle, with the working shown.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Countersink and chamfer calculator',
+        item: `${SITE.url}/machining/countersink-calculator`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+
+const field =
+  'border-line-strong bg-surface text-ink focus-visible:outline-brand w-full rounded-control border px-3 py-2 font-numeric text-base focus-visible:outline-2 focus-visible:outline-offset-2';
+const label = 'block text-sm font-semibold text-ink-soft';
+const hint = 'text-ink-mute mt-1 text-xs';
+
+/** The length fields, and the modes each one is shown in. */
+const LENGTHS = [
+  {
+    id: 'cs-diameter',
+    name: 'diameter',
+    label: 'Diameter at the surface D',
+    value: '12',
+    hint: 'The countersink or chamfer diameter on the drawing.',
+    modes: 'depth',
+  },
+  {
+    id: 'cs-drill',
+    name: 'drill',
+    label: 'Drill diameter D',
+    value: '10',
+    hint: null,
+    modes: 'point',
+  },
+  {
+    id: 'cs-depth',
+    name: 'depth',
+    label: 'Tool depth Z',
+    value: '3',
+    hint: 'From the surface to the tool’s tip.',
+    modes: 'diameter',
+  },
+  {
+    id: 'cs-flat',
+    name: 'tipFlat',
+    label: 'Tip flat f',
+    value: '',
+    hint: 'The flat on the tool’s tip. Blank for a sharp point.',
+    modes: 'depth diameter',
+  },
+  {
+    id: 'cs-hole',
+    name: 'hole',
+    label: 'Hole drilled first d',
+    value: '6.4',
+    hint: 'How far down it the cone reaches. Blank if none.',
+    modes: 'depth',
+  },
+  {
+    id: 'cs-full',
+    name: 'fullDepth',
+    label: 'Full-diameter depth H',
+    value: '',
+    hint: 'Blank for the point length alone.',
+    modes: 'point',
+  },
+];
+---
+
+<BaseLayout
+  title="Countersink depth calculator"
+  description="How deep a countersink, chamfer or spot drill goes for a diameter, the diameter it cuts at a depth, and a drill's point length, from the tool's included angle. Shows the working, to four decimals."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Countersink and chamfer
+    </nav>
+
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      Countersink and chamfer calculator
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      How deep a countersink, chamfer or spot drill goes for a diameter, the diameter it
+      cuts at a depth, and how long a drill's point is.
+    </p>
+
+    <!-- ── Calculator ──────────────────────────────────────────────────── -->
+    <section class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border">
+      <form id="cs-form" class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
+        <fieldset class="col-span-2 sm:col-span-4">
+          <legend class={label}>Work out</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="mode" value="depth" checked /> Depth from a diameter</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="mode" value="diameter" /> Diameter from a depth</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="mode" value="point" /> A drill's point</label
+            >
+          </div>
+        </fieldset>
+        <fieldset class="col-span-2">
+          <legend class={label}>Units</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="mm" checked /> Millimetres</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="in" /> Inches</label
+            >
+          </div>
+        </fieldset>
+        <div class="col-span-2">
+          <label class={label} for="cs-angle">Included angle θ (°)</label>
+          <input
+            class={`${field} mt-1`}
+            id="cs-angle"
+            name="angle"
+            type="number"
+            inputmode="decimal"
+            step="any"
+            min="0"
+            max="180"
+            value="90"
+          />
+          <p class={hint}>Across both flanks: a 45° chamfer is cut with a 90° tool.</p>
+        </div>
+
+        {
+          LENGTHS.map((f) => (
+            <div data-modes={f.modes} class={f.modes.includes('depth') ? '' : 'hidden'}>
+              <label class={label} for={f.id}>
+                {f.label}
+              </label>
+              <input
+                class={`${field} mt-1`}
+                id={f.id}
+                name={f.name}
+                type="number"
+                inputmode="decimal"
+                step="any"
+                min="0"
+                value={f.value}
+              />
+              {f.hint && <p class={hint}>{f.hint}</p>}
+            </div>
+          ))
+        }
+      </form>
+
+      <output
+        id="cs-result"
+        class="border-line block border-t px-5 py-5"
+        for="cs-form"
+        aria-live="polite"></output>
+    </section>
+
+    <p id="cs-error" class="text-negative mt-3 hidden text-sm" role="alert"></p>
+
+    <!-- ── How this was calculated ─────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        How this was calculated
+      </h2>
+      <div
+        id="cs-working"
+        class="border-line bg-sunken rounded-panel font-numeric mt-4 overflow-x-auto border p-4 text-sm leading-relaxed whitespace-pre-wrap"
+      >
+      </div>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        Lengths are carried in whole nanometres and each answer is rounded once, half to
+        even, to four decimals. At 90° the tangent is exactly 1 and the arithmetic is
+        exact, so a depth that falls exactly halfway between two figures rounds to the
+        even one. At any other angle the answer is irrational and can never fall exactly
+        halfway.
+      </p>
+    </section>
+
+    <!-- ── Explanation ─────────────────────────────────────────────────── -->
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        One triangle, three questions
+      </h2>
+      <p>
+        A countersink, a chamfer, a spot drill and the point of a twist drill are all the
+        same shape: a cone. Cut through its axis, half of it is a right triangle. The
+        depth runs down one side, half the difference between the two diameters runs
+        across the other, and the angle at the top is half the tool's angle. So the depth
+        is the half-difference divided by tan(θ/2), and the diameter is the stopping
+        diameter plus twice the depth times tan(θ/2). Severance Tool Industries, which
+        makes countersinks, prints both formulas in its countersink angle guide. This page
+        works them three ways: a depth from a diameter, a diameter from a depth, and the
+        length of a drill's point.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        The angle is the whole angle
+      </h3>
+      <p>
+        The mistake this page is built around is the angle. A tool is named by its
+        included angle, across both flanks. Severance's guide puts it plainly: the total
+        angle measured across the full cone, not the half-angle from center. A drawing
+        calls a chamfer by the angle on one side. So a 45° chamfer is cut with a 90° tool,
+        and typed in as 45 it gives a 10 mm chamfer 12.0711 mm deep instead of 5.0000:
+        nearly two and a half times too deep, and a part scrapped. The angle field here
+        says "included", and the working prints both angles, θ and half of it, so a wrong
+        one shows.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Tool depth, and where the cone meets the hole
+      </h3>
+      <p>
+        Over a solid surface the cone runs to the tool's tip, and the tool depth is the
+        whole story. Over a hole drilled first there are two depths. The cone meets the
+        hole's wall partway down, and the tip carries on into the hole. The opening
+        example is a 12 mm countersink at 90° over a 6.4 mm hole: the tip of a sharp tool
+        goes 6.0000 mm deep, and the cone meets the hole 2.8000 mm below the surface. A
+        CNC program wants the first, because the tool length is set to the tip. A check
+        with a pin or a gauge, and Severance's own calculator with the pilot hole as d,
+        give the second.
+      </p>
+      <p>
+        Many countersinks and chamfer mills are not sharp. A flat on the tip, f, stops the
+        cone short of its point, and the tool depth becomes (D − f) ÷ (2 × tan(θ/2)). The
+        same 12 mm at 90° with a 0.5 mm flat is 5.7500 mm deep, not 6.0000. Leave the flat
+        blank for a sharp tool.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">A diameter from a depth</h3>
+      <p>
+        Run the triangle the other way to find what a depth will cut. A chamfer mill with
+        a 0.2 mm flat, sent 3 mm deep at 90°, cuts Ø6.2000 at the surface: 0.2 + 2 × 3 ×
+        1. That is the number to check against the drawing before the first part, and the
+        one to work from when a part comes back with a chamfer too small.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">A drill's point length</h3>
+      <p>
+        A twist drill's point is a cone that runs ahead of its full diameter, so a hole
+        that has to be full size to a depth needs the drill to go further. With no stop
+        diameter, the depth formula gives the point length, L = D ÷ (2 × tan(θ/2)): 3.0043
+        mm for a 10 mm drill at 118°, 2.0711 mm at 135°. Give the full-diameter depth H
+        and the page adds them: to be Ø10 for 20 mm, drill to 23.0043. The length is
+        worked to the sharp point the angle describes, as drill charts and CAM tip
+        compensation are. A real drill has a chisel edge where its lips meet, so its tip
+        stops a little short of that point, and the full diameter goes slightly deeper
+        than asked, never shallower.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Worked examples, checked against published ones
+      </h3>
+      <p>
+        Severance's calculator opens on an 82° countersink to Ø0.500 in over a 0.201 in
+        pilot hole and prints a depth of 0.1720 in, and back the other way, 0.172 in deep
+        over the same hole, a diameter of 0.5000 in. This page prints 0.1720 and 0.5000.
+        Omni Calculator works a 5000 mm countersink at 36° to 7,694 mm deep and a 0.55 m
+        one at 75° to 0.358 m; this page prints 7694.2088 and 358.3870 mm. Tests on this
+        site hold all four.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">Exact at the edge</h3>
+      <p>
+        At 90° the tangent of the half-angle is exactly 1, and that is the only angle
+        given in degrees where it is a whole or a fraction at all. So 90° is the one angle
+        where a depth can land exactly halfway between two four-decimal figures: Ø12.0001
+        at 90° is exactly 6.00005 mm deep. The page does that arithmetic in whole
+        nanometres and rounds the tie to the even figure, 6.0000, as it rounds every other
+        figure. At any other angle the depth is irrational and cannot sit exactly halfway;
+        it is worked in floating point, and the tests check 3000 cones against an
+        independent 60-digit reference, in millimetres and in inches.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">What it leaves out</h3>
+      <p>
+        It does not know screw heads. For a flush flat-head screw, take the head's
+        diameter from the fastener standard and enter it as D: Severance names ASME
+        B18.6.3 for 82° heads, and ISO 10642 and DIN 7991 for 90°. It does not size the
+        hole under the cone, measure an existing countersink's angle, or allow for a tool
+        that cuts oversize. It works the geometry from the numbers you give it.
+      </p>
+    </section>
+
+    <!-- ── App ─────────────────────────────────────────────────────────── -->
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-12 border p-5"
+    >
+      <h2 class="font-display text-ink text-xl font-semibold">
+        This, but in your pocket on the shop floor
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        The same arithmetic is going into a metric-first Android app: countersinks,
+        chamfers and drill points, true position, bolt circles, thread and tap drill,
+        feeds and speeds, offline, one payment, no subscription. It is in development and
+        this page is free forever either way.
+      </p>
+      <a
+        class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+        href="/machining/app">What it will do, and what it will cost &rarr;</a
+      >
+    </section>
+
+    <!-- ── FAQ ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        The rule and the angle's definition are Severance's. Severance and Omni are the
+        published examples this page is tested against.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated figures from the numbers you enter. Check them against the
+      drawing and the tool's own dimensions before cutting a part.
+    </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each showing its working"
+      links={[
+        {
+          href: '/machining/tap-drill-calculator',
+          label: 'Tap drill calculator',
+          note: 'the drill for each threaded hole, and the engagement it really gives',
+        },
+        {
+          href: '/machining/drill-size-chart',
+          label: 'Drill size chart',
+          note: 'every metric, fractional, number and letter drill, both units on every row',
+        },
+      ]}
+    />
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    coneDisplay,
+    type ConeDisplay,
+    type ConeMode,
+  } from '../../lib/calc/cone-display';
+  import type { DisplayUnits } from '../../lib/calc/hole-pattern-display';
+
+  /** Resolve an element or fail loudly at load, as the other calculators do. */
+  function must<T extends HTMLElement>(id: string): T {
+    const el = document.getElementById(id);
+    if (el === null) throw new Error(`countersink: #${id} is missing from the page`);
+    return el as T;
+  }
+
+  const form = must<HTMLFormElement>('cs-form');
+  const resultEl = must('cs-result');
+  const workingEl = must('cs-working');
+  const errorEl = must('cs-error');
+
+  const input = (name: string): HTMLInputElement =>
+    form.elements.namedItem(name) as HTMLInputElement;
+  /** A required number: blank is NaN, which the display refuses in words. */
+  const num = (name: string): number => {
+    const v = input(name).value.trim();
+    return v === '' ? Number.NaN : Number(v);
+  };
+  /** An optional number: blank is null. */
+  const maybe = (name: string): number | null => {
+    const v = input(name).value.trim();
+    return v === '' ? null : Number(v);
+  };
+  const pick = (name: string): string =>
+    (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
+
+  /**
+   * The drawing: a section through the cone, the surface at the top.
+   *
+   * SVG y runs down, which is the way depth runs, so nothing is negated. Only
+   * numbers reach the markup; no text the user typed does.
+   */
+  function drawing(d: ConeDisplay): string {
+    const f = d.figure;
+    const R = f.surfaceR;
+    const parts: string[] = [];
+    let height: number;
+    if (f.kind === 'point') {
+      // The drill, point down: its body to the shoulder, then the cone.
+      const body = f.fullDepth !== null && f.fullDepth > 0 ? f.fullDepth : R * 1.5;
+      height = body + f.depth;
+      parts.push(
+        `<path d="M ${-R} 0 V ${body} L 0 ${height} L ${R} ${body} V 0" fill="none" stroke="currentColor" stroke-width="LINE" />`,
+        `<path class="text-brand" d="M ${R * 1.25} ${body} V ${height}" stroke="currentColor" stroke-width="LINE" />`,
+        `<path d="M ${R * 1.05} ${body} H ${R * 1.4} M ${R * 0.1} ${height} H ${R * 1.4}" stroke="currentColor" stroke-width="THIN" />`,
+      );
+    } else {
+      const stopR = f.holeR ?? f.tipR;
+      const stopY = f.holeDepth ?? f.depth;
+      height = Math.max(f.depth, stopY) + R * 0.5;
+      const ink = f.answer === 'diameter' ? '' : 'class="text-brand" ';
+      parts.push(
+        // The surface, broken where the cone opens.
+        `<path d="M ${-R * 1.6} 0 H ${-R} L ${-stopR} ${stopY} M ${R} 0 L ${stopR} ${stopY} M ${R} 0 H ${R * 1.6}" fill="none" stroke="currentColor" stroke-width="LINE" />`,
+      );
+      if (f.holeR !== null && f.holeDepth !== null) {
+        parts.push(
+          `<path d="M ${-f.holeR} ${f.holeDepth} V ${height} M ${f.holeR} ${f.holeDepth} V ${height}" stroke="currentColor" stroke-width="LINE" />`,
+          // The tool carries on to its tip, dashed.
+          `<path d="M ${-f.holeR} ${f.holeDepth} L ${-f.tipR} ${f.depth} H ${f.tipR} L ${f.holeR} ${f.holeDepth}" fill="none" stroke="currentColor" stroke-width="THIN" stroke-dasharray="DASH" />`,
+        );
+      } else if (f.tipR > 0) {
+        parts.push(
+          `<path d="M ${-f.tipR} ${f.depth} H ${f.tipR}" stroke="currentColor" stroke-width="LINE" />`,
+        );
+      }
+      parts.push(
+        `<path ${ink}d="M ${R * 1.35} 0 V ${f.depth}" stroke="currentColor" stroke-width="LINE" />`,
+        `<path d="M ${R * 1.05} 0 H ${R * 1.5} M ${f.tipR} ${f.depth} H ${R * 1.5}" stroke="currentColor" stroke-width="THIN" />`,
+      );
+      if (f.answer === 'diameter') {
+        parts.push(
+          `<path class="text-brand" d="M ${-R} ${-R * 0.15} H ${R}" stroke="currentColor" stroke-width="LINE" />`,
+        );
+      }
+    }
+    const w = R * 1.7;
+    const top = -R * 0.3;
+    const line = Math.max(w, height) * 0.012;
+    const svg = parts
+      .join('')
+      .replaceAll('stroke-width="LINE"', `stroke-width="${line}"`)
+      .replaceAll('stroke-width="THIN"', `stroke-width="${line / 2}"`)
+      .replaceAll(
+        'stroke-dasharray="DASH"',
+        `stroke-dasharray="${line * 3} ${line * 2}"`,
+      );
+    return `<svg class="text-ink-mute mx-auto block h-auto w-full max-w-xs" viewBox="${-w} ${top} ${2 * w} ${height - top + line * 2}" role="img" aria-label="A section through the cone, to scale">${svg}</svg>`;
+  }
+
+  /** Name what the drawing shows, and only that. */
+  function legend(d: ConeDisplay): string {
+    const f = d.figure;
+    if (f.kind === 'point')
+      return 'The drill to scale; the coloured line is the point length.';
+    const parts = [
+      'A section to scale, the surface at the top.',
+      f.answer === 'diameter'
+        ? 'The coloured line is the diameter at the surface.'
+        : 'The coloured line is the tool depth.',
+      f.holeR !== null ? 'Dashed: the tool below where it meets the hole.' : '',
+    ];
+    return parts.filter((p) => p !== '').join(' ');
+  }
+
+  function render(): void {
+    const mode = pick('mode') as ConeMode;
+    const units = pick('units') as DisplayUnits;
+    form.querySelectorAll<HTMLElement>('[data-modes]').forEach((el) => {
+      el.classList.toggle(
+        'hidden',
+        !(el.dataset['modes'] ?? '').split(' ').includes(mode),
+      );
+    });
+    errorEl.classList.add('hidden');
+    try {
+      // Everything below is presentation. The numbers, their units and their
+      // rounding come from `calc/cone-display.ts`, which the tests check as
+      // strings.
+      const d = coneDisplay({
+        mode,
+        units,
+        angle: num('angle'),
+        diameter: mode === 'point' ? maybe('drill') : maybe('diameter'),
+        tipFlat: maybe('tipFlat'),
+        hole: maybe('hole'),
+        depth: maybe('depth'),
+        fullDepth: maybe('fullDepth'),
+      });
+      const facts = d.summary
+        .map(
+          (s) => `<div>
+            <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">${s.label}</p>
+            <p class="mt-1 font-numeric text-xl font-semibold text-ink">${s.value}</p>
+          </div>`,
+        )
+        .join('');
+      const caution =
+        d.caution === null
+          ? ''
+          : `<p class="mt-2 font-sans text-sm text-ink-mute">${d.caution}</p>`;
+      resultEl.innerHTML = `
+        <div class="grid gap-6 sm:grid-cols-2">
+          <div>
+            <p class="font-display text-3xl font-semibold text-ink">${d.headline}</p>
+            <p class="mt-2 font-sans text-sm text-ink-soft">${d.detail}</p>
+            ${caution}
+            <div class="mt-4 grid grid-cols-2 gap-4">${facts}</div>
+          </div>
+          <div>
+            ${drawing(d)}
+            <p class="mt-2 text-center font-sans text-xs text-ink-mute">${legend(d)}</p>
+          </div>
+        </div>`;
+      workingEl.textContent = d.working;
+    } catch (err) {
+      errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
+      errorEl.classList.remove('hidden');
+      resultEl.innerHTML = '';
+      workingEl.textContent = '';
+    }
+  }
+
+  form.addEventListener('input', render);
+  // A radio fires `input` before `change`; render on both so the fields shown
+  // and the answer always match the controls (the tap drill page's lesson, #92).
+  form.addEventListener('change', render);
+  render();
+</script>
