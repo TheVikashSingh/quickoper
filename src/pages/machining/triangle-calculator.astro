@@ -1,0 +1,649 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+/**
+ * Triangle calculator: a right triangle from two parts, or any triangle from
+ * three, at least one a side; every triangle that fits is shown.
+ *
+ * ─── The one decision worth reading ─────────────────────────────────────────
+ *
+ * Two sides and an angle not between them can close two ways, and the page
+ * shows both rather than picking one: a guess there is a wrong part. The
+ * arithmetic lives in `calc/triangle.ts` and `triangle-display.ts`; this page
+ * maps the display object onto the DOM and computes nothing. The fields are
+ * text, not numbers, because a side in inches may be 3/8 and an angle 30 15.
+ */
+
+const RETRIEVED = '2026-10-13';
+const MIF = 'https://www.mathsisfun.com/algebra/';
+
+const SOURCES = [
+  {
+    label:
+      'Maths is Fun — Solving SSS Triangles: a 8, b 6, c 7, and two more, worked by the law of cosines',
+    url: `${MIF}trig-solving-sss-triangles.html`,
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'Maths is Fun — Solving SAS Triangles: A 49°, b 5, c 7 gives a 5.30, and a second example',
+    url: `${MIF}trig-solving-sas-triangles.html`,
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'Maths is Fun — Solving ASA Triangles and Solving AAS Triangles: two worked examples each',
+    url: `${MIF}trig-solving-asa-triangles.html`,
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'Maths is Fun — Solving SSA Triangles: B 31°, b 8, c 13 has two triangles, a 15.52 or 6.76; and cases with one and with none',
+    url: `${MIF}trig-solving-ssa-triangles.html`,
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'Maths is Fun — Finding a Side and Finding an Angle in a Right Triangle, and Area of Triangles: seven right-triangle examples and two areas',
+    url: `${MIF}trig-finding-side-right-triangle.html`,
+    retrieved: RETRIEVED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'Why does it show two triangles?',
+    a: 'Because two sides and an angle that is not between them can close two ways. With a 6, b 8 and α 30°, the angle β opposite the longer side is either 41.8103° or 180° minus that, 138.1897°, and both leave room for γ: c is 11.4003 or 2.4561. Nothing in those three numbers says which one you have, so the page shows both. The part or the drawing decides.',
+  },
+  {
+    q: 'Which side is a, and which angle is α?',
+    a: 'Side a is opposite angle α, b opposite β, and c opposite γ. In a right triangle γ is the right angle, so c is the hypotenuse and a and b are the legs. The drawing under the answer is to scale and labelled, so a mix-up shows.',
+  },
+  {
+    q: 'Why does another calculator give 47.7° where this gives 47.8°?',
+    a: 'Probably because it rounded on the way. Maths is Fun solves a 11.6, b 15.2, c 7.4 by finding B as 104.1° and C as 28.2°, both rounded to one place, and then A as 180° − 104.1° − 28.2° = 47.7°. Worked from unrounded figures, cos A is 151.24 ÷ 224.96, and A is 47.7554°: 47.8° to one place. This page rounds each figure once, at the end.',
+  },
+  {
+    q: 'Can I type an angle in degrees and minutes?',
+    a: 'Yes. 30 15 is 30° 15′, and so are 30°15′ and 30d 15m; a decimal such as 30.25 works too. A side in inches can be a fraction, such as 3/8 or 1 1/4.',
+  },
+  {
+    q: 'What does it refuse?',
+    a: 'Sides that do not close, where the longest is not shorter than the other two together; two angles that add up to 180° or more; angles alone, which fix the shape but not the size; in a right triangle, a hypotenuse that is not the longest side; and two sides and an angle that no triangle fits. Each says why in words.',
+  },
+  {
+    q: 'Does it work offline?',
+    a: 'Every calculation runs in your browser and nothing you type is sent anywhere, so once the page has loaded it works without a connection.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Triangle calculator',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/machining/triangle-calculator`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'Solves a right triangle from two parts or any triangle from three, at least one a side: every side, every angle and the area, both triangles where two fit, with the working shown.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Triangle calculator',
+        item: `${SITE.url}/machining/triangle-calculator`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+
+const field =
+  'border-line-strong bg-surface text-ink focus-visible:outline-brand w-full rounded-control border px-3 py-2 font-numeric text-base focus-visible:outline-2 focus-visible:outline-offset-2';
+const label = 'block text-sm font-semibold text-ink-soft';
+const hint = 'text-ink-mute mt-1 text-xs';
+
+/** The six parts. γ is hidden in a right triangle, where it is 90°. */
+const PARTS = [
+  {
+    id: 'tr-a',
+    name: 'a',
+    label: 'Side a',
+    value: '3',
+    hint: 'Opposite α.',
+    modes: 'right any',
+  },
+  {
+    id: 'tr-b',
+    name: 'b',
+    label: 'Side b',
+    value: '4',
+    hint: 'Opposite β.',
+    modes: 'right any',
+  },
+  {
+    id: 'tr-c',
+    name: 'c',
+    label: 'Side c',
+    value: '',
+    hint: 'Opposite γ: in a right triangle, the hypotenuse.',
+    modes: 'right any',
+  },
+  {
+    id: 'tr-alpha',
+    name: 'alpha',
+    label: 'Angle α (°)',
+    value: '',
+    hint: 'Blank if unknown. 30 15 is 30° 15′.',
+    modes: 'right any',
+  },
+  {
+    id: 'tr-beta',
+    name: 'beta',
+    label: 'Angle β (°)',
+    value: '',
+    hint: 'Blank if unknown.',
+    modes: 'right any',
+  },
+  {
+    id: 'tr-gamma',
+    name: 'gamma',
+    label: 'Angle γ (°)',
+    value: '',
+    hint: 'Blank if unknown.',
+    modes: 'any',
+  },
+];
+---
+
+<BaseLayout
+  title="Triangle calculator"
+  description="Solve a right triangle from two parts, or any triangle from three: every side, angle and the area, both triangles where two fit, with the working shown to four decimals."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Triangle
+    </nav>
+
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      Triangle calculator
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      Every side, every angle and the area, from two parts of a right triangle or three of
+      any triangle, at least one of them a side. Where two triangles fit, both.
+    </p>
+
+    <!-- ── Calculator ──────────────────────────────────────────────────── -->
+    <section class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border">
+      <form id="tr-form" class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3">
+        <fieldset class="col-span-2 sm:col-span-3">
+          <legend class={label}>Triangle</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="mode" value="right" checked /> Right-angled, γ = 90°</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="mode" value="any" /> Any</label
+            >
+          </div>
+        </fieldset>
+        <fieldset class="col-span-2 sm:col-span-3">
+          <legend class={label}>Units</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="mm" checked /> Millimetres</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="units" value="in" /> Inches</label
+            >
+          </div>
+        </fieldset>
+        <p id="tr-ask" class="text-ink-soft col-span-2 text-sm sm:col-span-3">
+          Enter two of a, b, c, α and β, at least one a side.
+        </p>
+        {
+          PARTS.map((f) => (
+            <div data-modes={f.modes} class={f.modes.includes('right') ? '' : 'hidden'}>
+              <label class={label} for={f.id}>
+                {f.label}
+              </label>
+              <input
+                class={`${field} mt-1`}
+                id={f.id}
+                name={f.name}
+                type="text"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                value={f.value}
+              />
+              <p class={hint}>{f.hint}</p>
+            </div>
+          ))
+        }
+      </form>
+
+      <output
+        id="tr-result"
+        class="border-line block border-t px-5 py-5"
+        for="tr-form"
+        aria-live="polite"></output>
+    </section>
+
+    <p id="tr-error" class="text-negative mt-3 hidden text-sm" role="alert"></p>
+
+    <!-- ── How this was calculated ─────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        How this was calculated
+      </h2>
+      <div
+        id="tr-working"
+        class="border-line bg-sunken rounded-panel font-numeric mt-4 overflow-x-auto border p-4 text-sm leading-relaxed whitespace-pre-wrap"
+      >
+      </div>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        Sides are carried in whole nanometres and each figure is rounded once, half to
+        even, to four decimals. Where a side or an area can land exactly halfway between
+        two figures, it is worked exactly in whole numbers; everywhere else it is
+        irrational and cannot.
+      </p>
+    </section>
+
+    <!-- ── Explanation ─────────────────────────────────────────────────── -->
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class="font-display text-ink text-2xl font-semibold">Two laws, five cases</h2>
+      <p>
+        Any triangle has six parts, three sides and three angles, and any three of them
+        fix it, as long as one is a side: angles alone give the shape at every size. Side
+        a sits opposite angle α, b opposite β, c opposite γ. Two rules do all the work.
+        The law of cosines, c² = a² + b² − 2ab × cos γ, gives a side from the other two
+        and the angle between them, or an angle from three sides. The law of sines, a ÷
+        sin α = b ÷ sin β = c ÷ sin γ, gives a side from an angle opposite it and any
+        matched pair. Which one to use depends on what you know, and the working names the
+        case.
+      </p>
+      <p>
+        Three sides is the law of cosines three times. Two sides and the angle between
+        them is the law of cosines once for the third side, then the angles. Two angles
+        and a side is the third angle from 180°, then the law of sines; it does not matter
+        whether the side lies between the two angles or not. A right triangle is any of
+        these with γ given as 90°, which is why it needs only two parts: the legs 3 and 4
+        give the hypotenuse 5, and the angles 36.8699° and 53.1301°.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Two sides and an angle not between them
+      </h3>
+      <p>
+        This is the case that catches people. Start with a 6, b 8 and α 30°. The law of
+        sines gives sin β = 8 × sin 30° ÷ 6 = 0.6667, and two angles have that sine:
+        41.8103° and 138.1897°. Both leave room for γ, so two different triangles fit the
+        same three numbers, one with c = 11.4003 and one with c = 2.4561. A calculator
+        that returns only the first is guessing, and on a part that guess is a scrapped
+        feature. This page shows both, each drawn to scale, and says why. Swap the sides,
+        a 8 and b 6, and the second value leaves no room for γ: one triangle. Make b too
+        long for a to reach and none fits, and the page says that instead.
+      </p>
+      <p>
+        There is a trap inside the trap. A 4, b 8 and α 30° is exactly right-angled at β:
+        sin β = 8 × sin 30° ÷ 4 = 1. In floating point, sin 30° is 0.49999999999999994,
+        sin β comes out a hair under 1, and a careless solver reports two triangles a few
+        millionths of a degree apart. Here sin 30° is taken as exactly a half, the
+        comparison is done in whole numbers, and the answer is one triangle with β =
+        90.0000° and c = 6.9282.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">On the shop floor</h3>
+      <p>
+        A taper is a right triangle on each side of its axis. From Ø20 down to Ø16 over 40
+        mm, the legs are half the difference, 2, and the length, 40: the half-angle is
+        2.8624°, so the included angle is twice that. A sine bar is a right triangle with
+        the bar as the hypotenuse: for 30° on a 5 in bar the gauge stack is the opposite
+        side, 5 × sin 30° = 2.5000 in exactly, and on a 100 mm bar at 12.5° it is 21.6440
+        mm. A check for square across a corner is 3, 4, 5 at any scale.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Checked against published examples
+      </h3>
+      <p>
+        Maths is Fun works an example of every case by hand, and this page is tested
+        against all of them: three sides 8, 6, 7 give 75.5224…° and 46.5674…°; A 49°
+        between b 5 and c 7 gives a 5.30; A 76° and B 34° about c 9 give 9.29 and 5.36; B
+        31°, b 8, c 13 gives two triangles, a 15.52 or 6.76; and seven right triangles and
+        two areas besides. One answer differs. For sides 11.6, 15.2 and 7.4, Maths is Fun
+        rounds B and C to one place and subtracts them from 180°, which gives A 47.7°.
+        Unrounded, cos A is 151.24 ÷ 224.96, so A is 47.7554°, 47.8° to one place.
+        Rounding twice moved the answer; this page rounds once, at the end.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">Exact where it matters</h3>
+      <p>
+        A figure can sit exactly halfway between two four-decimal figures only if it is a
+        whole or a fraction, and for angles in degrees that happens in few places: a
+        cosine is rational only at 60°, 90° and 120°, a sine only at 30°, 90° and 150°.
+        Those are worked in whole nanometres, with integer square roots, so legs of
+        0.00009 and 0.00012 mm give a hypotenuse of exactly 0.00015, rounded to the even
+        0.0002. Every other side and angle is irrational, cannot fall exactly halfway, and
+        is checked against more than three thousand triangles worked to 60 digits.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">What it leaves out</h3>
+      <p>
+        It works flat triangles from the parts you give it. It does not find a triangle
+        from its area, work on a sphere, or fit a triangle to measured points and their
+        errors. A dimension taken from a datum rather than a corner has to become a side
+        first: two holes dimensioned from the same corner are the legs of a right
+        triangle, and the distance between them is its hypotenuse.
+      </p>
+    </section>
+
+    <!-- ── App ─────────────────────────────────────────────────────────── -->
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-12 border p-5"
+    >
+      <h2 class="font-display text-ink text-xl font-semibold">
+        This, but in your pocket on the shop floor
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        The same arithmetic is going into a metric-first Android app: triangles, bolt
+        circles, true position, thread and tap drill, feeds and speeds, offline, one
+        payment, no subscription. It is in development and this page is free forever
+        either way.
+      </p>
+      <a
+        class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+        href="/machining/app">What it will do, and what it will cost &rarr;</a
+      >
+    </section>
+
+    <!-- ── FAQ ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        The laws of cosines and sines are geometry. Maths is Fun's worked examples are the
+        published results this page is tested against.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated figures from the numbers you enter. Check them against the
+      drawing before cutting a part.
+    </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each showing its working"
+      links={[
+        {
+          href: '/machining/bolt-circle-calculator',
+          label: 'Bolt circle calculator',
+          note: 'every hole’s X and Y on a circle or a grid',
+        },
+        {
+          href: '/machining/countersink-calculator',
+          label: 'Countersink and chamfer calculator',
+          note: 'a cone’s depth, diameter and a drill’s point length',
+        },
+      ]}
+    />
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    triangleDisplay,
+    type TriangleFigure,
+    type TriangleMode,
+    type TriangleView,
+  } from '../../lib/calc/triangle-display';
+  import type { DisplayUnits } from '../../lib/calc/hole-pattern-display';
+
+  /** Resolve an element or fail loudly at load, as the other calculators do. */
+  function must<T extends HTMLElement>(id: string): T {
+    const el = document.getElementById(id);
+    if (el === null) throw new Error(`triangle: #${id} is missing from the page`);
+    return el as T;
+  }
+
+  const form = must<HTMLFormElement>('tr-form');
+  const resultEl = must('tr-result');
+  const workingEl = must('tr-working');
+  const errorEl = must('tr-error');
+  const askEl = must('tr-ask');
+
+  const text = (name: string): string =>
+    (form.elements.namedItem(name) as HTMLInputElement).value;
+  const pick = (name: string): string =>
+    (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
+
+  /**
+   * The triangle to scale, A at the left and c along the bottom.
+   *
+   * SVG y runs down, so y is negated. Only numbers and fixed letters reach
+   * the markup; nothing the user typed does.
+   */
+  function drawing(f: TriangleFigure): string {
+    // Drawn 100 units across whatever the size: a label at 0.04 units (a
+    // fraction of an inch) was placed off its coordinates by the browser.
+    const span = Math.max(
+      ...f.points.map((p) => Math.abs(p[0] - f.points[0][0])),
+      ...f.points.map((p) => Math.abs(p[1])),
+      Math.abs(f.points[1][0] - f.points[2][0]),
+    );
+    const scale = 100 / (span || 1);
+    const pts = f.points.map(([x, y]) => [x * scale, -y * scale] as const);
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const size = Math.max(maxX - minX, maxY - minY);
+    const pad = size * 0.2;
+    const line = size * 0.012;
+    const font = size * 0.07;
+    const [A, B, C] = pts as [
+      readonly [number, number],
+      readonly [number, number],
+      readonly [number, number],
+    ];
+    const cx = (A[0] + B[0] + C[0]) / 3;
+    const cy = (A[1] + B[1] + C[1]) / 3;
+    /** A label pushed away from the centre, beside a point. */
+    const away = (p: readonly [number, number], k: number): [number, number] => {
+      const dx = p[0] - cx;
+      const dy = p[1] - cy;
+      const d = Math.hypot(dx, dy) || 1;
+      return [p[0] + (dx / d) * font * k, p[1] + (dy / d) * font * k];
+    };
+    /**
+     * A side's label off its middle, square to the side and away from the
+     * opposite corner: pushed out from the centre instead, it sat on the line
+     * of a long side at 375 px.
+     */
+    const beside = (
+      p: readonly [number, number],
+      q: readonly [number, number],
+      far: readonly [number, number],
+    ): [number, number] => {
+      const mx = (p[0] + q[0]) / 2;
+      const my = (p[1] + q[1]) / 2;
+      const len = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1;
+      let nx = -(q[1] - p[1]) / len;
+      let ny = (q[0] - p[0]) / len;
+      if (nx * (far[0] - mx) + ny * (far[1] - my) > 0) {
+        nx = -nx;
+        ny = -ny;
+      }
+      return [mx + nx * font * 0.9, my + ny * font * 0.9];
+    };
+    const labels: [readonly [number, number], string][] = [
+      [beside(B, C, A), 'a'],
+      [beside(A, C, B), 'b'],
+      [beside(A, B, C), 'c'],
+      [away(A, 1.6), 'α'],
+      [away(B, 1.6), 'β'],
+      [away(C, 1.6), 'γ'],
+    ];
+    const text = labels
+      .map(
+        ([[x, y], t]) =>
+          `<text x="${x}" y="${y}" font-size="${font}" text-anchor="middle" dominant-baseline="middle" fill="currentColor">${t}</text>`,
+      )
+      .join('');
+    let mark = '';
+    if (f.right) {
+      // A small square in the corner at C, along both legs.
+      const k = size * 0.06;
+      const u = (p: readonly [number, number]) => {
+        const d = Math.hypot(p[0] - C[0], p[1] - C[1]) || 1;
+        return [((p[0] - C[0]) / d) * k, ((p[1] - C[1]) / d) * k] as const;
+      };
+      const [ux, uy] = u(A);
+      const [vx, vy] = u(B);
+      mark = `<path d="M ${C[0] + ux} ${C[1] + uy} L ${C[0] + ux + vx} ${C[1] + uy + vy} L ${C[0] + vx} ${C[1] + vy}" fill="none" stroke="currentColor" stroke-width="${line / 2}" />`;
+    }
+    return `<svg class="text-ink-mute mx-auto block h-auto w-full max-w-xs" viewBox="${minX - pad} ${minY - pad} ${maxX - minX + 2 * pad} ${maxY - minY + 2 * pad}" role="img" aria-label="The triangle to scale, with its sides and angles labelled">
+      <path class="text-brand" d="M ${A[0]} ${A[1]} L ${B[0]} ${B[1]} L ${C[0]} ${C[1]} Z" fill="none" stroke="currentColor" stroke-width="${line}" stroke-linejoin="round" />
+      ${mark}${text}</svg>`;
+  }
+
+  const table = (t: TriangleView): string => `
+    <table class="w-full font-numeric text-base">
+      <tbody>${t.rows
+        .map(
+          (r) => `<tr class="border-b border-line">
+            <th scope="row" class="py-1 pr-3 text-left font-semibold text-ink">${r.name}</th>
+            <td class="py-1 text-right ${r.given ? 'text-ink-mute' : 'text-ink font-semibold'}">${r.value}</td>
+            <td class="py-1 pl-3 font-sans text-xs text-ink-mute">${r.given ? 'given' : ''}</td>
+          </tr>`,
+        )
+        .join('')}
+        <tr>
+          <th scope="row" class="pt-2 pr-3 text-left font-sans text-sm font-semibold text-ink-soft">Area</th>
+          <td class="pt-2 text-right font-semibold text-ink">${t.area}</td>
+          <td class="pt-2 pl-3"></td>
+        </tr>
+      </tbody>
+    </table>`;
+
+  function render(): void {
+    const mode = pick('mode') as TriangleMode;
+    const units = pick('units') as DisplayUnits;
+    form.querySelectorAll<HTMLElement>('[data-modes]').forEach((el) => {
+      el.classList.toggle(
+        'hidden',
+        !(el.dataset['modes'] ?? '').split(' ').includes(mode),
+      );
+    });
+    askEl.textContent =
+      mode === 'right'
+        ? 'Enter two of a, b, c, α and β, at least one a side.'
+        : 'Enter three of the six, at least one a side.';
+    errorEl.classList.add('hidden');
+    try {
+      // Everything below is presentation. The numbers, their units and their
+      // rounding come from `calc/triangle-display.ts`, which the tests check
+      // as strings.
+      const d = triangleDisplay({
+        mode,
+        units,
+        a: text('a'),
+        b: text('b'),
+        c: text('c'),
+        alpha: text('alpha'),
+        beta: text('beta'),
+        gamma: text('gamma'),
+      });
+      const note =
+        d.note === null
+          ? ''
+          : `<p class="mt-2 font-sans text-sm text-ink-soft">${d.note}</p>`;
+      const many = d.triangles.length > 1;
+      resultEl.innerHTML = `
+        <p class="font-display text-3xl font-semibold text-ink">${d.headline}</p>
+        <p class="mt-2 font-sans text-sm text-ink-soft">${d.detail}</p>
+        ${note}
+        <div class="mt-5 grid gap-8 ${many ? 'sm:grid-cols-2' : ''}">${d.triangles
+          .map(
+            (t, i) => `<div>
+              ${many ? `<p class="font-mono text-xs uppercase tracking-widest text-ink-mute">Triangle ${i + 1}</p>` : ''}
+              <div class="mt-2 grid gap-4 ${many ? '' : 'sm:grid-cols-2'}">
+                <div>${table(t)}</div>
+                <div>${drawing(t.figure)}</div>
+              </div>
+            </div>`,
+          )
+          .join('')}</div>`;
+      workingEl.textContent = d.working;
+    } catch (err) {
+      errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
+      errorEl.classList.remove('hidden');
+      resultEl.innerHTML = '';
+      workingEl.textContent = '';
+    }
+  }
+
+  form.addEventListener('input', render);
+  // A radio fires `input` before `change`; render on both so the fields shown
+  // and the answer always match the controls (the tap drill page's lesson, #92).
+  form.addEventListener('change', render);
+  render();
+</script>

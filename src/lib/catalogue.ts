@@ -311,6 +311,17 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'calculator',
   },
   {
+    href: '/machining/triangle-calculator',
+    title: 'Triangle calculator — right or any, every side and angle',
+    short: 'Triangle',
+    summary:
+      'Every side, angle and the area of a right triangle from two parts or any triangle from three, at least one a side; both triangles where two fit.',
+    detail:
+      'Checked against Maths is Fun’s worked examples of every case. Drawn to scale, with the working shown.',
+    vertical: 'machining',
+    kind: 'calculator',
+  },
+  {
     href: '/machining/drill-size-chart',
     title: 'Drill size chart — the whole index, on one sheet',
     summary:
