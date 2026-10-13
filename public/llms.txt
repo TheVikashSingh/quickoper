@@ -471,6 +471,27 @@ Jurisdiction: none. Unit definitions.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
+### Triangle calculator (right or any)
+URL: https://quickoper.com/machining/triangle-calculator
+Computes: the three sides, three angles and area of a right triangle from two
+parts, or of any triangle from three, at least one of them a side. Where two
+triangles fit (two sides and an angle not between them), both.
+Inputs: sides a, b, c in millimetres or inches (a fraction such as 3/8 in
+inches); angles alpha, beta, gamma in degrees, decimal or degrees and minutes
+(30 15). Side a is opposite alpha, b opposite beta, c opposite gamma; in a right
+triangle gamma is 90 degrees and c the hypotenuse.
+Key figures: legs 3 and 4 give hypotenuse 5.0000 and angles 36.8699 and
+53.1301 degrees. a 6, b 8, alpha 30 degrees has two triangles, c 11.4003 or
+2.4561. a 4, b 8, alpha 30 degrees is one triangle, exactly right-angled at
+beta, c 6.9282. SAS a 5, b 7, gamma 60 degrees gives c = sqrt(39) = 6.2450.
+Sides 11.6, 15.2, 7.4 give A 47.7554 degrees (47.8 to one place; a worked
+example that rounds B and C first gets 47.7). Every figure is rounded once,
+half-even, to 4 decimals; sides and areas that can tie are worked exactly.
+Not counted: spherical triangles, a triangle from its area.
+Jurisdiction: none. Geometry: the laws of cosines and sines.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/finance/verify
+
 ### Drill size chart (metric, fractional, number and letter)
 URL: https://quickoper.com/machining/drill-size-chart
 Computes: nothing on demand. It PUBLISHES four drill series as printable tables,

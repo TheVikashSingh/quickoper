@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-10-13, the unit converter (D107).
+**Updated:** 2026-10-13, the triangle calculator (D108).
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -30,9 +30,9 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 31 (30 substantive — `/404` is not) |
+| Pages built | 32 (31 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 961 passing |
+| Tests | 1020 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
@@ -381,6 +381,28 @@ and `tests/calc/convert-display.test.ts` checks the strings.
 - Written from the research spec, then cross-checked against its table, which
   the Android core's tests also hold (Gate 7): every row agrees.
 
+### Triangles
+
+`/machining/triangle-calculator` (2026-10-13, D108) solves a right triangle
+from two parts or any triangle from three, at least one a side: SSS, SAS, ASA,
+AAS and SSA, every side, angle and the area, each drawn to scale. Where two
+triangles fit it shows both. `calc/triangle.ts` solves it,
+`calc/triangle-display.ts` words it, and `tests/calc/triangle-display.test.ts`
+checks the strings.
+
+- **The published checks (rule 3):** Maths is Fun's worked examples of every
+  case, seven right triangles and two areas, each matched at the precision it
+  prints. One differs, and the page says why: Maths is Fun rounds B and C
+  before taking A from 180° (47.7°); unrounded A is 47.7554°.
+- **Exact where a tie can happen:** a cosine is rational only at 60°, 90° and
+  120°, a sine at 30°, 90° and 150° (Niven), so those sides are integer square
+  roots or rational ratios in BigInt, and an area is exact from them or by
+  Heron's formula. Every exact path was broken on purpose and a test failed.
+  The rest is irrational: 3234 triangles against a 60-digit reference
+  (`tests/fixtures/triangle-reference.py`).
+- Written from the research spec, then checked against its golden values,
+  which the Android core's tests also hold (Gate 7): every one agrees.
+
 ### The conversion surface
 
 `/machining/app` describes the app; `/apps` is the site-level index linked from
@@ -455,7 +477,7 @@ Claude.
 
 ## Next
 
-**The content threshold is met.** The build produces 31 pages, of which 30 are
+**The content threshold is met.** The build produces 32 pages, of which 31 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -509,7 +531,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **30** — none to go |
+| 15+ substantive pages | **31** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |

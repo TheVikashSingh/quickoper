@@ -4521,6 +4521,54 @@ at six places, built at build time from the same module as plain HTML, with
 the row nearest the length marked. No CSV: the chart is the table, and it
 prints.
 
+### D108 — Triangles: every triangle that fits, and exact only where a tie can happen
+
+The app's triangle tool, on the site, written from `machinist-calc-research`
+03-spec/calculations.md, "Triangles", rather than from the Kotlin, then
+compared with the spec's golden values, which the Android core's tests also
+hold (Gate 7): every one agrees. A right triangle from two parts or any
+triangle from three, at least one a side, by the laws of cosines and sines.
+
+**The published checks.** Maths is Fun works an example of every case by
+hand: three SSS, two SAS, two ASA, two AAS, three SSA (two triangles, one,
+none), seven right triangles and two areas. Each is a test, matched at the
+precision the page prints. One disagrees, by a tenth of a degree, and the
+disagreement is theirs: for 11.6, 15.2, 7.4 they round B to 104.1° and C to
+28.2° and take A as 180° less those, 47.7°; unrounded, A is 47.7554°. The page's
+prose and FAQ say so. Two of their figures are printed truncated (75.5224…°
+is 75.5225 to four places), and the tests say that too.
+
+**Every triangle that fits.** Two sides and an angle not between them can
+close two ways; the page shows both, each drawn to scale, with a note, because
+picking one is a guess and a guess is a wrong part. The right angle hidden in
+SSA (a 4, b 8, α 30°) is decided in whole numbers where the angle's sine is
+rational, and within 1e−14 of 1 elsewhere, as the spec says.
+
+**Exact only where a tie can happen.** For angles in degrees a cosine is
+rational only at 60°, 90° and 120° and a sine only at 30°, 90° and 150°
+(Niven). So a side is rational only as an integer square root (SAS, and SSA,
+at those cosines) or as a known side times a rational ratio of sines; those
+are worked in BigInt, as true position's roots are (D101). An area is exact
+from two exact sides and a rational sine, or by Heron's formula on three
+whole-nanometre sides. Each exact path was broken on purpose and a test
+failed: roots in floating point, the law of sines in floating point, the area
+from ½ab sin γ, Heron, and SSA at 60°. The last two at first failed nothing;
+cases where floating point really misses were searched for (a 0.00035, b
+0.0004 at 60° gives 250.00000000000006 and 149.99999999999997 nm; sides
+0.035, 0.075, 0.1 give 1050000000.0000002 nm²) and added. Every other figure
+is irrational: 3234 triangles, every case, against a 60-digit reference
+(`tests/fixtures/triangle-reference.py`), with near-ties taken as ties since
+its series give 1/2 to 60 digits rather than exactly.
+
+**Text fields.** A side in inches may be 3/8, and an angle 30 15; the fields
+are `type="text"`, parsed by the converter's `parseLength` and `parseAngle`
+(D107), so a typed angle is an exact rational and the third angle from 180°
+is too.
+
+**No table and no CSV.** One triangle has no schedule; the drawing to scale,
+the area and, in the ambiguous case, the second triangle carry "more than a
+number", as D101 and D106 decided.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
