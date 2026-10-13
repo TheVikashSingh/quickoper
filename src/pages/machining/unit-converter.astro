@@ -1,0 +1,573 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { sixtyFourthsChart } from '../../lib/calc/convert-display';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+/**
+ * Unit converter: a length between millimetres, inches, thou and
+ * micrometres, the nearest 1/64, 1/32 and 1/16 inch, and an angle between
+ * degrees minutes seconds, decimal degrees and radians.
+ *
+ * ─── The one decision worth reading ─────────────────────────────────────────
+ *
+ * Each figure is rounded once, half to even, from the exact value: a length
+ * from whole nanometres, an angle from the exact fraction it was typed as.
+ * The arithmetic lives in `calc/convert.ts` and `convert-display.ts`; this
+ * page maps the display object onto the DOM and computes nothing. The 64ths
+ * chart is built here, at build time, from the same module, so it ships as
+ * HTML with no script.
+ *
+ * The one field is text, not a number, because it takes 13/64 and 1 3/8 and
+ * 12 30 15. A phone's decimal keypad has no slash or space, so it is left on
+ * the ordinary keyboard rather than `inputmode="decimal"`.
+ */
+
+const RETRIEVED = '2026-10-13';
+
+const SOURCES = [
+  {
+    label:
+      'NIST Special Publication 811, Appendix B.8 — inch to metre 2.54 E−02 and mil (0.001 in) to millimetre 2.54 E−02, both exact; degree to radian 1.745 329 E−02, minute 2.908 882 E−04, second 4.848 137 E−06',
+    url: 'https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'Inch Calculator — Inch Fraction Calculator: 2.695 in to the nearest 1/16 is 2 11/16, and a chart of every 64th in inches and millimetres',
+    url: 'https://www.inchcalculator.com/inch-fraction-calculator/',
+    retrieved: RETRIEVED,
+  },
+  {
+    label:
+      'Omni Calculator — Inches to Fraction Calculator: 12 mm is 15/32 in, 7 mm is 9/32 in, 11.81 in is 11 13/16',
+    url: 'https://www.omnicalculator.com/conversion/inches-to-fraction',
+    retrieved: RETRIEVED,
+  },
+  {
+    label: 'Omni Calculator — Degrees Minutes Seconds Calculator: 47.392° is 47°23′31.2″',
+    url: 'https://www.omnicalculator.com/conversion/degrees-minutes-seconds',
+    retrieved: RETRIEVED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const FAQ = [
+  {
+    q: 'Is 25.4 exact, or rounded?',
+    a: 'Exact. Since the international yard and pound agreement of 1959 an inch is defined as 25.4 mm, and NIST prints the factor in bold, its mark for an exact one. So a thou is exactly 0.0254 mm and 1/64 in is exactly 0.396875 mm. The only rounding on this page is the one done for display, once, at the end.',
+  },
+  {
+    q: 'Why is 0.201 in called 13/64 and not 3/16?',
+    a: 'Because 13/64 is nearer. 0.201 × 64 = 12.864, which rounds to 13, and 13/64 in is 0.203125 in, 0.0021 in over. At 32nds and 16ths there is no 13, so the nearest is 3/16, 0.1875 in, 0.0135 in under. A tap drill chart that calls a #7 drill (0.201 in) "about 13/64" is doing the same arithmetic.',
+  },
+  {
+    q: 'What happens exactly halfway between two fractions?',
+    a: 'The even one is taken, the same rule the rest of this site rounds by. 17/64 in sits exactly halfway between 8/32 and 9/32, so at 32nds it is 8/32, which is 1/4. Rounding every half up instead would lean a whole table of conversions the same way; half to even does not.',
+  },
+  {
+    q: 'Why are the seconds rounded before they are split?',
+    a: 'To stop 60 seconds appearing. 29.999999° is 107 999.9964″, which rounds to 108 000.00″, which is exactly 30° 0′ 0.00″. Splitting first gives 29° 59′ and 59.9964″, which rounds to 60.00″, a reading no protractor shows.',
+  },
+  {
+    q: 'How do I type an angle in degrees, minutes and seconds?',
+    a: 'Any of the usual ways: 12 30 15, 12°30′15″, 12° 30\' 15", or 12d 30m 15s. Minutes and seconds are optional and must be under 60, and only the last part can have decimals. A minus sign in front makes the whole angle negative.',
+  },
+  {
+    q: 'Does it work offline?',
+    a: 'Every calculation runs in your browser and nothing you type is sent anywhere, so once the page has loaded it works without a connection. The 64ths chart is plain HTML and prints on one sheet.',
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Inch, millimetre, fraction and angle converter',
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Any',
+    url: `${SITE.url}/machining/unit-converter`,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    description:
+      'A length in millimetres, inches, thou and micrometres with the nearest 1/64, 1/32 and 1/16 inch and how far off each is, and an angle in degrees minutes seconds, decimal degrees and radians, each rounded once with the working shown.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Unit converter',
+        item: `${SITE.url}/machining/unit-converter`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+
+const field =
+  'border-line-strong bg-surface text-ink focus-visible:outline-brand w-full rounded-control border px-3 py-2 font-numeric text-base focus-visible:outline-2 focus-visible:outline-offset-2';
+const label = 'block text-sm font-semibold text-ink-soft';
+const hint = 'text-ink-mute mt-1 text-xs';
+
+const CHART = sixtyFourthsChart();
+---
+
+<BaseLayout
+  title="Inch to mm and fraction converter"
+  description="A length in mm, inches, thou and µm, with the nearest 1/64, 1/32 and 1/16 inch and how far off each is; an angle in degrees, minutes and seconds, decimal degrees and radians. Shows the working."
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Unit converter
+    </nav>
+
+    <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
+      Inch, millimetre, fraction and angle converter
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      A length in millimetres, inches, thou and micrometres, with the nearest 64th, 32nd
+      and 16th of an inch and how far off each one is. An angle in degrees, minutes and
+      seconds, decimal degrees and radians.
+    </p>
+
+    <!-- ── Calculator ──────────────────────────────────────────────────── -->
+    <section class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border">
+      <form id="cv-form" class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
+        <fieldset class="col-span-2 sm:col-span-4">
+          <legend class={label}>Convert</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="mode" value="length" checked /> A length</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="mode" value="angle" /> An angle</label
+            >
+          </div>
+        </fieldset>
+        <fieldset class="col-span-2 sm:col-span-4" data-modes="length">
+          <legend class={label}>Typed in</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="unit" value="mm" checked /> mm</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="unit" value="in" /> inches</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="unit" value="thou" /> thou</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="unit" value="um" /> µm</label
+            >
+          </div>
+        </fieldset>
+        <fieldset class="col-span-2 hidden sm:col-span-4" data-modes="angle">
+          <legend class={label}>Typed in</legend>
+          <div class="mt-1 flex flex-wrap gap-4 text-sm">
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="angleUnit" value="deg" checked /> degrees</label
+            >
+            <label class="flex items-center gap-2"
+              ><input type="radio" name="angleUnit" value="rad" /> radians</label
+            >
+          </div>
+        </fieldset>
+        <div class="col-span-2 sm:col-span-4" data-modes="length">
+          <label class={label} for="cv-length">Length</label>
+          <input
+            class={`${field} mt-1`}
+            id="cv-length"
+            name="length"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            value="10"
+          />
+          <p class={hint}>
+            A decimal, such as 0.201. In inches also 13/64, 1 3/8 or 1-3/8.
+          </p>
+        </div>
+        <div class="col-span-2 hidden sm:col-span-4" data-modes="angle">
+          <label class={label} for="cv-angle">Angle</label>
+          <input
+            class={`${field} mt-1`}
+            id="cv-angle"
+            name="angle"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            value="12 30 15"
+          />
+          <p class={hint}>
+            12.5, 12 30 15, 12°30′15″ or 12d 30m 15s. In radians, a decimal.
+          </p>
+        </div>
+      </form>
+
+      <output
+        id="cv-result"
+        class="border-line block border-t px-5 py-5"
+        for="cv-form"
+        aria-live="polite"></output>
+    </section>
+
+    <p id="cv-error" class="text-negative mt-3 hidden text-sm" role="alert"></p>
+
+    <!-- ── How this was calculated ─────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        How this was calculated
+      </h2>
+      <div
+        id="cv-working"
+        class="border-line bg-sunken rounded-panel font-numeric mt-4 overflow-x-auto border p-4 text-sm leading-relaxed whitespace-pre-wrap"
+      >
+      </div>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        A length is carried in whole nanometres, and each figure is rounded once, half to
+        even: millimetres and inches to four places, thou and micrometres to one. An angle
+        typed in degrees is carried as the exact fraction it was typed as; radians are the
+        one place π comes in.
+      </p>
+    </section>
+
+    <!-- ── The 64ths chart ─────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        Every 64th of an inch, in inches and millimetres
+      </h2>
+      <p class="text-ink-soft mt-3 max-w-prose">
+        Exact, not rounded: every 64th is a whole number of millionths of an inch and of a
+        millimetre. The row nearest the length above is marked.
+      </p>
+      <div class="border-line rounded-panel mt-4 overflow-x-auto border">
+        <table id="cv-chart" class="font-numeric w-full text-sm">
+          <thead class="bg-sunken text-ink-soft">
+            <tr>
+              <th scope="col" class="px-3 py-2 text-left font-semibold">Fraction</th>
+              <th scope="col" class="px-3 py-2 text-right font-semibold">Inches</th>
+              <th scope="col" class="px-3 py-2 text-right font-semibold">Millimetres</th>
+            </tr>
+          </thead>
+          <tbody class="text-ink">
+            {
+              CHART.map((r) => (
+                <tr data-row={r.sixtyFourths} class="border-line border-t">
+                  <th scope="row" class="px-3 py-1 text-left font-semibold">
+                    {r.fraction}
+                  </th>
+                  <td class="px-3 py-1 text-right">{r.inch}</td>
+                  <td class="px-3 py-1 text-right">{r.mm}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Explanation ─────────────────────────────────────────────────── -->
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class="font-display text-ink text-2xl font-semibold">
+        Definitions, and one rounding each
+      </h2>
+      <p>
+        Nothing on this page is measured or looked up. An inch is 25.4 mm by definition,
+        since the international yard and pound agreement of 1959; a thou is a thousandth
+        of an inch and a micrometre a thousandth of a millimetre; a degree is 60 minutes
+        and a minute 60 seconds; π radians are 180°. NIST's guide to the SI prints the
+        inch and the mil as exact factors. So the arithmetic is simple, and the only way
+        to get it wrong is in the rounding: rounding twice, rounding the wrong way at a
+        tie, or rounding before a split that the rounding then breaks. This page rounds
+        each figure once, from the exact value, half to even.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Lengths, on a nanometre grid
+      </h3>
+      <p>
+        A typed length becomes a whole number of nanometres first: 0.201 in is 0.201 × 25
+        400 000 = 5 105 400 nm, with nothing lost, because a decimal inch to five places,
+        or a millimetre to six, is always a whole number of nanometres. Every unit is then
+        a division of that integer, rounded once. 5 105 400 ÷ 1 000 000 is 5.1054 mm; ÷ 25
+        400 000 is 0.2010 in; ÷ 25 400 is 201.0 thou; ÷ 1 000 is 5105.4 µm. Going the
+        other way, 10 mm is 0.3937 in, 393.7 thou and 10 000.0 µm. A length with more
+        decimals than a nanometre, such as 0.123456 in, is put on the nearest nanometre,
+        and the working says so. That moves it by half a nanometre at most, two hundred
+        times finer than the 0.0001 mm the page shows.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        The nearest fraction, and how far off it is
+      </h3>
+      <p>
+        A shop rule, a drill index and an old drawing count in 64ths, 32nds and 16ths. The
+        nearest fraction is the length times the denominator, rounded to a whole number:
+        0.201 × 64 = 12.864, so 13/64. The page gives all three, because a 16ths rule has
+        no 13/64: at 32nds and 16ths the same 0.201 in is 3/16. And it says how far off
+        each is, in inches and in millimetres, because "about 13/64" hides whether that is
+        0.0021 in over, which is nothing on a clearance hole, or 0.0135 in under, which is
+        a bolt that will not go through.
+      </p>
+      <p>
+        Exactly halfway, the even numerator wins. 17/64 in is halfway between 8/32 and
+        9/32, and at 32nds it is 8/32, which is 1/4; 19/64 is halfway between 9/32 and
+        10/32 and goes to 10/32. Half up, the usual school rule, would push every tie in a
+        table the same way. A tie between two 64ths cannot happen on this page at all: it
+        would sit on an odd 128th, and 1/128 in is 198 437.5 nm, half a nanometre off the
+        grid. So 0.2578125 in, which on paper is exactly halfway between 16/64 and 17/64,
+        is 6 548 438 nm here, and rightly 17/64.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">
+        Where another converter differs, and why
+      </h3>
+      <p>
+        Omni Calculator's inches to fraction page says, in one of its answers, to round
+        the result up. Its own worked example does not: it gives 12 mm as 15/32 in, and 12
+        mm is 15.12 32nds, so rounded up it would be 16/32. 15/32 is the nearest, and the
+        nearest is what this page gives too. Rounding up would call a 0.4724 in hole 1/2
+        in, 0.0276 in too big, where the nearest, 15/32, is 0.0037 in small. Inch
+        Calculator rounds to the nearest as well, and its 2.695 in at 16ths, 2 11/16, is
+        one of the examples this page is tested against.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">Angles</h3>
+      <p>
+        Degrees, minutes and seconds are a split of one number, so they are rounded as one
+        number. 12 30 15 is 12 + 30 ÷ 60 + 15 ÷ 3600 = 12.5041666…°, which is 12.504167°
+        to six places and 45 015.00″ in seconds. The seconds are rounded first, as a whole
+        count of hundredths, and only then split into degrees, minutes and seconds. That
+        order is what keeps 29.999999° from reading 29° 59′ 60.00″: it is 108 000.00″,
+        which is exactly 30° 0′ 0.00″. The other order rounds 59.9964″ up to 60.00″.
+        Omni's 47.392° comes out the same here as there: 47° 23′ 31.20″.
+      </p>
+      <p>
+        Radians bring in π, the one irrational step. 12 30 15 is 0.21823888 rad, and 1 rad
+        is 57.295780°, or 57° 17′ 44.81″. NIST gives a degree as 1.745 329 E−02 rad, a
+        minute as 2.908 882 E−04 and a second as 4.848 137 E−06; this page prints
+        0.01745329, 0.00029089 and 0.00000485. Radians worked from degrees, and degrees
+        worked from radians, are irrational for every angle but 0, so they are never
+        exactly halfway between two figures; they are worked in floating point, and the
+        tests check 3000 random angles against a 70-digit reference.
+      </p>
+      <h3 class="font-display text-ink text-xl font-semibold">What it leaves out</h3>
+      <p>
+        It does not convert temperatures, pressures, speeds or feeds; the feeds and speeds
+        calculator takes its units in each field. It does not do fractions finer than
+        1/64, which no shop rule or drill index uses, or metric fractions. Lengths go to
+        10 m and angles to ten turns either way, and a negative length is refused rather
+        than guessed at.
+      </p>
+    </section>
+
+    <!-- ── App ─────────────────────────────────────────────────────────── -->
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-12 border p-5"
+    >
+      <h2 class="font-display text-ink text-xl font-semibold">
+        This, but in your pocket on the shop floor
+      </h2>
+      <p class="text-ink-soft mt-2 max-w-prose text-sm">
+        The same arithmetic is going into a metric-first Android app: conversions, thread
+        and tap drill, feeds and speeds, countersinks, true position and bolt circles,
+        offline, one payment, no subscription. It is in development and this page is free
+        forever either way.
+      </p>
+      <a
+        class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+        href="/machining/app">What it will do, and what it will cost &rarr;</a
+      >
+    </section>
+
+    <!-- ── FAQ ─────────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-2xl font-semibold">Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        The factors are NIST's. Inch Calculator and Omni Calculator are the published
+        examples this page is tested against.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated figures from the numbers you enter. Check a fraction's error
+      against the fit the drawing calls for before choosing a drill or a stock size.
+    </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each showing its working"
+      links={[
+        {
+          href: '/machining/drill-size-chart',
+          label: 'Drill size chart',
+          note: 'every metric, fractional, number and letter drill, both units on every row',
+        },
+        {
+          href: '/machining/tap-drill-calculator',
+          label: 'Tap drill calculator',
+          note: 'the drill for each threaded hole, and the engagement it really gives',
+        },
+      ]}
+    />
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    angleDisplay,
+    lengthDisplay,
+    type FractionRow,
+  } from '../../lib/calc/convert-display';
+  import type { AngleUnit, LengthUnit } from '../../lib/calc/convert';
+  import type { Fact } from '../../lib/calc/true-position-display';
+
+  /** Resolve an element or fail loudly at load, as the other calculators do. */
+  function must<T extends HTMLElement>(id: string): T {
+    const el = document.getElementById(id);
+    if (el === null) throw new Error(`converter: #${id} is missing from the page`);
+    return el as T;
+  }
+
+  const form = must<HTMLFormElement>('cv-form');
+  const resultEl = must('cv-result');
+  const workingEl = must('cv-working');
+  const errorEl = must('cv-error');
+  const chart = must('cv-chart');
+
+  const text = (name: string): string =>
+    (form.elements.namedItem(name) as HTMLInputElement).value;
+  const pick = (name: string): string =>
+    (form.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement).value;
+
+  // Everything below is presentation. The numbers, their units and their
+  // rounding come from `calc/convert-display.ts`, which the tests check as
+  // strings; none of what was typed reaches this markup.
+  const facts = (list: readonly Fact[]): string =>
+    list
+      .map(
+        (s) => `<div>
+          <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">${s.label}</p>
+          <p class="mt-1 font-numeric text-xl font-semibold text-ink">${s.value}</p>
+        </div>`,
+      )
+      .join('');
+
+  // One block per fraction, stacked on a phone and in four columns from `sm`:
+  // as a four-column table the error broke a word to a line at 375 px.
+  const fractions = (rows: readonly FractionRow[]): string =>
+    `<div class="mt-5 border-t border-line">${rows
+      .map(
+        (
+          r,
+        ) => `<div class="border-b border-line py-3 sm:grid sm:grid-cols-4 sm:items-baseline sm:gap-3">
+          <p class="font-mono text-xs uppercase tracking-widest text-ink-mute">${r.label}</p>
+          <p class="mt-1 font-numeric text-lg font-semibold text-ink sm:mt-0">${r.fraction}</p>
+          <p class="font-numeric text-sm text-ink">${r.inch} <span class="text-ink-mute">· ${r.mm}</span></p>
+          <p class="font-sans text-sm text-ink-soft">${r.error}</p>
+        </div>`,
+      )
+      .join('')}</div>`;
+
+  function mark(row: number | null): void {
+    chart.querySelectorAll<HTMLElement>('tr[data-row]').forEach((tr) => {
+      const on = row !== null && tr.dataset['row'] === String(row);
+      // Colour as well as shade: the shade alone is faint in the dark theme.
+      tr.classList.toggle('bg-sunken', on);
+      tr.classList.toggle('text-brand', on);
+      if (on) tr.setAttribute('aria-current', 'true');
+      else tr.removeAttribute('aria-current');
+    });
+  }
+
+  function render(): void {
+    const mode = pick('mode');
+    form.querySelectorAll<HTMLElement>('[data-modes]').forEach((el) => {
+      el.classList.toggle('hidden', el.dataset['modes'] !== mode);
+    });
+    errorEl.classList.add('hidden');
+    try {
+      if (mode === 'angle') {
+        const d = angleDisplay(text('angle'), pick('angleUnit') as AngleUnit);
+        resultEl.innerHTML = `
+          <p class="font-display text-3xl font-semibold text-ink">${d.headline}</p>
+          <p class="mt-2 font-sans text-sm text-ink-soft">${d.detail}</p>
+          <div class="mt-4 grid gap-4 sm:grid-cols-3">${facts(d.facts)}</div>`;
+        workingEl.textContent = d.working;
+        mark(null);
+      } else {
+        const d = lengthDisplay(text('length'), pick('unit') as LengthUnit);
+        resultEl.innerHTML = `
+          <p class="font-display text-3xl font-semibold text-ink">${d.headline}</p>
+          <p class="mt-2 font-sans text-sm text-ink-soft">${d.detail}</p>
+          <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">${facts(d.units)}</div>
+          ${fractions(d.fractions)}`;
+        workingEl.textContent = d.working;
+        mark(d.chartRow);
+      }
+    } catch (err) {
+      errorEl.textContent = err instanceof Error ? err.message : 'Check the inputs.';
+      errorEl.classList.remove('hidden');
+      resultEl.innerHTML = '';
+      workingEl.textContent = '';
+      mark(null);
+    }
+  }
+
+  form.addEventListener('input', render);
+  // A radio fires `input` before `change`; render on both so the fields shown
+  // and the answer always match the controls (the tap drill page's lesson, #92).
+  form.addEventListener('change', render);
+  render();
+</script>

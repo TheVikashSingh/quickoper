@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-10-12, the countersink and chamfer calculator (D106).
+**Updated:** 2026-10-13, the unit converter (D107).
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -30,9 +30,9 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 30 (29 substantive — `/404` is not) |
+| Pages built | 31 (30 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 826 passing |
+| Tests | 961 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
@@ -359,6 +359,28 @@ checks the strings.
   than the true position page's 8.81 because it borrows that page's rounding
   module; within the budget, and the place to look if a page needs the room.
 
+### Unit converter
+
+`/machining/unit-converter` (2026-10-13, D107) converts a length between mm,
+inches, thou and µm, with the nearest 1/64, 1/32 and 1/16 inch and how far off
+each is, and an angle between degrees minutes seconds, decimal degrees and
+radians; under it, every 64th of an inch in both units, built at build time
+as plain HTML. `calc/convert.ts` works it, `calc/convert-display.ts` words it,
+and `tests/calc/convert-display.test.ts` checks the strings.
+
+- **The published checks (rule 3):** NIST SP 811 Appendix B.8 (the inch and
+  the mil exact; a degree, minute and second in radians); Inch Calculator's
+  2.695 in at 16ths and its 64ths chart rows; Omni Calculator's 12 mm, 7 mm
+  and 11.81 in, and its 47.392° in ° ′ ″.
+- **Rounded once, half to even:** lengths from whole nanometres, fractions to
+  the even numerator at a tie, seconds as whole hundredths before the split
+  (29.999999° is 30° 0′ 0.00″). A typed angle in degrees is held as an exact
+  fraction (BigInt), so a tie at six places is seen; radians, the one
+  irrational step, are checked with 3000 lengths and 3000 angles against
+  exact and 70-digit references (`tests/fixtures/convert-reference.py`).
+- Written from the research spec, then cross-checked against its table, which
+  the Android core's tests also hold (Gate 7): every row agrees.
+
 ### The conversion surface
 
 `/machining/app` describes the app; `/apps` is the site-level index linked from
@@ -433,7 +455,7 @@ Claude.
 
 ## Next
 
-**The content threshold is met.** The build produces 30 pages, of which 29 are
+**The content threshold is met.** The build produces 31 pages, of which 30 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -487,7 +509,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **29** — none to go |
+| 15+ substantive pages | **30** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |

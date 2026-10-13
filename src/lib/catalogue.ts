@@ -300,6 +300,17 @@ export const CATALOGUE: readonly Entry[] = [
     kind: 'calculator',
   },
   {
+    href: '/machining/unit-converter',
+    title: 'Unit converter — inch, mm, fractions and angles',
+    short: 'Unit converter',
+    summary:
+      'A length in mm, inches, thou and µm with the nearest 1/64, 1/32 and 1/16 inch and how far off each is, and an angle in degrees, minutes and seconds, decimal degrees and radians.',
+    detail:
+      'Every 64th of an inch in both units, exactly. Checked against NIST and the published examples of Inch Calculator and Omni Calculator.',
+    vertical: 'machining',
+    kind: 'calculator',
+  },
+  {
     href: '/machining/drill-size-chart',
     title: 'Drill size chart — the whole index, on one sheet',
     summary:

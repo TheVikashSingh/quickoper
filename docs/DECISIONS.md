@@ -4472,6 +4472,55 @@ scale with the worked length in the accent colour, and the second depth (into
 the hole, or drill to) carry "more than a number", as D101 decided for one
 feature against one frame.
 
+### D107 — Conversions: one rounding each, and the seconds rounded before the split
+
+The app's Convert tool, on the site, written from `machinist-calc-research`
+03-spec/calculations.md, "Conversions", rather than from the Kotlin, then
+compared with the spec's table, which the Android core's tests also hold
+(Gate 7): every row agrees. A length between mm, inches, thou and µm, the
+nearest 1/64, 1/32 and 1/16 inch with how far off each is, and an angle between
+degrees minutes seconds, decimal degrees and radians.
+
+**The published checks.** These are definitions, so the first check is the
+definitions' publisher: NIST SP 811, Appendix B.8, prints inch to metre and
+mil to millimetre in bold, its mark for an exact factor, and a degree, a
+minute and a second in radians to seven figures; the page prints 0.01745329,
+0.00029089 and 0.00000485. Then two converters' worked examples: Inch
+Calculator's 2.695 in to the nearest 16th, 2 11/16, and four rows of its 64ths
+chart (13/64 is 0.203125 in and 5.159375 mm); Omni Calculator's 12 mm as 15/32
+in, 7 mm as 9/32, 11.81 in as 11 13/16, and 47.392° as 47°23′31.2″. Omni's
+FAQ says to round the fraction up, but its own 12 mm example is the nearest
+(15.12 32nds, 15/32), so the page follows the example and says so.
+
+**One rounding each.** A typed length goes on the whole-nanometre grid, half to
+even, and the working says when it was not already on it; every unit and every
+fraction is then integer arithmetic on that one integer. A fraction exactly
+halfway goes to the even numerator, as the drill picker rounds (17/64 at 32nds
+is 1/4). A 64ths tie cannot happen: an odd 128th is half a nanometre off the
+grid, so the spec's 0.2578125 in is 6 548 438 nm and rightly 17/64. An angle
+typed in degrees is held as the exact fraction it was typed as, in BigInt, so
+a tie at six places is seen; floating point misses some (0.0001255° × 10^6 is
+125.49999999999999), and a test holds that one. Seconds are rounded as a whole
+count of hundredths and only then split, so 29.999999° is 30° 0′ 0.00″, never
+29° 59′ 60.00″.
+
+**Checked, and broken on purpose.** Radians are the one irrational step, worked
+in floating point; 3000 lengths (exact fractions) and 3000 angles (70-digit
+decimals) from `tests/fixtures/convert-reference.py` match. Three rules were
+broken on purpose and each was caught: ties rounded up (seven tests failed),
+the seconds worked in floating point instead of exactly (two), and degrees in floating point
+(none, at first, so the test above was added; then one).
+
+**A text field, not a number.** It takes 13/64, 1 3/8 and 12 30 15, so it is
+`type="text"` without `inputmode="decimal"`: a phone's decimal keypad has no
+slash or space. Nothing typed reaches the result's markup; only the working,
+set as text, repeats it.
+
+**More than a number.** Every 64th of an inch in inches and millimetres, exact
+at six places, built at build time from the same module as plain HTML, with
+the row nearest the length marked. No CSV: the chart is the table, and it
+prints.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

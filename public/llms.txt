@@ -447,6 +447,30 @@ Jurisdiction: none. Geometry.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
+### Unit converter (inch, mm, fractions, angles)
+URL: https://quickoper.com/machining/unit-converter
+Computes: a length in millimetres, inches, thou and micrometres; the nearest
+1/64, 1/32 and 1/16 inch and how far off each is, in inches and millimetres;
+an angle in degrees, minutes and seconds, decimal degrees and radians; and a
+chart of every 64th of an inch in inches and millimetres, exactly.
+Inputs: a length in mm, inches (a decimal, or a fraction such as 13/64 or
+1 3/8), thou or micrometres; or an angle in degrees (12.5, 12 30 15,
+12°30′15″) or radians.
+Key figures: 1 in = 25.4 mm exactly (NIST SP 811 prints the inch and the mil
+as exact factors). 0.201 in is 5.1054 mm, 201.0 thou; its nearest 64th is
+13/64 (0.203125 in, 0.0021 in over), and at 32nds and 16ths it is 3/16
+(0.0135 in under). 10 mm is 0.3937 in. A fraction exactly halfway goes to the
+even numerator: 17/64 in at 32nds is 1/4. 12 30 15 is 12.504167 degrees and
+0.21823888 rad; 1 rad is 57 degrees 17 minutes 44.81 seconds; 29.999999
+degrees is 30 degrees 0 minutes 0.00 seconds, because seconds are rounded once
+as whole hundredths before they are split. Lengths rounded once, half-even:
+mm and in to 4 decimals, thou and um to 1.
+Not counted: fractions finer than 1/64, temperatures, pressures, speeds,
+feeds.
+Jurisdiction: none. Unit definitions.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/finance/verify
+
 ### Drill size chart (metric, fractional, number and letter)
 URL: https://quickoper.com/machining/drill-size-chart
 Computes: nothing on demand. It PUBLISHES four drill series as printable tables,
