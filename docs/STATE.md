@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-10-14, the app named and its launch switch (D109).
+**Updated:** 2026-10-14, the first machining derivation, percentage of thread (D110).
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -30,9 +30,9 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 32 (31 substantive — `/404` is not) |
+| Pages built | 33 (32 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 1024 passing |
+| Tests | 1060 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
@@ -66,16 +66,18 @@ report (local-only — never in the URL, never persisted).
 `/` · `/finance` (cluster hub) · `/methodology` · `/finance/verify` · `/about` ·
 `/privacy` · `/terms` · `/contact` · `/404`
 
-**Derivations** — eight pages, each tied to a tool that exists and each carrying
+**Derivations** — nine pages, each tied to a tool that exists and each carrying
 figures computed here rather than transcribed:
 `/finance/minimum-payments` · `/finance/biweekly-mortgage-payments` ·
 `/finance/credit-card-interest` · `/finance/monthly-return-rate` ·
 `/finance/withdrawal-rate` · `/finance/coast-number` ·
-`/finance/mortgage-overpayment-timing` · `/finance/15-year-vs-30-year-mortgage`
+`/finance/mortgage-overpayment-timing` · `/finance/15-year-vs-30-year-mortgage` ·
+`/machining/percentage-of-thread` (the first machining one, D110)
 
 They are not listed by hand anywhere that renders: `src/lib/catalogue.ts` is the
 registry, and the hub and homepage both read it (D82). This list is prose and
-therefore drifts — it said six while eight existed.
+therefore drifts — it said six while eight existed. The machining hub lists
+its derivations from the same registry, under the tools.
 
 **Engines** (`src/lib/calc/`) — `money.ts`, `debt-payoff.ts`, `coast-fire.ts`,
 `mortgage.ts`. Pure, no DOM, no framework. Fixtures anchored to published
@@ -403,6 +405,26 @@ checks the strings.
 - Written from the research spec, then checked against its golden values,
   which the Android core's tests also hold (Gate 7): every one agrees.
 
+### Percentage of thread (a derivation)
+
+`/machining/percentage-of-thread` (2026-10-14, D110) derives the tap drill
+formula's constant, 3√3/4 = 1.299038, from the 60° thread's triangle: why
+drill = major − pitch is 76.98% for every thread, why the basic minor diameter
+is 83⅓%, and two worked examples (M8 × 1.25, 1/4-20). It types no figure:
+`calc/thread-percentage.ts` returns every one as a string, worked with the tap
+drill engine's constants, and `tests/calc/thread-percentage.test.ts` holds them.
+
+- **The published checks (rule 3):** OSG's Tapping Guide Vol 3 (the formula,
+  its 2"-12N worked example, forty drill sizes for eight coarse threads and the
+  class 2B minor diameter limits) and Guhring's theoretical percentages (every
+  row for M8 × 1.25 and 1/4-20). 38 of OSG's 40 match at four decimals; the two
+  that do not are exact ties under OSG's 0.01299 that OSG rounds up, and the
+  page says so. Guhring's inch percentages follow its decimal-inch column.
+- **The class window:** OSG's 2B minor limits read as percentages, with the
+  verified chart drill (golden fixture) inside each. 1/4-20's 65% column lies
+  above its 2B maximum.
+- `llms.txt` is static, so a test holds each figure in its entry to the page's.
+
 ### The conversion surface
 
 `/machining/app` describes the app; `/apps` is the site-level index linked from
@@ -500,7 +522,7 @@ Claude.
 
 ## Next
 
-**The content threshold is met.** The build produces 32 pages, of which 31 are
+**The content threshold is met.** The build produces 33 pages, of which 32 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -554,7 +576,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **31** — none to go |
+| 15+ substantive pages | **32** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |
