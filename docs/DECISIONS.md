@@ -4606,6 +4606,53 @@ stated, because none is decided.
 from Google; downloading is the operator's call, so the links are text until
 then.
 
+### D110 — The first machining derivation: percentage of thread
+
+The roadmap's next site step after launch prep was derivation pages, one per
+session (D57's format: education that computes). The first is the formula
+under every tap drill chart, because it is the most searched thing the tap
+drill calculator does and because its constant is where this site differs
+from the trade's printed one.
+
+**The page types no figure.** D47, D55 and D62 were each a number in prose
+that drifted from what computes it. `calc/thread-percentage.ts` returns every
+figure the page prints as a string, worked with the tap drill engine's own
+constants (`ENGAGEMENT_K`, `MINOR_DIA_K`, `SHOP_RULE_PERCENT`), and the page
+interpolates them. The only typed numbers are inputs and the makers' own
+printed figures, each marked as printed.
+
+**Two makers as the published checks.** Both read on 2026-10-14 from the text
+layer and the page image of the same PDF, which agree:
+
+- OSG's Tapping Guide Vol 3 prints the formula with 0.01299, a worked example
+  (2"-12N at 70% = 1.9242"), forty drill sizes for eight UNC threads and the
+  class 2B minor diameter limits. The full constant reproduces 38 of the 40.
+  The other two, 3/8-16 at 80% and 1/2-13 at 65%, are exactly 0.31005" and
+  0.43505" under 0.01299, and OSG prints both rounded up; with √3 they are
+  0.310048" and 0.435048". So OSG's table is the four-figure constant rounded
+  half-up, and the test says exactly which two differ and why.
+- Guhring prints a whole-number percentage for every drill. All nine rows for
+  M8 × 1.25 and all thirteen for 1/4-20 agree. For inch threads Guhring's
+  percentage follows its decimal-inch column, not its millimetre one: the #5
+  row is 68.51% by 0.2055" and 68.49% by 5.220 mm, and Guhring prints 69.
+
+**The class window, as a computation, not advice.** OSG's 2B minor limits,
+read as percentages, are the page's one finding a chart does not show: 1/4-20
+may be 66.20% to 83.14%, and OSG's own 65% column for it is outside class 2B.
+OSG says as much in words, and the page attributes it. It recommends nothing.
+
+**Inch arithmetic in inches.** A pitch of 1/24" or 1/13" is not a whole
+number of nanometres, so the inch figures are worked in inches with the
+engine's constant, and a test proves they agree with the engine's nanometre
+arithmetic wherever the pitch is exact. The four-figure formula is worked in
+whole billionths of an inch so that its ties are exact ties.
+
+**Registered like the finance derivations:** catalogue (`kind: 'derivation'`),
+a derivations list on the machining hub read from it (as `/finance` has had
+since D53), `llms.txt` under a new "Derivations — machining" heading with a
+test holding its typed figures to the page's, and a Related link from the tap
+drill calculator.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

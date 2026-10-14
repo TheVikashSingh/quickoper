@@ -523,6 +523,33 @@ Jurisdiction: none. ISO 235 / DIN 338 metric and ASME B94.11M fractional inch.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
+## Derivations — machining
+
+### Percentage of thread, and where 1.299 comes from
+URL: https://quickoper.com/machining/percentage-of-thread
+States: percentage of thread = 100 x (D - d) / (K x P), D the major diameter,
+d the drill, P the pitch (1 / threads per inch for an inch thread). K = 1.5 x
+H / P = 3*sqrt(3)/4 = 1.299038..., where H = (sqrt(3)/2) x P is the height of the
+60-degree thread's equilateral triangle. OSG prints the same formula in inches
+as drill = major - 0.01299 x % / TPI.
+Key figures, computed by the same code as the tap drill calculator and tested
+against OSG's and Guhring's printed tables:
+  - drill = major - pitch gives 100 / K = 76.98% for EVERY thread.
+  - A hole at the basic minor diameter D1 = D - 1.25 H gives 1.25 / 1.5 =
+    83.33% for every thread; the formula's 100% is smaller than D1.
+  - M8 x 1.25 at 75% wants 6.7822 mm; the chart's 6.8 mm drill gives 73.90%
+    (Guhring prints 74%). 1/4-20 at 75% wants 0.201286 in (OSG prints 0.2013);
+    the chart's #7 gives 75.44%.
+  - OSG's class 2B minor diameter limits read as percentages: 1/4-20 may be
+    66.20% to 83.14%, #4-40 55.73% to 83.45%. OSG's own 65% column for 1/4-20
+    (0.2078 in) is above its 2B maximum (0.2070 in).
+  - With 0.01299 in place of sqrt(3), 38 of 40 OSG drill sizes agree at four
+    decimals; 3/8-16 at 80% and 1/2-13 at 65% are exact ties (0.31005, 0.43505)
+    that OSG rounds up. #8-32 on a #29 is 68.97% exactly, 68.98% with 1.299.
+Jurisdiction: none. ISO metric and Unified inch, 60-degree threads, cutting taps.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/finance/verify
+
 ## Verification
 
 - [Methodology](https://quickoper.com/methodology): formulas, assumptions and the
