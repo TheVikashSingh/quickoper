@@ -1,0 +1,502 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+import {
+  OSG_CONSTANT_TEXT,
+  threadPercentageFigures,
+} from '../../lib/calc/thread-percentage';
+
+/**
+ * Derivation: percentage of thread, and where 1.299 comes from.
+ *
+ * The page types no figure. Every number below is a string from
+ * `threadPercentageFigures()`, worked by the tap drill engine's own constants
+ * and pinned in `tests/calc/thread-percentage.test.ts` against what OSG and
+ * Guhring printed. The only numbers in this file are inputs (a thread, a
+ * percentage) and the makers' own words.
+ */
+
+const F = threadPercentageFigures();
+const CHECKED_ON = '2026-10-14';
+
+const SOURCES = [
+  {
+    label:
+      'OSG USA — Tapping Guide Vol 3: Tap Drill Sizes and Pitch Diameter Limits (EDP 800274CA-V3): the formula, its worked example, the drill table and the class 2B minor diameter limits',
+    url: 'https://res.cloudinary.com/osg-usa-inc/image/upload/v1717093846/Literature/03%20-%20Charts%20and%20Guides/OSG%5F-%5FChart%5F-%5FTap%5FDrill%5FSize%5Fand%5FPitch%5FDiameter%5FLimit%5F-%5FVol%5F3%5F-%5F2024%5F-%5FIA.pdf',
+    retrieved: CHECKED_ON,
+  },
+  {
+    label:
+      'Guhring — UNC / UNF and Metric Tap Drill Sizes, theoretical percentage of thread (catalogue pp. 126–129)',
+    url: 'https://guhring.com/media/support/Tap-Drill-Sizes.pdf',
+    retrieved: CHECKED_ON,
+  },
+  {
+    label: 'ISO 68-1 — screw threads, basic profile (metric). ICS 21.040, Screw threads',
+    url: 'https://www.iso.org/ics/21.040/x/',
+    retrieved: CHECKED_ON,
+  },
+  {
+    label: 'ASME B1.1 — Unified inch screw threads (UN, UNR, UNJ thread form)',
+    url: 'https://www.asme.org/codes-standards',
+    retrieved: CHECKED_ON,
+  },
+].map((s) => sourceRef.parse(s));
+
+const quarter7 = F.quarter20.drills.find((d) => d.label === '#7');
+const m8Chart = F.m8.drills.find((d) => d.label === '6.8 mm');
+const loosest = F.classRange[0];
+const tightest = F.classRange[F.classRange.length - 1];
+const quarterClass = F.classRange.find((r) => r.thread === '1/4-20');
+const [tie1, tie2] = F.ties;
+if (
+  quarter7 === undefined ||
+  m8Chart === undefined ||
+  loosest === undefined ||
+  tightest === undefined ||
+  quarterClass === undefined ||
+  tie1 === undefined ||
+  tie2 === undefined
+) {
+  throw new Error('percentage-of-thread: a figure the page names is missing');
+}
+
+const FAQ = [
+  {
+    q: 'What is the formula for percentage of thread?',
+    a: `% of thread = 100 × (D − d) ÷ (${F.k} × P), where D is the major diameter, d the drill and P the pitch, all in the same unit. For an inch thread P is 1 ÷ threads per inch, and OSG prints the same formula as threads per inch × (major − drill) ÷ ${OSG_CONSTANT_TEXT}. The constant is 3√3/4, one and a half times the height of the 60° thread's triangle per unit of pitch.`,
+  },
+  {
+    q: 'Why does drill = major − pitch give about 77%?',
+    a: `Because the pitch cancels. With d = D − P the formula is 100 × P ÷ (${F.k} × P) = ${F.shopRulePercent}%, the same for every thread. M8 × 1.25 by that rule wants ${F.m8.shopTarget} mm, exactly between the 6.7 and 6.8 mm drills; the charts name 6.8 mm, which gives ${m8Chart.percent}%.`,
+  },
+  {
+    q: 'Is 100% thread the basic minor diameter?',
+    a: `No. A hole at the basic minor diameter is ${F.basicMinorPercent}% in this formula, for every 60° thread. The formula's 100% is a hole one and a half thread heights under the major diameter, which is smaller than the basic minor diameter. Tap drill tables stop well short of it: Guhring's runs from 81% down to 59%.`,
+  },
+  {
+    q: 'How much thread does a class 2B tapped hole allow?',
+    a: `The class limits the minor diameter, and that limit can be read as a percentage. From OSG's class 2B limits, 1/4-20 may be anywhere from ${quarterClass.maxPercent}% to ${quarterClass.minPercent}%, and #4-40 from ${loosest.maxPercent}% to ${loosest.minPercent}%. The chart drill for each lands inside: a #7 gives 1/4-20 ${quarterClass.drillPercent}%.`,
+  },
+  {
+    q: 'Why carry 1.2990381 rather than 1.299?',
+    a: `For a drill it makes no difference you could measure. For a printed table it does: #8-32 on a #29 is ${F.eight32.exact}% with √3 and ${F.eight32.fourFigure}% with 1.299, and M12's shop-rule target moves ${F.m12.gapNm} nanometres past the halfway point between the 10.2 and 10.3 mm drills, enough to change which is nearer.`,
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Percentage of thread, and where 1.299 comes from',
+    url: `${SITE.url}/machining/percentage-of-thread`,
+    description:
+      'The percentage of thread formula derived from the 60° thread: why its constant is 3√3/4, why drill = major − pitch gives 76.98%, why the basic minor diameter is 83⅓%, worked against OSG’s and Guhring’s printed tables.',
+    author: { '@id': `${SITE.url}/about#person` },
+    publisher: { '@id': `${SITE.url}#organization` },
+    dateModified: CHECKED_ON,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Percentage of thread',
+        item: `${SITE.url}/machining/percentage-of-thread`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+
+const h2 = 'font-display text-ink text-2xl font-semibold';
+const formula =
+  'border-line bg-sunken rounded-panel font-numeric overflow-x-auto border p-3 text-sm leading-relaxed';
+const th = 'px-2 py-1 text-left font-mono text-xs uppercase tracking-wide text-ink-mute';
+const thNum =
+  'px-2 py-1 text-right font-mono text-xs uppercase tracking-wide text-ink-mute';
+const td = 'border-line border-t px-2 py-1 whitespace-nowrap';
+const tdNum = 'border-line border-t px-2 py-1 text-right font-numeric whitespace-nowrap';
+---
+
+<BaseLayout
+  title="Percentage of thread: the formula and where 1.299 comes from"
+  description={`% of thread = 100 × (D − d) ÷ (1.299 × P). Where 1.299 comes from (3√3/4, from the 60° thread), why drill = major − pitch gives ${F.shopRulePercent}%, and OSG's and Guhring's printed tables worked from it.`}
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Percentage of thread
+    </nav>
+
+    <p class="text-ink-mute mt-3 font-mono text-xs tracking-widest uppercase">
+      Derivation
+    </p>
+    <h1 class="font-display text-ink mt-2 text-4xl leading-tight font-semibold">
+      Percentage of thread, and where 1.299 comes from
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      Every tap drill chart is one formula worked many times. OSG prints it on the front
+      of its tapping guide, and Guhring prints its answer beside every drill. This page
+      derives its one constant from the shape of a 60° thread, then works it against both
+      makers' printed figures.
+    </p>
+
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border p-5"
+      aria-label="The short version"
+    >
+      <p class="text-ink-mute font-mono text-xs tracking-widest uppercase">
+        The short version
+      </p>
+      <p class="font-numeric text-ink mt-3 text-lg">
+        % of thread = 100 × (D − d) ÷ ({F.k} × P)
+      </p>
+      <p class="text-ink-soft mt-3 text-sm">
+        D is the major diameter, d the drill and P the pitch, all in one unit; for an inch
+        thread P is 1 ÷ threads per inch. The constant is 3√3/4, one and a half times the
+        height of the 60° thread's triangle. Drill at major − pitch and every thread comes
+        out at <span class="font-numeric text-ink">{F.shopRulePercent}%</span>. Drill at
+        the basic minor diameter and every thread comes out at{' '}
+        <span class="font-numeric text-ink">{F.basicMinorPercent}%</span>.
+      </p>
+    </section>
+
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class={h2}>The formula as a tap maker prints it</h2>
+      <p>
+        OSG's Tapping Guide gives it both ways round, in inches, with threads per inch
+        (TPI):
+      </p>
+      <p class={formula}>
+        Drill = Major − {OSG_CONSTANT_TEXT} × % ÷ TPI
+        <br />
+        % = TPI × (Major − Drill) ÷ {OSG_CONSTANT_TEXT}
+      </p>
+      <p>
+        Its worked example is a 2"-12N tap at 70%: {OSG_CONSTANT_TEXT} × 70 ÷ 12 takes 0.0758"
+        off the 2.0000" major for a 1.9242" drill, and worked back, 1.9242" is 70%. Carried
+        with the constant at full precision, the same tap and percentage give a{' '}
+        <span class="font-numeric text-ink">{F.osgExample.drill}"</span> drill, and the same
+        hole is <span class="font-numeric text-ink">{F.osgExample.back}%</span>, which OSG
+        rounds to 70.
+      </p>
+      <p>
+        Dividing by threads per inch is multiplying by the pitch, so the metric form is
+        the same formula with the percent sign moved: d = D − 1.299 × P × % ÷ 100, with
+        every length in millimetres. {OSG_CONSTANT_TEXT} is 1.299 divided by 100.
+      </p>
+
+      <h2 class={h2}>Where 1.299 comes from</h2>
+      <p>
+        A 60° thread is built on a triangle whose sides are each one pitch long and whose
+        angles are all 60°: an equilateral triangle. Its height, H, is the pitch times
+        √3/2, so H = <span class="font-numeric text-ink">{F.hPerPitch}</span> × P. ISO 68-1
+        draws the metric thread on this triangle, and the Unified inch thread uses the same
+        one.
+      </p>
+      <p>
+        The formula's constant is one and a half of those heights: 1.5 × √3/2 = 3√3/4 ={
+          ' '
+        }
+        <span class="font-numeric text-ink">{F.k}</span>. So its 100% is a hole 1.5 H
+        smaller than the major diameter, three quarters of H on each side, and the
+        percentage is how much of that depth the tap's thread fills.
+      </p>
+
+      <h2 class={h2}>Why the basic minor diameter is 83⅓%</h2>
+      <p>
+        The thread itself is shallower than that. In the ISO 68-1 basic profile the
+        internal thread runs five eighths of H deep on each side, from the major diameter
+        D down to the basic minor diameter:
+      </p>
+      <p class={formula}>D₁ = D − 1.25 H = D − {F.minorK} × P</p>
+      <p>
+        Drill a hole exactly at D₁ and the formula gives 1.25 H ÷ 1.5 H ={' '}
+        <span class="font-numeric text-ink">{F.basicMinorPercent}%</span>, for every 60°
+        thread whatever its size or pitch. Anything above that is a hole smaller than the
+        basic minor diameter. Neither maker's table goes there: Guhring's runs from 81% to
+        59%, and OSG's columns from 80% to 60%.
+      </p>
+
+      <h2 class={h2}>Why drill = major − pitch gives {F.shopRulePercent}%</h2>
+      <p>
+        The shop rule for metric coarse threads is to take the pitch off the major
+        diameter: M6 × 1 takes a 5 mm drill and M10 × 1.5 an 8.5 mm drill. Put d = D − P
+        into the formula and the pitch cancels, leaving 100 ÷ {F.k} ={' '}
+        <span class="font-numeric text-ink">{F.shopRulePercent}%</span>. Every thread
+        drilled by that rule gets the same percentage. It is a little under 77 because of
+        the triangle, not because anyone chose 77.
+      </p>
+    </section>
+
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class={h2}>Worked example: M8 × 1.25</h2>
+      <p>At 75%, the hole the formula asks for is</p>
+      <p class={formula}>d = 8 − {F.k} × 1.25 × 75 ÷ 100 = {F.m8.target75} mm</p>
+      <p>
+        No drill is that size. The shop rule asks for {F.m8.shopTarget} mm, exactly halfway
+        between the 6.7 and 6.8 mm drills, and the published charts name 6.8 mm. Here is what
+        the drills either side give, beside the whole-number percentage Guhring prints for the
+        same drill:
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-sunken">
+            <tr>
+              <th class={th}>Drill</th>
+              <th class={thNum}>% of thread</th>
+              <th class={thNum}>Guhring prints</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              F.m8.drills.map((d) => (
+                <tr>
+                  <td class={td}>{d.label}</td>
+                  <td class={tdNum}>{d.percent}%</td>
+                  <td class={tdNum}>{d.guhring}%</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The chart's 6.8 mm drill gives {m8Chart.percent}%, under the 75 that was asked
+        for. The percentage follows from the drill you own, which is why the{' '}
+        <a
+          class="text-brand underline underline-offset-2"
+          href="/machining/tap-drill-calculator">tap drill calculator</a
+        > reports the percentage of the drill it picks, not the one you asked for.
+      </p>
+
+      <h2 class={h2}>Worked example: 1/4-20 UNC</h2>
+      <p>At 75%, with a pitch of 1 ÷ 20 inch:</p>
+      <p class={formula}>
+        d = 0.25 − {F.k} × 75 ÷ 100 ÷ 20 = {F.quarter20.target75Long}"
+      </p>
+      <p>
+        OSG's 75% column prints that as {F.quarter20.osg75}". The inch rack has these
+        drills either side of it:
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-sunken">
+            <tr>
+              <th class={th}>Drill</th>
+              <th class={thNum}>inch</th>
+              <th class={thNum}>% of thread</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              F.quarter20.drills.map((d) => (
+                <tr>
+                  <td class={td}>{d.label}</td>
+                  <td class={tdNum}>{d.size}</td>
+                  <td class={tdNum}>{d.percent}%</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>The #7 is the drill the charts name, and it gives {quarter7.percent}%.</p>
+    </section>
+
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class={h2}>What the thread class allows</h2>
+      <p>
+        A percentage of thread is not a tolerance, but the thread class sets one on the
+        minor diameter, and OSG prints the class 2B limits beside its drill table. Read as
+        percentages, they show how wide the window is:
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-sunken">
+            <tr>
+              <th class={th}>Thread</th>
+              <th class={thNum}>2B minor min</th>
+              <th class={thNum}>2B minor max</th>
+              <th class={thNum}>Chart drill</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              F.classRange.map((r) => (
+                <tr>
+                  <td class={td}>{r.thread}</td>
+                  <td class={tdNum}>
+                    {r.min}"<br />
+                    {r.minPercent}%
+                  </td>
+                  <td class={tdNum}>
+                    {r.max}"<br />
+                    {r.maxPercent}%
+                  </td>
+                  <td class={tdNum}>
+                    {r.drill}
+                    <br />
+                    {r.drillPercent}%
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Every minimum sits near {F.basicMinorPercent}%: it is the basic minor diameter,
+        printed to four decimals. The maximums run from {loosest.maxPercent}% on{' '}
+        {loosest.thread} to {tightest.maxPercent}% on {tightest.thread}, and every chart
+        drill lands between its two limits.
+      </p>
+      <p>
+        The window sets how low a percentage can go. For 1/4-20, OSG's own 65% column,{
+          ' '
+        }
+        {F.quarter20.osg65}", is larger than its class 2B maximum of {F.quarter20.max2B}",
+        which is {F.quarter20.max2BPercent}%. OSG's guide makes the same point in words:
+        it suggests the lowest percentage that holds, 55% to 65% for most work, and warns
+        that some classes need more to stay inside their minor diameter limits.
+      </p>
+    </section>
+
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class={h2}>Four figures or √3</h2>
+      <p>
+        {OSG_CONSTANT_TEXT} is √3 carried to four figures. OSG's table for eight coarse threads,
+        #4-40 to 1/2-13, holds forty drill sizes, and with √3 kept 38 of them come out the same.
+        The other two are {tie1.thread} at {tie1.percent}% and{' '}
+        {tie2.thread} at {tie2.percent}%. With {OSG_CONSTANT_TEXT} they come to exactly{
+          ' '
+        }
+        {tie1.fourFigure}" and {tie2.fourFigure}", halfway between two ten-thousandths,
+        and OSG prints them rounded up, {tie1.printed}" and {tie2.printed}". With √3 they
+        are{' '}
+        {tie1.exact}" and {tie2.exact}", which round to {tie1.exactRounded}" and{' '}
+        {tie2.exactRounded}".
+      </p>
+      <p>
+        A ten-thousandth of an inch is finer than any drill holds, so this changes no
+        hole. It changes printed figures: #8-32 on a #29 is {F.eight32.exact}% with √3 and{
+          ' '
+        }
+        {F.eight32.fourFigure}% with 1.299. And it can change a pick. M12 × 1.75's
+        shop-rule target is exactly {F.m12.shopTarget} mm, halfway between the 10.2 and 10.3
+        mm drills, and the charts name 10.2. Worked as 1.299 × 76.98 it is{' '}
+        {F.m12.fourFigureTarget} mm, {F.m12.gapNm} nanometres past halfway, and the nearest
+        drill becomes 10.3. This site's tap drill calculator carries √3 for that reason.
+      </p>
+
+      <h2 class={h2}>What the formula leaves out</h2>
+      <p>
+        It takes the hole to be exactly the drill's size. Guhring calls its figures the
+        theoretical percentage of thread, and the percentage a real hole gives depends on
+        the hole as it was cut.
+      </p>
+      <p>
+        It is for a cutting tap. A forming tap pushes metal into the thread instead of
+        cutting it, and its makers publish a different constant, 0.0068 per percent where
+        a cutting tap has {OSG_CONSTANT_TEXT}. That one is the makers' rule, not the
+        triangle's, and the tap drill calculator works both.
+      </p>
+      <p>
+        It is for 60° threads: ISO metric and Unified inch. The constant comes from the
+        60° triangle, so a thread with another flank angle has another constant.
+      </p>
+      <p>
+        It does not say how strong a thread is. That depends on the material and on how
+        much thread length is engaged, and OSG's guide gives its suggested percentages as
+        ranges by material, not as one number.
+      </p>
+    </section>
+
+    <section class="mt-12">
+      <h2 class={h2}>Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class={h2}>Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        OSG's and Guhring's figures are theirs, as printed. Every other figure on this
+        page is computed by the same code as the tap drill calculator, and the tests hold
+        each one to the makers' printed tables.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated figures. Check a tapped hole against the drawing's thread class
+      and the tap maker's own recommendation before cutting a part.
+    </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each showing its working"
+      links={[
+        {
+          href: '/machining/tap-drill-calculator',
+          label: 'Tap drill calculator',
+          note: 'any thread and percentage, against a rack of real drills',
+        },
+        {
+          href: '/machining/drill-size-chart',
+          label: 'Drill size chart',
+          note: 'every metric, fractional, number and letter drill, both units on every row',
+        },
+      ]}
+    />
+  </div>
+</BaseLayout>

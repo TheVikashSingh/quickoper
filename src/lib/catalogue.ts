@@ -330,6 +330,16 @@ export const CATALOGUE: readonly Entry[] = [
     vertical: 'machining',
     kind: 'reference',
   },
+
+  // ── Machining derivations ──────────────────────────────────────────────────
+  {
+    href: '/machining/percentage-of-thread',
+    title: 'Percentage of thread, and where 1.299 comes from',
+    summary:
+      'the tap drill formula derived from the 60° thread, worked against two makers’ printed tables',
+    vertical: 'machining',
+    kind: 'derivation',
+  },
 ];
 
 /** Everything a vertical's hub lists as a tool: calculators and references. */
