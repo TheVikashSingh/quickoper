@@ -370,8 +370,10 @@ const tdNum = 'border-line border-t px-2 py-1 text-right font-numeric whitespace
         </table>
       </div>
       <p>
-        Every minimum sits near {F.basicMinorPercent}%: it is the basic minor diameter,
-        printed to four decimals. The maximums run from {loosest.maxPercent}% on{' '}
+        Every minimum is the basic minor diameter, rounded for printing: the furthest from
+        it, on {F.furthestMinimum.thread}, is {F.furthestMinimum.gap}" away. That is why
+        each sits near {F.basicMinorPercent}%. The maximums run from {loosest.maxPercent}%
+        on{' '}
         {loosest.thread} to {tightest.maxPercent}% on {tightest.thread}, and every chart
         drill lands between its two limits.
       </p>
@@ -465,7 +467,10 @@ const tdNum = 'border-line border-t px-2 py-1 text-right font-numeric whitespace
               >
                 {s.label}
               </a>
-              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {s.retrieved.toISOString().slice(0, 10)}
+              </span>
             </li>
           ))
         }

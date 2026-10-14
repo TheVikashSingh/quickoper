@@ -252,6 +252,24 @@ describe('the class 2B range (limits PRINTED by OSG, percentages DERIVED)', () =
     ]);
   });
 
+  it('each printed minimum is its basic minor diameter, rounded', () => {
+    // DERIVED: D − 1.25 H, √3 to 60 digits.
+    expect(F.classRange.map((r) => [r.thread, r.basicMinor])).toEqual([
+      ['#4-40', '0.08494'],
+      ['#6-32', '0.10417'],
+      ['#8-32', '0.13017'],
+      ['#10-24', '0.14489'],
+      ['1/4-20', '0.19587'],
+      ['3/8-16', '0.30734'],
+    ]);
+    for (const r of F.classRange) {
+      expect(Math.abs(Number(r.min) - Number(r.basicMinor)), r.thread).toBeLessThan(
+        0.0005,
+      );
+    }
+    expect(F.furthestMinimum).toEqual({ thread: '3/8-16', gap: '0.0003' });
+  });
+
   it('agrees with the engine’s nanometre arithmetic where the pitch is exact', () => {
     const exactPitch: Record<string, [number, number]> = {
       '#4-40': [0.112, 40],

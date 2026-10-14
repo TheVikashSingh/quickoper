@@ -68,6 +68,11 @@ function inchPercent(majorIn: number, tpi: number, holeIn: number): number {
   return (100 * (majorIn - holeIn) * tpi) / ENGAGEMENT_K;
 }
 
+/** The basic minor diameter of an inch thread, D − 1.25 H, in inches. */
+function basicMinorIn(majorIn: number, tpi: number): number {
+  return majorIn - MINOR_DIA_K / tpi;
+}
+
 /** The hole for a percentage of an inch thread, worked in inches. */
 function inchDrill(majorIn: number, tpi: number, percent: number): number {
   return majorIn - (ENGAGEMENT_K * percent) / (100 * tpi);
@@ -198,7 +203,11 @@ export interface ThreadPercentageFigures {
     minPercent: string;
     max: string;
     maxPercent: string;
+    /** The basic minor diameter D − 1.25 H, inches, five decimals. */
+    basicMinor: string;
   }[];
+  /** Which printed 2B minimum is furthest from its basic minor diameter, and by how much. */
+  furthestMinimum: { thread: string; gap: string };
   /** #8-32 on a #29, with the full constant and with 1.299. */
   eight32: { exact: string; fourFigure: string };
 }
@@ -278,8 +287,18 @@ export function threadPercentageFigures(): ThreadPercentageFigures {
         minPercent: fixed(inchPercent(c.major, c.tpi, Number(c.min)), 2),
         max: c.max,
         maxPercent: fixed(inchPercent(c.major, c.tpi, Number(c.max)), 2),
+        basicMinor: fixed(basicMinorIn(c.major, c.tpi), 5),
       };
     }),
+    furthestMinimum: CLASS_2B.map((c) => ({
+      thread: c.thread,
+      gap: Math.abs(Number(c.min) - basicMinorIn(c.major, c.tpi)),
+    }))
+      .sort((a, b) => b.gap - a.gap)
+      .map((g) => ({ thread: g.thread, gap: fixed(g.gap, 4) }))[0] ?? {
+      thread: '',
+      gap: '',
+    },
     eight32: {
       exact: fixed(inchPercent(0.164, 32, twenty9), 2),
       fourFigure: fixed((100 * (0.164 - twenty9) * 32) / 1.299, 2),
