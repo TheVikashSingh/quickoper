@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-10-13, the triangle calculator (D108).
+**Updated:** 2026-10-14, the app named and its launch switch (D109).
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -32,7 +32,7 @@ changes the answer to "what exists" or "what is next".
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
 | Pages built | 32 (31 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 1020 passing |
+| Tests | 1024 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
@@ -410,10 +410,33 @@ the masthead and routes to it. The split is deliberate — conversion happens in
 context, so a machinist reads about their app on a machining-coloured page
 rather than in a directory beside a mortgage tool.
 
-The app does not exist yet, so nothing on either page reads as buyable and the
+The app is named as on its Play listing, **CNC Calculator for Machinists**,
+everywhere (`APP` in `src/lib/site.ts`, D109). It is built and not yet on
+Google Play, so nothing on either page reads as buyable and the
 SoftwareApplication node carries NO `offers`: a price in a rich result for an
-unreleased app is a lie told by markup. The Play Store link takes the marked
-slot under "Getting it" on release, and nothing else on the page changes.
+app nobody can buy is a lie told by markup. Every machining tool page's app
+panel is one component, `AppCallout.astro`; it, the hub's panel, `/apps` and
+`/machining/app` all read `APP.live`.
+
+**Launch day (roadmap W7), in this order, once the Play listing is public:**
+
+1. `APP.live = true` in `src/lib/site.ts`. Every app mention then links to
+   the listing through `playLink(page)`, tagged `utm_source=quickoper`,
+   `utm_medium=website` and the page as `utm_campaign`, inside `referrer`.
+2. `tests/lib/play-link.test.ts` expects `false`: change it in the same PR.
+3. `public/llms.txt`: the `/apps` and `/machining/app` entries say "not yet
+   on Google Play"; say what is true.
+4. The `offers` node on `/machining/app`, only once the price is decided
+   (roadmap A5).
+5. The Google Play badge, if wanted: Google's own artwork, downloaded with the
+   operator's say-so; until then the links are text.
+6. In the Play Console (the operator's): quickoper.com in the listing's
+   website field, so the site and the listing link to each other.
+
+`npm run sources` fetches every external link and fails the build on a 404,
+which is what Google returns for a listing that is not public (checked
+2026-10-14). So the launch PR fails CI until the listing is live: open it
+then, not before.
 
 There is no signup form and no demand-test CTA. An earlier draft had a two-CTA
 willingness-to-pay test; the decision to build has since been taken, which makes

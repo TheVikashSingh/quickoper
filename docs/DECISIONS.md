@@ -4569,6 +4569,43 @@ is too.
 the area and, in the ambiguous case, the second triangle carry "more than a
 number", as D101 and D106 decided.
 
+### D109 — The app's name and its one launch switch
+
+The operator, 2026-10-07: link the app from the site, and use "CNC Calculator
+for Machinists" wherever it fits, for search (roadmap W7). Done ahead of
+launch, so that launch day is one line.
+
+**One name, one switch.** `APP` in `src/lib/site.ts` holds the name, the Play
+build's ID and `live`. The eight machining tool pages' app panels were eight
+hand-written copies of one paragraph, each naming "a metric-first Android app";
+they are now one component, `AppCallout.astro`, given the page's own list of
+tools. It, the machining hub, `/apps` and `/machining/app` say "built and not
+yet on Google Play" while `live` is false and link to the listing when it is
+true. Nothing else changes on launch day but `llms.txt`, which is static, and
+the offer, which waits for the price (STATE.md, "Launch day").
+
+**The Play link's tag.** `playLink(page)` puts `utm_source=quickoper`,
+`utm_medium=website` and the page as `utm_campaign` URL-encoded inside
+`referrer`, the form Google's only published example uses
+(developer.android.com, "User acquisition" for Play Games on PC, checked
+2026-10-14). The Play Console's store listing reports filter by "UTM source
+and campaign" (Play Console Help 9859173), which does not say where the
+values go; the example is the only official form found, so it is the one
+used. A test holds the encoding and the 512-character limit.
+
+**Stale claims removed.** `/machining/app` said the app was "not finished" and
+would be built "if enough machinists say it is worth having", listed feeds and
+speeds as "next" (live for weeks), promised decimals "configurable to six" and
+"tap a number to see the formula". The app has neither of the last two. Its
+claims are now the fact-checked Play listing's (machinist-calc-app
+`store/play/listing.md`): the nine tools, the makers' data with the page, the
+one payment after 30 free lookups, offline, English and German. No price is
+stated, because none is decided.
+
+**No badge yet.** Google Play's badge is Google's artwork, to be downloaded
+from Google; downloading is the operator's call, so the links are text until
+then.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

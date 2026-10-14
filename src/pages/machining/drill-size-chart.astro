@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AppCallout from '../../components/AppCallout.astro';
 import { sourceRef } from '../../lib/schema';
 import { SITE } from '../../lib/site';
 import { chartRows } from '../../lib/calc/drill-chart';
@@ -572,23 +573,11 @@ inch column   = mm / 25.4,           shown to 4 decimals
       </p>
     </section>
 
-    <!-- ── App ─────────────────────────────────────────────────────────── -->
-    <section
-      class="border-line-strong bg-surface shadow-panel rounded-panel no-print mt-12 border p-5"
-    >
-      <h2 class="font-display text-ink text-xl font-semibold">
-        This, but in your pocket on the shop floor
-      </h2>
-      <p class="text-ink-soft mt-2 max-w-prose text-sm">
-        The same arithmetic is going into a metric-first Android app: feeds and speeds,
-        thread and tap drill, your machines and materials saved, offline, one payment, no
-        subscription. It is in development and this page is free forever either way.
-      </p>
-      <a
-        class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
-        href="/machining/app">What it will do, and what it will cost &rarr;</a
-      >
-    </section>
+    <!-- ── App ──────────────────────────────────────────────────────── -->
+    <AppCallout
+      tools="the drill chart, thread and tap drill, feeds and speeds, your machines and materials saved"
+      campaign="drill-size-chart"
+    />
 
     <!-- ── FAQ ─────────────────────────────────────────────────────────── -->
     <section class="mt-12">
