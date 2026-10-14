@@ -14,6 +14,13 @@
  * The rule: a word character must not sit directly against an inline tag
  * boundary. `<sup>` and `<sub>` are exempt, because `1.05<sup>30</sup>` is
  * correct and adding a space there would be the bug.
+ *
+ * It also catches one other defect of the same kind, right in the source and
+ * wrong only in the output: a `Date` interpolated as it is. `sourceRef`
+ * coerces `retrieved` to a Date, and `{s.retrieved}` renders "Mon Oct 12 2026
+ * 00:00:00 GMT+0000 (Coordinated Universal Time)". Eight machining pages
+ * shipped it in their source lists until a session opened one and read it
+ * (D111).
  */
 
 import { readdir, readFile, stat } from 'node:fs/promises';
@@ -47,6 +54,13 @@ const CHECKS = [
     pattern: new RegExp(`<(${INLINE})\\b([^>]*)>[^<]*</\\1>(\\w)`, 'g'),
     describe: 'inline element runs straight into text',
     skip: (m) => /\bdata-tight\b/.test(m[2] ?? ''),
+  },
+  {
+    // A Date rendered by its default toString: Mon Oct 12 2026 00:00:00 GMT+0000
+    pattern:
+      /\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [A-Z][a-z]{2} \d{2} \d{4} \d{2}:\d{2}:\d{2} GMT/g,
+    describe:
+      'a Date printed in JavaScript’s default form: format it, e.g. .toISOString().slice(0, 10)',
   },
 ];
 
@@ -116,17 +130,17 @@ for (const page of pages) {
 }
 
 if (problems.length > 0) {
-  console.error(`FAIL: ${problems.length} missing space(s) in rendered prose:\n`);
+  console.error(`FAIL: ${problems.length} defect(s) in rendered prose:\n`);
   for (const p of problems) {
     console.error(`    ${p.url}`);
     console.error(`      ${p.describe}`);
     console.error(`      …${p.text}…\n`);
   }
   console.error(
-    "  Keep the text and the inline element on ONE source line, or use {' '}.",
+    "  A missing space: keep the text and the inline element on ONE source line, or use {' '}.",
   );
   console.error('  Prettier removes the newline between them and the space vanishes.');
   process.exit(1);
 }
 
-console.log(`PASS: no missing spaces across ${pages.length} page(s).`);
+console.log(`PASS: no missing spaces or raw dates across ${pages.length} page(s).`);

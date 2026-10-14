@@ -641,7 +641,10 @@ inch column   = mm / 25.4,           shown to 4 decimals
               >
                 {s.label}
               </a>
-              <span class="text-ink-mute"> &mdash; retrieved {s.retrieved}</span>
+              <span class="text-ink-mute">
+                {' '}
+                &mdash; retrieved {s.retrieved.toISOString().slice(0, 10)}
+              </span>
             </li>
           ))
         }
