@@ -589,7 +589,10 @@ const label = 'block text-sm font-semibold text-ink-soft';
               >
                 {s.label}
               </a>
-              <span class="text-ink-mute"> — retrieved {s.retrieved}</span>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {s.retrieved.toISOString().slice(0, 10)}
+              </span>
             </li>
           ))
         }

@@ -4653,6 +4653,28 @@ since D53), `llms.txt` under a new "Derivations — machining" heading with a
 test holding its typed figures to the page's, and a Related link from the tap
 drill calculator.
 
+### D111 — Source dates are printed as dates, and a gate holds it
+
+Opening `/machining/percentage-of-thread` to check it (D110) showed its
+sources "retrieved Wed Oct 14 2026 05:30:00 GMT+0530 (India Standard Time)".
+`sourceRef` in `lib/schema.ts` coerces `retrieved` to a `Date`, and the
+machining pages interpolated it as it was, so every machining page with a
+sources list printed it that way, live, in UTC: eight pages, 44 dates. The
+finance pages never did, because they format it with
+`.toISOString().slice(0, 10)`, and the machining pages each left it out.
+
+**Fixed the same way the finance pages do it,** on all eight. The date is
+coerced from a `YYYY-MM-DD` string, so it is midnight UTC and the ISO slice
+returns the day that was typed, in any time zone the build runs in.
+
+**A gate, because no gate could see it.** The source was correct-looking and
+every check passed, which is D69's lesson again: a defect that exists only in
+the built HTML is caught in the built HTML. `check-spacing.mjs` already reads
+every page's rendered prose for a defect of exactly that kind, so it gained
+one more pattern, a `Date`'s default string ("Mon Oct 12 2026 00:00:00
+GMT"), rather than a fourteenth gate. Run against the old pages it reports
+all 44; against the fixed ones, none.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
