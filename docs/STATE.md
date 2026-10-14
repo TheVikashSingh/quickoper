@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-10-14, the first machining derivation, percentage of thread (D110).
+**Updated:** 2026-10-14, source dates printed as dates on the machining pages, with a gate (D111).
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -33,7 +33,7 @@ changes the answer to "what exists" or "what is next".
 | Pages built | 33 (32 substantive — `/404` is not) |
 | Working calculators | 4 |
 | Tests | 1060 passing |
-| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
+| CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing and raw dates · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
 
