@@ -20,7 +20,8 @@ claimed is computational, not advisory.
 URL: https://quickoper.com/apps
 Computes: nothing; routes to the per-vertical app pages.
 Inputs: none.
-Status: one app listed, in development. No app is downloadable yet.
+Status: one app listed, CNC Calculator for Machinists, built and not yet on
+Google Play. No app is downloadable yet.
 Jurisdiction: none.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
@@ -275,13 +276,16 @@ Jurisdiction: none. ISO metric and Unified inch thread forms are international.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
-### The machinist Android app (in development)
+### CNC Calculator for Machinists, the Android app (not yet on Google Play)
 URL: https://quickoper.com/machining/app
-Computes: nothing. It describes the Android app, which is in development and
-not yet released.
+Computes: nothing. It describes the Android app, CNC Calculator for Machinists:
+nine metric-first tools (tap drill, feeds and speeds with the tool makers' own
+cutting data cited to the page, countersink and chamfer, bolt circle and grid,
+triangle, true position, drill chart, materials, conversions), offline, in
+English and German. It is built and not yet released.
 Inputs: none.
-Status: IN DEVELOPMENT, NOT RELEASED. There is no price to pay, no pre-order and
-no download. The page carries no purchasable offer for that reason.
+Status: BUILT, NOT YET ON GOOGLE PLAY. There is no price to pay, no pre-order
+and no download. The page carries no purchasable offer for that reason.
 Key figures: one-time purchase, no subscription, no ads, no account. The Play
 Store link appears on this page on release; there is no download, pre-order or
 price to pay before then.

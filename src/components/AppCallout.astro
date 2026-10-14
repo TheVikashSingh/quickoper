@@ -1,0 +1,67 @@
+---
+import { APP, playLink } from '../lib/site';
+
+/**
+ * The panel under each machining tool that points to the Android app.
+ *
+ * One component so launch day is one switch (`APP.live` in `lib/site.ts`,
+ * roadmap W7), not eight pages edited by hand. Before launch it says the app
+ * is built and not yet on Google Play, and links to /machining/app. After, it
+ * links to the Play listing, tagged with this page as the campaign.
+ */
+interface Props {
+  /** What the app does that a reader of this page cares about, as a phrase list. */
+  readonly tools: string;
+  /** This page, for the Play link's tag: lowercase and hyphens. */
+  readonly campaign: string;
+}
+
+const { tools, campaign } = Astro.props;
+---
+
+<section
+  class="border-line-strong bg-surface shadow-panel rounded-panel mt-12 border p-5"
+>
+  <h2 class="font-display text-ink text-xl font-semibold">
+    This, but in your pocket on the shop floor
+  </h2>
+  {
+    APP.live ? (
+      <>
+        <p class="text-ink-soft mt-2 max-w-prose text-sm">
+          The same arithmetic is in {APP.name}, a metric-first Android app on Google Play:{' '}
+          {tools}, offline, one payment, no subscription. This page stays free either way.
+        </p>
+        <p class="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+          <a
+            class="text-brand inline-block font-semibold underline underline-offset-2"
+            href={playLink(campaign)}
+            rel="noopener"
+          >
+            Get it on Google Play &rarr;
+          </a>
+          <a
+            class="text-brand inline-block underline underline-offset-2"
+            href="/machining/app"
+          >
+            What it does
+          </a>
+        </p>
+      </>
+    ) : (
+      <>
+        <p class="text-ink-soft mt-2 max-w-prose text-sm">
+          The same arithmetic is in {APP.name}, a metric-first Android app: {tools},
+          offline, one payment, no subscription. It is built and not yet on Google Play,
+          and this page is free forever either way.
+        </p>
+        <a
+          class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+          href="/machining/app"
+        >
+          What it does, and how it is paid for &rarr;
+        </a>
+      </>
+    )
+  }
+</section>
