@@ -4569,6 +4569,90 @@ is too.
 the area and, in the ambiguous case, the second triangle carry "more than a
 number", as D101 and D106 decided.
 
+### D109 — The app's name and its one launch switch
+
+The operator, 2026-10-07: link the app from the site, and use "CNC Calculator
+for Machinists" wherever it fits, for search (roadmap W7). Done ahead of
+launch, so that launch day is one line.
+
+**One name, one switch.** `APP` in `src/lib/site.ts` holds the name, the Play
+build's ID and `live`. The eight machining tool pages' app panels were eight
+hand-written copies of one paragraph, each naming "a metric-first Android app";
+they are now one component, `AppCallout.astro`, given the page's own list of
+tools. It, the machining hub, `/apps` and `/machining/app` say "built and not
+yet on Google Play" while `live` is false and link to the listing when it is
+true. Nothing else changes on launch day but `llms.txt`, which is static, and
+the offer, which waits for the price (STATE.md, "Launch day").
+
+**The Play link's tag.** `playLink(page)` puts `utm_source=quickoper`,
+`utm_medium=website` and the page as `utm_campaign` URL-encoded inside
+`referrer`, the form Google's only published example uses
+(developer.android.com, "User acquisition" for Play Games on PC, checked
+2026-10-14). The Play Console's store listing reports filter by "UTM source
+and campaign" (Play Console Help 9859173), which does not say where the
+values go; the example is the only official form found, so it is the one
+used. A test holds the encoding and the 512-character limit.
+
+**Stale claims removed.** `/machining/app` said the app was "not finished" and
+would be built "if enough machinists say it is worth having", listed feeds and
+speeds as "next" (live for weeks), promised decimals "configurable to six" and
+"tap a number to see the formula". The app has neither of the last two. Its
+claims are now the fact-checked Play listing's (machinist-calc-app
+`store/play/listing.md`): the nine tools, the makers' data with the page, the
+one payment after 30 free lookups, offline, English and German. No price is
+stated, because none is decided.
+
+**No badge yet.** Google Play's badge is Google's artwork, to be downloaded
+from Google; downloading is the operator's call, so the links are text until
+then.
+
+### D110 — The first machining derivation: percentage of thread
+
+The roadmap's next site step after launch prep was derivation pages, one per
+session (D57's format: education that computes). The first is the formula
+under every tap drill chart, because it is the most searched thing the tap
+drill calculator does and because its constant is where this site differs
+from the trade's printed one.
+
+**The page types no figure.** D47, D55 and D62 were each a number in prose
+that drifted from what computes it. `calc/thread-percentage.ts` returns every
+figure the page prints as a string, worked with the tap drill engine's own
+constants (`ENGAGEMENT_K`, `MINOR_DIA_K`, `SHOP_RULE_PERCENT`), and the page
+interpolates them. The only typed numbers are inputs and the makers' own
+printed figures, each marked as printed.
+
+**Two makers as the published checks.** Both read on 2026-10-14 from the text
+layer and the page image of the same PDF, which agree:
+
+- OSG's Tapping Guide Vol 3 prints the formula with 0.01299, a worked example
+  (2"-12N at 70% = 1.9242"), forty drill sizes for eight UNC threads and the
+  class 2B minor diameter limits. The full constant reproduces 38 of the 40.
+  The other two, 3/8-16 at 80% and 1/2-13 at 65%, are exactly 0.31005" and
+  0.43505" under 0.01299, and OSG prints both rounded up; with √3 they are
+  0.310048" and 0.435048". So OSG's table is the four-figure constant rounded
+  half-up, and the test says exactly which two differ and why.
+- Guhring prints a whole-number percentage for every drill. All nine rows for
+  M8 × 1.25 and all thirteen for 1/4-20 agree. For inch threads Guhring's
+  percentage follows its decimal-inch column, not its millimetre one: the #5
+  row is 68.51% by 0.2055" and 68.49% by 5.220 mm, and Guhring prints 69.
+
+**The class window, as a computation, not advice.** OSG's 2B minor limits,
+read as percentages, are the page's one finding a chart does not show: 1/4-20
+may be 66.20% to 83.14%, and OSG's own 65% column for it is outside class 2B.
+OSG says as much in words, and the page attributes it. It recommends nothing.
+
+**Inch arithmetic in inches.** A pitch of 1/24" or 1/13" is not a whole
+number of nanometres, so the inch figures are worked in inches with the
+engine's constant, and a test proves they agree with the engine's nanometre
+arithmetic wherever the pitch is exact. The four-figure formula is worked in
+whole billionths of an inch so that its ties are exact ties.
+
+**Registered like the finance derivations:** catalogue (`kind: 'derivation'`),
+a derivations list on the machining hub read from it (as `/finance` has had
+since D53), `llms.txt` under a new "Derivations — machining" heading with a
+test holding its typed figures to the page's, and a Related link from the tap
+drill calculator.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { SITE } from '../lib/site';
+import { APP, SITE } from '../lib/site';
 
 /**
  * The site-level app index, linked from the masthead.
@@ -27,16 +27,16 @@ const APPS: readonly AppEntry[] = [
   {
     href: '/machining/app',
     vertical: 'Machining',
-    name: 'Machinist Calculator',
+    name: APP.name,
     platform: 'Android',
-    status: 'in-development',
+    status: APP.live ? 'live' : 'in-development',
     summary:
-      'Metric-first feeds and speeds, thread and tap drill sizing, drill charts. Offline, one payment, no subscription.',
+      'Nine metric-first machining tools: tap drill, feeds and speeds with the tool makers’ own cutting data, countersinks, bolt circles, triangles, true position, drill chart and conversions. Offline, one payment, no subscription.',
   },
 ];
 
 const STATUS_COPY = {
-  'in-development': 'In development — not yet released',
+  'in-development': 'Built — not yet on Google Play',
   live: 'On Google Play',
 } as const;
 
@@ -63,7 +63,7 @@ const structuredData = [
 <BaseLayout
   vertical="site"
   title="Apps — the calculators, offline on a phone | QuickOper"
-  description="Where the QuickOper calculators are heading on mobile: one Android machinist app, in development, one payment and no subscription. What exists today, what does not, and where to read about each."
+  description={`Where the QuickOper calculators are on mobile: ${APP.name}, an Android machinist app, ${APP.live ? 'on Google Play' : 'built and not yet on Google Play'}, one payment and no subscription. What exists today, what does not, and where to read about each.`}
   structuredData={structuredData}
 >
   <div class="mx-auto max-w-3xl px-4 py-10">

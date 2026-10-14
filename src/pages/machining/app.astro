@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { SITE } from '../../lib/site';
+import { APP, playLink, SITE } from '../../lib/site';
 
 /**
  * The Android app page — the conversion surface for the machining vertical.
@@ -10,11 +10,19 @@ import { SITE } from '../../lib/site';
  * their app on a machining-coloured page, not in a directory beside a mortgage
  * tool. /apps exists as the masthead entry point and routes here.
  *
- * THE APP DOES NOT EXIST YET, so nothing on this page may read as buyable.
- * Status is stated in the eyebrow and again at the foot, and the
- * SoftwareApplication node carries NO `offers` — a price in a rich result for
- * an unreleased app is a lie told by markup. The Play Store link takes the
- * marked slot in "Getting it" on release; nothing else needs to change.
+ * THE APP IS BUILT BUT NOT YET ON GOOGLE PLAY (`APP.live` in `lib/site.ts`),
+ * so until launch nothing on this page may read as buyable. Status is stated
+ * in the eyebrow and again at the foot. The SoftwareApplication node carries
+ * NO `offers`: a price in a rich result for an app nobody can buy is a lie
+ * told by markup, and the launch price is still the operator's decision
+ * (roadmap A5). On launch day `APP.live` turns the eyebrow, the lead, "Getting
+ * it" and the status list over to the Play listing; the offer is added only
+ * once the price is decided.
+ *
+ * Every claim about what the app does is taken from its fact-checked Play
+ * listing (machinist-calc-app `store/play/listing.md`). An earlier version of
+ * this page promised "configurable to six" decimal places and "tap a number to
+ * see the formula"; the app has neither, and both are gone.
  *
  * There is deliberately no signup form and no demand-test CTA. The decision to
  * build has been taken, so asking visitors to vote on it would be theatre.
@@ -63,28 +71,28 @@ const COMPLAINTS = [
 
 const DOING = [
   {
-    title: 'Metric first, and metric everywhere',
-    body: 'Every field switches independently. Milling, turning, drilling and boring all behave the same way — no module that is imperial-only while its neighbour is metric.',
+    title: 'Metric first, inch where needed',
+    body: 'Every length, speed and pitch field has its own switch: mm or inch, m/min or sfm, pitch in mm or threads per inch. Switching converts the number, with no drift.',
   },
   {
-    title: 'Feed in mm/min and mm/rev, always both',
-    body: 'Not one convention with the other buried in a setting. Both figures, on screen, at the same time.',
+    title: 'Feed per tooth, per rev and per minute',
+    body: 'Milling, turning, drilling, boring and tapping: spindle speed, feed per tooth and per rev, table feed and removal rate, and power from your own kc1.1 and mc.',
   },
   {
     title: 'Drills that exist',
-    body: 'Recommendations come from a real index, and the app reports the thread engagement that drill actually produces — which is rarely the round number you asked for.',
+    body: 'The tap drill comes from real metric, number, letter and fractional drills, and the app reports the thread engagement that drill actually gives — which is rarely the round number you asked for.',
   },
   {
-    title: 'Four decimal places, minimum',
-    body: 'Configurable to six. Rounding happens once, on the way to the screen, never inside a calculation.',
+    title: 'The tool makers’ own cutting data',
+    body: 'Cutting speeds, and feeds where printed, for 27 materials from Walter, Kennametal, ISCAR, Mitsubishi Materials, Harvey, Helical and OSG, each naming the maker, the tool or grade and the page. Never averaged; where no maker publishes, it says so.',
   },
   {
-    title: 'Every result shows its working',
-    body: 'Tap a number to see the formula, the values substituted into it, and the standard it comes from.',
+    title: 'Every answer shows its working',
+    body: 'Open the working under any answer: the formula, your numbers in it, and the standard it follows where there is one. Each answer is rounded once, on the way to the screen.',
   },
   {
-    title: 'Offline, always',
-    body: 'No network call on any calculation path. Shop floors do not have signal.',
+    title: 'Nine tools, offline',
+    body: 'Tap drill, feeds and speeds, countersink and chamfer, bolt circle and grid, triangle, true position, drill chart, materials and conversions, with a trig calculator on the home screen. No internet access; English and German.',
   },
 ];
 
@@ -105,13 +113,15 @@ const structuredData = [
   {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'QuickOper Machinist Calculator',
+    name: APP.name,
     applicationCategory: 'UtilitiesApplication',
     operatingSystem: 'Android',
-    // NO `offers` node. The app is unreleased; a price here would put a
-    // purchasable claim into search results for something nobody can buy.
-    description:
-      'A metric-first machinist calculator for Android: feeds and speeds, thread and tap drill sizing, drill charts. In development, not yet released.',
+    // NO `offers` node until the app is on Google Play AND its price is
+    // decided (roadmap A5): a price here would put a purchasable claim into
+    // search results for something nobody can buy.
+    description: APP.live
+      ? 'A metric-first machinist calculator for Android: tap drill, feeds and speeds with the tool makers’ own cutting data, countersinks, bolt circles, triangles, true position, drill chart and conversions. Offline, one payment.'
+      : 'A metric-first machinist calculator for Android: tap drill, feeds and speeds with the tool makers’ own cutting data, countersinks, bolt circles, triangles, true position, drill chart and conversions. Built, not yet on Google Play.',
     url: `${SITE.url}/machining/app`,
   },
   {
@@ -137,8 +147,10 @@ const structuredData = [
 ---
 
 <BaseLayout
-  title="The machinist app"
-  description="A metric-first machinist calculator for Android — feeds and speeds, thread and tap drill, offline, one payment. In development. Here is what it will do and why it is being built."
+  title={`${APP.name} — the Android app`}
+  description={APP.live
+    ? `${APP.name}: a metric-first machinist calculator for Android — tap drill, feeds and speeds with the tool makers' cutting data, and seven more tools. Offline, one payment. On Google Play.`
+    : `${APP.name}: a metric-first machinist calculator for Android — tap drill, feeds and speeds with the tool makers' cutting data, and seven more tools. Offline, one payment. Built, not yet on Google Play.`}
   vertical="machining"
   structuredData={structuredData}
 >
@@ -152,7 +164,7 @@ const structuredData = [
     <p
       class="border-caution text-ink-soft mt-4 inline-block border-l-4 py-1 pl-3 font-mono text-xs tracking-widest uppercase"
     >
-      In development · not yet released
+      {APP.live ? 'On Google Play' : 'Built · not yet on Google Play'}
     </p>
 
     <h1 class="font-display text-ink mt-3 text-4xl leading-tight font-semibold">
@@ -160,8 +172,12 @@ const structuredData = [
     </h1>
     <p class="text-ink-soft mt-4 max-w-prose text-lg">
       Every machining calculator on the Play Store is imperial-first with metric bolted
-      on. This one is built the other way round. It is not finished yet — this page is
-      what it will be, and why.
+      on. {APP.name} works the other way round.{' '}
+      {
+        APP.live
+          ? 'It is on Google Play; this page is what it does, and why it was built.'
+          : 'It is built and not yet on Google Play; this page is what it does, and why it was built.'
+      }
     </p>
 
     <!-- ── Why ─────────────────────────────────────────────────────────── -->
@@ -191,7 +207,7 @@ const structuredData = [
 
     <!-- ── What it does ────────────────────────────────────────────────── -->
     <section class="mt-12">
-      <h2 class="font-display text-ink text-2xl font-semibold">What it will do</h2>
+      <h2 class="font-display text-ink text-2xl font-semibold">What it does</h2>
       <div class="mt-5 grid gap-4 sm:grid-cols-2">
         {
           DOING.map((d) => (
@@ -203,12 +219,11 @@ const structuredData = [
         }
       </div>
       <p class="text-ink-mute mt-4 max-w-prose text-sm">
-        You can judge the arithmetic before the app exists. The{' '}
-        <a
-          class="text-brand underline underline-offset-2"
-          href="/machining/tap-drill-calculator">tap drill calculator</a
-        > on this site runs the same formulas, cites the same standards and shows the same working.
-        If it gets a number wrong, tell me and I will fix it there first.
+        You can judge the arithmetic here first. The{' '}
+        <a class="text-brand underline underline-offset-2" href="/machining"
+          >calculators on this site</a
+        > run the same formulas, cite the same standards and show the same working. If one gets
+        a number wrong, tell me and I will fix it there first.
       </p>
     </section>
 
@@ -233,24 +248,42 @@ const structuredData = [
     >
       <h2 class="font-display text-ink text-2xl font-semibold">Getting it</h2>
       <p class="text-ink-soft mt-3 max-w-prose">
-        It will be on Google Play. One payment, no subscription, no ads, no account — and
-        it follows your Google account onto your next phone, which is not a feature so
-        much as using the platform correctly.
+        {APP.live ? 'It is on Google Play.' : 'It will be on Google Play.'} One payment, no
+        subscription, no ads, no account — and it follows your Google account onto your next
+        phone, which is not a feature so much as using the platform correctly. Every calculator
+        and the working are free; the one payment unlocks the tool makers' cutting figures,
+        after 30 free lookups.
       </p>
-      <p
-        class="border-caution text-ink-soft mt-4 inline-block border-l-4 py-1 pl-3 font-mono text-xs tracking-widest uppercase"
-      >
-        Play Store link appears here on release
-      </p>
-      <p class="text-ink-mute mt-4 max-w-prose text-sm">
-        Until then the{' '}
-        <a
-          class="text-brand underline underline-offset-2"
-          href="/machining/tap-drill-calculator">tap drill calculator</a
-        >{' '}
-        on this site runs the same arithmetic, cites the same standards and shows the same working.
-        It is free and stays free.
-      </p>
+      {
+        APP.live ? (
+          <a
+            class="text-brand mt-4 inline-block text-lg font-semibold underline underline-offset-2"
+            href={playLink('machining-app')}
+            rel="noopener"
+          >
+            Get {APP.name} on Google Play &rarr;
+          </a>
+        ) : (
+          <p class="border-caution text-ink-soft mt-4 inline-block border-l-4 py-1 pl-3 font-mono text-xs tracking-widest uppercase">
+            Play Store link appears here on release
+          </p>
+        )
+      }
+      {
+        !APP.live && (
+          <p class="text-ink-mute mt-4 max-w-prose text-sm">
+            Until then the{' '}
+            <a
+              class="text-brand underline underline-offset-2"
+              href="/machining/tap-drill-calculator"
+            >
+              tap drill calculator
+            </a>{' '}
+            on this site runs the same arithmetic, cites the same standards and shows the
+            same working. It is free and stays free.
+          </p>
+        )
+      }
     </section>
 
     <!-- ── Status ──────────────────────────────────────────────────────── -->
@@ -258,26 +291,39 @@ const structuredData = [
       <h2 class="font-display text-ink text-xl font-semibold">Where it actually is</h2>
       <ul class="text-ink-soft mt-3 space-y-2 text-sm">
         <li class="border-positive border-l-2 pl-3">
-          <strong class="text-ink">Live now:</strong>
-          <a
-            class="text-brand underline underline-offset-2"
-            href="/machining/tap-drill-calculator">the tap drill calculator</a
-          > on this site. Same formulas, same standards, free, no signup.
+          <strong class="text-ink">Live now:</strong>{' '}
+          <a class="text-brand underline underline-offset-2" href="/machining"
+            >the machining calculators</a
+          > on this site — tap drill, feeds and speeds, countersink, bolt circle, triangle,
+          true position, the unit converter and the drill chart. Same formulas, same standards,
+          free, no signup.
         </li>
-        <li class="border-caution border-l-2 pl-3">
-          <strong class="text-ink">Next:</strong> feeds and speeds — milling, turning, drilling
-          and boring, in mm/min and mm/rev.
-        </li>
-        <li class="border-line-strong border-l-2 pl-3">
-          <strong class="text-ink">Then:</strong> the Android app, if enough machinists say
-          it is worth having. That is what the links above decide.
-        </li>
+        {
+          APP.live ? (
+            <li class="border-positive border-l-2 pl-3">
+              <strong class="text-ink">On Google Play:</strong> {APP.name}, with all nine
+              tools and the tool makers' cutting data.
+            </li>
+          ) : (
+            <>
+              <li class="border-positive border-l-2 pl-3">
+                <strong class="text-ink">Built:</strong> {APP.name}, all nine tools, in
+                English and German, checked on a phone.
+              </li>
+              <li class="border-caution border-l-2 pl-3">
+                <strong class="text-ink">Next:</strong> Google Play's checks for a new
+                developer, a closed test, and then the release.
+              </li>
+            </>
+          )
+        }
       </ul>
       <p class="text-ink-mute mt-4 max-w-prose text-sm">
-        No release date, because I would be making it up. It is built in evenings by one
-        person, and the arithmetic is checked against published standards before anything
-        ships — which is slower than guessing and the only way a tool like this is worth
-        installing.
+        {
+          APP.live
+            ? 'It is built in evenings by one person, and the arithmetic is checked against published standards before anything ships — which is slower than guessing and the only way a tool like this is worth installing.'
+            : 'No release date, because Google’s checks set it and I would be making it up. It is built in evenings by one person, and the arithmetic is checked against published standards before anything ships — which is slower than guessing and the only way a tool like this is worth installing.'
+        }
       </p>
     </section>
   </div>

@@ -2,8 +2,8 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ToolCard from '../../components/ToolCard.astro';
 import ToolRow from '../../components/ToolRow.astro';
-import { SITE } from '../../lib/site';
-import { toolsIn } from '../../lib/catalogue';
+import { APP, playLink, SITE } from '../../lib/site';
+import { derivationsIn, toolsIn } from '../../lib/catalogue';
 
 /**
  * The machining hub.
@@ -18,6 +18,7 @@ import { toolsIn } from '../../lib/catalogue';
  */
 
 const TOOLS = toolsIn('machining');
+const DERIVATIONS = derivationsIn('machining');
 
 const COMING = [
   'Thread engagement and tolerance classes — 6H/6g and the Unified equivalents',
@@ -74,16 +75,67 @@ const structuredData = [
     <section
       class="border-line-strong bg-surface shadow-panel rounded-panel mt-10 border p-5"
     >
-      <h2 class="font-display text-ink text-xl font-semibold">The Android app</h2>
+      <h2 class="font-display text-ink text-xl font-semibold">{APP.name}</h2>
       <p class="text-ink-soft mt-2 max-w-prose text-sm">
-        These calculators are the web half. The same arithmetic is going into a
-        metric-first Android app — offline, one payment, no subscription. It is not
-        finished, and whether it gets finished depends on whether machinists want it.
+        These calculators are the web half. The same arithmetic is in {APP.name}, a
+        metric-first Android app with nine tools and the tool makers' own cutting data —
+        offline, one payment, no subscription.{' '}
+        {APP.live ? 'It is on Google Play.' : 'It is built and not yet on Google Play.'}
       </p>
-      <a
-        class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
-        href="/machining/app">What it will do, and what it will cost &rarr;</a
-      >
+      {
+        APP.live ? (
+          <p class="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+            <a
+              class="text-brand inline-block font-semibold underline underline-offset-2"
+              href={playLink('machining-hub')}
+              rel="noopener"
+            >
+              Get it on Google Play &rarr;
+            </a>
+            <a
+              class="text-brand inline-block underline underline-offset-2"
+              href="/machining/app"
+            >
+              What it does
+            </a>
+          </p>
+        ) : (
+          <a
+            class="text-brand mt-3 inline-block font-semibold underline underline-offset-2"
+            href="/machining/app"
+          >
+            What it does, and how it is paid for &rarr;
+          </a>
+        )
+      }
+    </section>
+
+    {
+      /*
+        The derivations belong on the hub, as on /finance (D53): a hub that
+        lists only the tools tells a crawler the cluster is that wide.
+      */
+    }
+    <section class="mt-12">
+      <h2 class="font-display text-ink text-xl font-semibold">
+        The arithmetic behind them
+      </h2>
+      <p class="text-ink-soft mt-2 text-sm">
+        Each one works a single calculation out from first principles, with figures
+        computed by the same code the tools run.
+      </p>
+      <ul class="mt-4 space-y-3">
+        {
+          DERIVATIONS.map((page) => (
+            <li>
+              <a class="text-brand underline underline-offset-2" href={page.href}>
+                {page.title}
+              </a>
+              <span class="text-ink-soft text-sm"> — {page.summary}</span>
+            </li>
+          ))
+        }
+      </ul>
     </section>
 
     <section class="mt-12">
