@@ -305,7 +305,8 @@ const tdNum = 'border-line border-t px-2 py-1 text-right font-numeric whitespace
         The chip is measured square to the cutting edge. On a face mill whose edge meets
         the work at an entering angle κr, the same feed is spread along a longer edge, and
         the chip is thinner by sin κr. Sandvik Coromant prints the feed that cuts a 0.1 mm
-        chip at five angles, with the factor:
+        chip at five angles, with the factor. Worked here, with Sandvik's printed figure
+        under each:
       </p>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -313,9 +314,7 @@ const tdNum = 'border-line border-t px-2 py-1 text-right font-numeric whitespace
             <tr>
               <th class={th}>κr</th>
               <th class={thNum}>fz for 0.1 mm</th>
-              <th class={thNum}>Sandvik prints</th>
               <th class={thNum}>Factor</th>
-              <th class={thNum}>Sandvik prints</th>
             </tr>
           </thead>
           <tbody>
@@ -323,10 +322,16 @@ const tdNum = 'border-line border-t px-2 py-1 text-right font-numeric whitespace
               F.kappa.map((k) => (
                 <tr>
                   <td class={td}>{k.kappa}°</td>
-                  <td class={tdNum}>{k.ours}</td>
-                  <td class={tdNum}>{k.feed}</td>
-                  <td class={tdNum}>{k.oursFactor}</td>
-                  <td class={tdNum}>{k.factor}</td>
+                  <td class={tdNum}>
+                    {k.ours}
+                    <br />
+                    <span class="text-ink-mute">Sandvik {k.feed}</span>
+                  </td>
+                  <td class={tdNum}>
+                    {k.oursFactor}
+                    <br />
+                    <span class="text-ink-mute">Sandvik {k.factor}</span>
+                  </td>
                 </tr>
               ))
             }
