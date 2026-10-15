@@ -348,6 +348,14 @@ export const CATALOGUE: readonly Entry[] = [
     vertical: 'machining',
     kind: 'derivation',
   },
+  {
+    href: '/machining/position-tolerance-zone',
+    title: 'The round position zone, and where 57% comes from',
+    summary:
+      'a ± square against the circle through its corners, what the percentage is of, and holes judged against each',
+    vertical: 'machining',
+    kind: 'derivation',
+  },
 ];
 
 /** Everything a vertical's hub lists as a tool: calculators and references. */

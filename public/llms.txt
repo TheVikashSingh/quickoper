@@ -574,6 +574,29 @@ Jurisdiction: none. Straight-edge milling cutters.
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
+### Position tolerance zone: the round zone and where 57% comes from
+URL: https://quickoper.com/machining/position-tolerance-zone
+States: a coordinate tolerance of +/- t in X and Y is a square 2t on a side.
+The circle through its corners has a diameter of 2 x sqrt(2) x t and contains
+every point of the square. Its area is 2 pi t^2 against the square's 4 t^2, a
+ratio of pi/2 for every t. A hole off by dx and dy has a position of
+2 x sqrt(dx^2 + dy^2), compared with the diameter.
+Key figures, computed by the same code as the true position calculator:
+  - The circle is 57.08% bigger than the square (GD&T Basics and Xometry print
+    57%). Measured against the circle, the square leaves out 36.34% of it, not
+    57%. Along X or Y the circle reaches 41.42% further.
+  - The circle inside the square, as wide as it, covers 78.54% of it. The square
+    inside a circle of diameter T is +/- T / (2 sqrt 2), +/- 0.3536 T.
+  - +/-.005 in is the circle 0.014142 in. To four places neither 0.0141 nor
+    0.0142 is that circle: 0.0142 contains the square and 0.0141 cuts its
+    corners, so a hole .005 off in X and Y (position 0.0141 to four places)
+    fails 0.0141.
+  - GD&T Basics' hole, .003 and .002 off, is 0.0072 (it prints .007), inside
+    its .008 tolerance.
+Jurisdiction: none. ASME Y14.5 position tolerances with a diameter symbol.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/finance/verify
+
 ## Verification
 
 - [Methodology](https://quickoper.com/methodology): formulas, assumptions and the

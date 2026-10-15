@@ -1,0 +1,372 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+import { positionZoneFigures } from '../../lib/calc/position-zone-figures';
+
+/**
+ * Derivation: the round position zone against the ± square.
+ *
+ * The page types no figure (D110, D112, D113). Every number below is a string
+ * from `positionZoneFigures()`, and every verdict is the true position
+ * engine's own, decided on exact squares. Both are pinned in
+ * `tests/calc/position-zone-figures.test.ts`. The only numbers in this file
+ * are inputs and the sources' own figures.
+ */
+
+const F = positionZoneFigures();
+const CHECKED_ON = '2026-10-15';
+const ASME_CHECKED = '2026-10-06';
+
+const SOURCES = [
+  {
+    label:
+      'GD&T Basics — True Position: the square zone against the round one, the 57%, and the worked hole .003 in and .002 in off against a .008 in tolerance',
+    url: 'https://www.gdandtbasics.com/true-position/',
+    retrieved: CHECKED_ON,
+  },
+  {
+    label:
+      'Xometry — True Position Tolerance: Definition, Calculation, and GD&T Applications (published 2026-08-13): 57% more usable tolerance area',
+    url: 'https://www.xometry.com/resources/machining/true-position-tolerance/',
+    retrieved: CHECKED_ON,
+  },
+  {
+    label:
+      'ASME Y14.5, Dimensioning and Tolerancing — the standard a position tolerance is read to',
+    url: 'https://www.asme.org/codes-standards/find-codes-standards/y14-5-dimensioning-tolerancing',
+    retrieved: ASME_CHECKED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const [gdtHole, corner, alongX, bothWays] = F.parts;
+if (
+  gdtHole === undefined ||
+  corner === undefined ||
+  alongX === undefined ||
+  bothWays === undefined
+) {
+  throw new Error('position-tolerance-zone: a hole the page names is missing');
+}
+
+const mark = (inside: boolean) => (inside ? 'in' : 'out');
+
+const FAQ = [
+  {
+    q: 'Where does the 57% for a position tolerance come from?',
+    a: `From the circle drawn through the corners of a ± square. A square ±t wide has an area of 4t²; the circle through its corners has a radius of √2 × t and an area of 2πt². The circle is π/2 times the square, ${F.moreArea}% bigger, and it contains every point the square does.`,
+  },
+  {
+    q: 'What diameter is the same as ±.005 in?',
+    a: `The circle through the corners of a ±${F.drawing.plusMinus} square is 2√2 × ${F.drawing.plusMinus} = Ø${F.drawing.exact} in. To four places that sits between ${F.drawing.below} and ${F.drawing.above}: Ø${F.drawing.above} contains the whole square, and Ø${F.drawing.below} cuts its corners, so a hole .005 off in both X and Y measures Ø${corner.position} to four places and still fails Ø${F.drawing.below}.`,
+  },
+  {
+    q: 'Does a square zone remove 57% of the tolerance?',
+    a: `No: 57% is how much bigger the circle is than the square. Measured against the circle, the square leaves out ${F.squareLeavesOut}% of it. GD&T Basics' article says the square removed over 57%; a reply further down the same page puts it the right way round, as 57% more with the circle.`,
+  },
+  {
+    q: 'How do I turn a position tolerance into a ± tolerance?',
+    a: `The square that fits inside a circle of diameter T is ±T ÷ (2√2), ±${F.inscribedPlusMinus} × T. For Ø${F.drawing.inscribed} that is ±${F.drawing.backToSquare}. Every hole inside that square is inside the circle, but holes near the circle along X or Y are outside the square.`,
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'The round position zone, and where 57% comes from',
+    url: `${SITE.url}/machining/position-tolerance-zone`,
+    description:
+      'Why a diametral position tolerance through the corners of a ± square is π/2 times its area, 57.08% bigger; the ± to diameter conversion either way; and four holes judged against each zone.',
+    author: { '@id': `${SITE.url}/about#person` },
+    publisher: { '@id': `${SITE.url}#organization` },
+    dateModified: CHECKED_ON,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Position tolerance zone',
+        item: `${SITE.url}/machining/position-tolerance-zone`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+
+const h2 = 'font-display text-ink text-2xl font-semibold';
+const formula =
+  'border-line bg-sunken rounded-panel font-numeric overflow-x-auto border p-3 text-sm leading-relaxed';
+const th =
+  'px-1.5 py-1 text-left font-mono text-xs uppercase tracking-wide text-ink-mute';
+const thNum =
+  'px-1.5 py-1 text-right font-mono text-xs uppercase tracking-wide text-ink-mute';
+const td = 'border-line border-t px-1.5 py-1 whitespace-nowrap font-numeric';
+const tdNum =
+  'border-line border-t px-1.5 py-1 text-right font-numeric whitespace-nowrap';
+---
+
+<BaseLayout
+  title="Position tolerance zone: where the 57% comes from"
+  description={`Why a round position zone through the corners of a ± square is ${F.moreArea}% bigger, how ±.005 becomes Ø${F.drawing.exact}, and four holes judged against each zone with the working shown.`}
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Position tolerance zone
+    </nav>
+
+    <p class="text-ink-mute mt-3 font-mono text-xs tracking-widest uppercase">
+      Derivation
+    </p>
+    <h1 class="font-display text-ink mt-2 text-4xl leading-tight font-semibold">
+      The round position zone, and where 57% comes from
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      GD&T guides say a round position tolerance gives 57% more room than a ± square. This
+      page derives the figure, says exactly what it is a percentage of, converts ±.005 in
+      to a diameter both ways, and judges four holes against each zone with the same code
+      as the true position calculator.
+    </p>
+
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border p-5"
+      aria-label="The short version"
+    >
+      <p class="text-ink-mute font-mono text-xs tracking-widest uppercase">
+        The short version
+      </p>
+      <p class="font-numeric text-ink mt-3 text-lg">circle ÷ square = 2πt² ÷ 4t² = π/2</p>
+      <p class="text-ink-soft mt-3 text-sm">
+        A ±t square fits exactly inside a circle of diameter 2√2 × t. That circle is{' '}
+        <span class="font-numeric text-ink">{F.moreArea}%</span> bigger than the square, reaches{
+          ' '
+        }
+        <span class="font-numeric text-ink">{F.axisReach}%</span> further along X or Y, and
+        accepts every hole the square accepts. For ±{F.drawing.plusMinus} in the circle is{
+          ' '
+        }
+        <span class="font-numeric text-ink">Ø{F.drawing.exact}</span> in.
+      </p>
+    </section>
+
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class={h2}>Two ways to say where a hole may be</h2>
+      <p>
+        A coordinate drawing gives a ± in X and a ± in Y. The axis of the hole may be
+        anywhere in the square those two make: 2t on a side for ±t. A position tolerance
+        with a Ø in front of it gives a diameter instead, and the axis may be anywhere in
+        that circle.
+      </p>
+      <p>
+        A hole off by dx and dy is √(dx² + dy²) from where it should be, by Pythagoras.
+        The zone is stated as a diameter, so the hole is compared as one:
+      </p>
+      <p class={formula}>position = 2 × √(dx² + dy²)</p>
+
+      <h2 class={h2}>The circle through the square's corners</h2>
+      <p>
+        The square's corners are its furthest points: √2 × t from the centre, against t at
+        the middle of each side, {F.root2} times as far. The circle through them has that radius,
+        so its diameter is 2√2 × t, {F.twoRoot2} × t. Their areas:
+      </p>
+      <p class={formula}>
+        square = (2t)² = 4t²
+        <br />
+        circle = π × (√2 × t)² = 2πt²
+      </p>
+      <p>
+        The circle is π/2 times the square: <span class="font-numeric text-ink"
+          >{F.moreArea}%</span
+        > bigger. That is the 57% GD&T Basics and Xometry print. It holds for every t, in inches
+        or millimetres, because the t cancels. Along X or Y alone the circle reaches √2 × t
+        where the square stops at t, {F.axisReach}% further.
+      </p>
+      <p>
+        Turned round, the square is 2/π of the circle, and leaves out{' '}
+        <span class="font-numeric text-ink">{F.squareLeavesOut}%</span> of it. GD&T Basics'
+        article says a square zone "removed over 57%" of the tolerance zone. The 57% is how
+        much bigger the circle is; measured against the circle, the square leaves out{' '}
+        {F.squareLeavesOut}%. A reply further down the same page puts it the right way
+        round, as 57% more with the circle.
+      </p>
+
+      <h2 class={h2}>The circle inside the square</h2>
+      <p>
+        The other conversion goes the other way. A circle as wide as the square, Ø2t, fits
+        inside it and covers {F.inscribedShare}% of it: the corners are lost. And the
+        square that fits inside a circle of diameter T is ±T ÷ (2√2), ±{
+          F.inscribedPlusMinus
+        } × T, so Ø{F.drawing.inscribed} becomes ±{F.drawing.backToSquare}. Every hole
+        inside that square is inside the circle; holes near the circle along X or Y are
+        not inside the square.
+      </p>
+    </section>
+
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class={h2}>Worked: ±{F.drawing.plusMinus} in</h2>
+      <p>
+        The circle through the corners of ±{F.drawing.plusMinus} is 2√2 × {
+          F.drawing.plusMinus
+        } = Ø{F.drawing.exact} in. A drawing printed to four places cannot say that: Ø{
+          F.drawing.above
+        } contains the whole square, and Ø{F.drawing.below} cuts its corners. Four holes, each
+        given as dx and dy over its position, judged against the square, both of those circles
+        and the circle inside the square, Ø{F.drawing.inscribed}:
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-sunken">
+            <tr>
+              <th class={th}>Hole</th>
+              <th class={thNum}>±{F.drawing.plusMinus}</th>
+              <th class={thNum}>Ø{F.drawing.above}</th>
+              <th class={thNum}>Ø{F.drawing.below}</th>
+              <th class={thNum}>Ø{F.drawing.inscribed}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              F.parts.map((p) => (
+                <tr>
+                  <td class={td}>
+                    {p.dx}
+                    <br />
+                    {p.dy}
+                    <br />
+                    <span class="text-ink-mute">Ø{p.position}</span>
+                  </td>
+                  <td class={tdNum}>{mark(p.square)}</td>
+                  <td class={tdNum}>{mark(p.above)}</td>
+                  <td class={tdNum}>{mark(p.below)}</td>
+                  <td class={tdNum}>{mark(p.inscribed)}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The corner hole, {corner.dx} off in both X and Y, prints as Ø{corner.position} and still
+        fails Ø{F.drawing.below}: it is Ø{F.drawing.exact}, and the verdict is decided on
+        the exact squares, not on the printed figure. The hole {alongX.dx} off along X fails
+        the ± drawing and passes both circles. Every hole the square accepts, Ø{
+          F.drawing.above
+        } accepts too.
+      </p>
+      <p>
+        The first hole is GD&T Basics' own example, {gdtHole.dx} off in X and {
+          gdtHole.dy
+        }{' '}
+        in Y. Its position is Ø{F.gdtBasics.position}, {F.gdtBasics.threePlaces} to three places
+        as GD&T Basics works it, inside its {F.gdtBasics.tolerance} tolerance.
+      </p>
+
+      <h2 class={h2}>What the 57% leaves out</h2>
+      <p>
+        It is an area. How many more parts it passes depends on where the holes actually
+        land, which no formula on this page knows.
+      </p>
+      <p>
+        It is the zone's cross-section. A position tolerance on a hole is a cylinder
+        through its depth, and the axis must lie inside it all the way down.
+      </p>
+      <p>
+        It leaves out the bonus. At MMC or LMC a hole in size earns extra tolerance from
+        its measured size, on top of everything here; the{' '}
+        <a
+          class="text-brand underline underline-offset-2"
+          href="/machining/true-position-calculator">true position calculator</a
+        > works it.
+      </p>
+    </section>
+
+    <section class="mt-12">
+      <h2 class={h2}>Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class={h2}>Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {s.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        GD&T Basics' and Xometry's figures are theirs, as printed. Every other figure and
+        every verdict on this page is computed by the same code as the true position
+        calculator, and the tests hold each one.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated figures. A part is accepted or rejected against its own
+      drawing, read to the standard it cites.
+    </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each showing its working"
+      links={[
+        {
+          href: '/machining/true-position-calculator',
+          label: 'True position calculator',
+          note: 'your own hole against its tolerance, with the bonus',
+        },
+        {
+          href: '/machining/bolt-circle-calculator',
+          label: 'Bolt circle calculator',
+          note: 'the true positions themselves, for every hole of a pattern',
+        },
+      ]}
+    />
+  </div>
+</BaseLayout>
