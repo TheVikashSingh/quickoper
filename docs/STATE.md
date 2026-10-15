@@ -1,6 +1,6 @@
 # Project state
 
-**Updated:** 2026-10-14, source dates printed as dates on the machining pages, with a gate (D111).
+**Updated:** 2026-10-15, the second machining derivation, chip thinning (D112).
 
 Where the project actually is. Update this at the end of any pull request that
 changes the answer to "what exists" or "what is next".
@@ -30,9 +30,9 @@ changes the answer to "what exists" or "what is next".
 | | |
 |---|---|
 | Live? | **Yes — `https://quickoper.com`, launched 2026-08-11.** Cloudflare Workers static assets, DNS on Cloudflare, registrar still Hostinger. |
-| Pages built | 33 (32 substantive — `/404` is not) |
+| Pages built | 34 (33 substantive — `/404` is not) |
 | Working calculators | 4 |
-| Tests | 1060 passing |
+| Tests | 1079 passing |
 | CI gates | typecheck · vitest · secret scan · JS byte budget · internal links + indexability · prose spacing and raw dates · STATE.md counts · island prose slots · structured data · llms.txt catalogue · deploy config |
 | Worst-page JS | 18.75 KB of 19.5 KB (0.75 KB spare) — `/finance/uk-early-repayment-charge-calculator`, measured 2026-10-06 |
 | Content pages JS | 0.53 KB (inline theme script only) — **including the homepage**, which became a router and gave its island to `/finance` (D91). Rule 9 now has no exceptions. |
@@ -66,13 +66,14 @@ report (local-only — never in the URL, never persisted).
 `/` · `/finance` (cluster hub) · `/methodology` · `/finance/verify` · `/about` ·
 `/privacy` · `/terms` · `/contact` · `/404`
 
-**Derivations** — nine pages, each tied to a tool that exists and each carrying
+**Derivations** — ten pages, each tied to a tool that exists and each carrying
 figures computed here rather than transcribed:
 `/finance/minimum-payments` · `/finance/biweekly-mortgage-payments` ·
 `/finance/credit-card-interest` · `/finance/monthly-return-rate` ·
 `/finance/withdrawal-rate` · `/finance/coast-number` ·
 `/finance/mortgage-overpayment-timing` · `/finance/15-year-vs-30-year-mortgage` ·
-`/machining/percentage-of-thread` (the first machining one, D110)
+`/machining/percentage-of-thread` (the first machining one, D110) ·
+`/machining/chip-thinning` (D112)
 
 They are not listed by hand anywhere that renders: `src/lib/catalogue.ts` is the
 registry, and the hub and homepage both read it (D82). This list is prose and
@@ -425,6 +426,22 @@ drill engine's constants, and `tests/calc/thread-percentage.test.ts` holds them.
   above its 2B maximum.
 - `llms.txt` is static, so a test holds each figure in its entry to the page's.
 
+### Chip thinning (a derivation)
+
+`/machining/chip-thinning` (2026-10-15, D112) derives the radial chip
+thinning formula from the arc a milling tooth sweeps, the average chip hm and
+the entering angle, on a 10 mm end mill. Like the thread page it types no
+figure: `calc/chip-thinning-figures.ts` returns each one, worked by the feeds
+and speeds engine, and `tests/calc/chip-thinning-figures.test.ts` holds them.
+
+- **The published checks (rule 3):** M.A. Ford's chip thinning factors
+  (TuffCut GP catalogue p. 360) and Sandvik's entering-angle table. Ford
+  agrees at one decimal at four of its five widths; at 20% the geometry is
+  exactly 1.25, rounded from its exact square, and Ford prints 1.2; at 10%
+  Ford prints 1.8 against the geometry's 1.67, and the page reports both
+  without choosing. Every Sandvik feed and factor agrees.
+- `llms.txt` is static, so a test holds each figure in its entry to the page's.
+
 ### The conversion surface
 
 `/machining/app` describes the app; `/apps` is the site-level index linked from
@@ -522,7 +539,7 @@ Claude.
 
 ## Next
 
-**The content threshold is met.** The build produces 33 pages, of which 32 are
+**The content threshold is met.** The build produces 34 pages, of which 33 are
 substantive. None more needed for AdSense.
 
 **Launched 2026-08-11.** The site is live, deploys on merge, and carries the
@@ -576,7 +593,7 @@ high-school mathematics check our figure against a published third-party result?
 
 | Requirement | State |
 |---|---|
-| 15+ substantive pages | **32** — none to go |
+| 15+ substantive pages | **33** — none to go |
 | Privacy policy naming Google as an ad vendor | Written, marked as not yet live |
 | Terms, about with named author, working contact | Done, pending the mailbox |
 | Clear navigation, everything within two clicks | Done |

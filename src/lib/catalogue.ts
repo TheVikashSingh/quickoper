@@ -340,6 +340,14 @@ export const CATALOGUE: readonly Entry[] = [
     vertical: 'machining',
     kind: 'derivation',
   },
+  {
+    href: '/machining/chip-thinning',
+    title: 'Chip thinning, from the tooth’s arc',
+    summary:
+      'why a narrow cut takes a thinner chip than its feed, worked against a maker’s chip thinning factors',
+    vertical: 'machining',
+    kind: 'derivation',
+  },
 ];
 
 /** Everything a vertical's hub lists as a tool: calculators and references. */
