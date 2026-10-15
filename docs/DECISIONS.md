@@ -4708,6 +4708,38 @@ figures; Kennametal's KenFeed starting feeds by engagement are a feed per
 tooth for one cutter, not a thinning factor, and were not read from
 Kennametal's own page.
 
+### D113 — The third machining derivation: the round position zone
+
+The next derivation (D110, D112), and the first for the true position
+calculator. "57% more tolerance" is the most repeated sentence about position
+tolerancing; the page derives it rather than repeating it.
+
+**What it computes.** The circle through the corners of a ±t square has
+radius √2 × t, so its area is 2πt² against 4t²: π/2, 57.08% more, for every
+t. The page also says the reverse (the square leaves out 36.34% of the
+circle), the reach along an axis (√2, 41.42% further), and the circle inside
+the square (π/4, 78.54%). Every verdict on the four worked holes is the true
+position engine's `checkPosition`, decided on exact squares in BigInt; the
+square's verdict is a whole-nanometre comparison.
+
+**The published checks are not makers' tables.** Position tolerancing has no
+maker to print one. GD&T Basics and Xometry both print 57%, and GD&T Basics'
+worked hole is reproduced: Ø.0072, which it works to .007, within .008.
+
+**What the page corrects, and how it says so.** GD&T Basics' article says a
+square zone "removed over 57%" of the tolerance zone. 57% is how much bigger
+the circle is; measured against the circle, the square leaves out 36.34%. The
+page quotes the six words, gives both figures, and notes that a reply on the
+same page has it the right way round. It states arithmetic, not a judgement of
+the site.
+
+**A conversion that cannot be printed exactly.** ±.005 in is Ø.014142…, and
+a drawing printed to four places must say Ø.0141, which cuts the square's
+corners, or Ø.0142, which contains it. The corner hole, .005 off both ways,
+prints as Ø.0141 to four places and still fails Ø.0141, because the engine
+decides on the exact value. The page states this as a computed fact and does
+not say which a drawing should use (rule A).
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the
