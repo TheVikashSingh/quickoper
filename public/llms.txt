@@ -550,6 +550,30 @@ Jurisdiction: none. ISO metric and Unified inch, 60-degree threads, cutting taps
 Methodology: https://quickoper.com/methodology
 Verification: https://quickoper.com/finance/verify
 
+### Chip thinning, from the tooth's arc
+URL: https://quickoper.com/machining/chip-thinning
+States: in side milling with a width of cut ae under half the cutter diameter
+D, the thickest chip a tooth cuts is hex = fz x 2 x sqrt(ae x (D - ae)) / D;
+at ae >= D/2 it is fz. Derived from the arc the tooth sweeps: the chip is
+fz x sin(phi), and the tooth leaves the work where cos(phi) = 1 - 2 ae / D.
+The feed that cuts a chip as thick as the data sheet's fz is fz / (hex / fz).
+An entering angle kr thins the chip again by sin(kr).
+Key figures, computed by the same code as the feeds and speeds calculator:
+  - At 10% of D the chip is exactly 0.6000 of fz; the restoring factor is
+    1.6667. At 5% it is 2.2942, at 20% exactly 1.2500.
+  - M.A. Ford (TuffCut GP catalogue p. 360) prints factors of 2.3, 1.8, 1.2,
+    1.1 and 1 at 5, 10, 20, 30 and 50%. Rounded to one decimal the geometry
+    agrees at four of the five; at 10% Ford prints 1.8 against 1.7.
+  - Average chip hm = fz x (ae / D) x 2 / arccos(1 - 2 ae / D) (Kennametal
+    US 12,202,058 B2). A full slot is 2/pi = 0.6366 of fz; the shortcut
+    fz x sqrt(ae / D) gives fz there, 57.1% too thick, and at mc 0.25 a
+    Kienzle power 10.7% too low.
+  - Sandvik's entering-angle factors are 1 / sin(kr): 1.4142 at 45 degrees,
+    5.7588 at 10 degrees (printed 1.4 and 5.8).
+Jurisdiction: none. Straight-edge milling cutters.
+Methodology: https://quickoper.com/methodology
+Verification: https://quickoper.com/finance/verify
+
 ## Verification
 
 - [Methodology](https://quickoper.com/methodology): formulas, assumptions and the

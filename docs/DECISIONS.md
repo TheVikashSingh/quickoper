@@ -4675,6 +4675,39 @@ one more pattern, a `Date`'s default string ("Mon Oct 12 2026 00:00:00
 GMT"), rather than a fourteenth gate. Run against the old pages it reports
 all 44; against the fixed ones, none.
 
+### D112 — The second machining derivation: chip thinning
+
+The next derivation after percentage of thread (D110), because the feeds and
+speeds calculator's chip and restoring feed are its least obvious figures and
+the ones a machinist is most likely to search for.
+
+**Derived, not quoted.** The page works hex from the arc: the chip at tooth
+angle φ is fz × sin φ, and a tooth in a side cut of width ae leaves the work
+where cos φ = 1 − 2ae/D, so hex = fz × 2√(ae(D − ae))/D below half the
+diameter. That is Sandvik's printed formula, and the mean of fz sin φ over the
+arc is Kennametal's patented hm. The page types no figure:
+`calc/chip-thinning-figures.ts` returns each one from the feeds and speeds
+engine's own functions.
+
+**A maker's factor table as the published check.** No maker found prints a
+worked chip-thinning example with figures; M.A. Ford prints a table of
+factors. Its TuffCut GP catalogue (p. 360, read 2026-10-15) says "Multiply fz
+by this Factor based on ae": 2.3, 1.8, 1.2, 1.1 and 1 at 5, 10, 20, 30 and
+50%. The geometry, rounded to Ford's one decimal, agrees at four. At 20% the
+factor is exactly 5/4, a tie at one decimal: it is rounded from its exact
+square in integers (`roundedFactor`), half-even, to Ford's 1.2. At 10% the
+geometry's 5/3 is 1.7 and Ford prints 1.8. Ford does not say how it set its
+factors, so the page reports both as they are, calls Ford's a recommendation
+for its own tools, and chooses neither (rule A). Sandvik's entering-angle
+table (read 2026-10-06, already the feeds calculator's rule-3 check) agrees
+in every feed and factor.
+
+**Searched and not used:** Machining Doctor and other calculator sites print
+the same formula but are not makers; RedLine Tools' calculator page prints no
+figures; Kennametal's KenFeed starting feeds by engagement are a feed per
+tooth for one cutter, not a thinning factor, and were not read from
+Kennametal's own page.
+
 ### D28 — Static prose belongs to the page, not to the island
 
 A sentence inside a Preact component is paid for twice: once as HTML in the

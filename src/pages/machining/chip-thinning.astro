@@ -1,0 +1,432 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RelatedTools from '../../components/RelatedTools.astro';
+import { sourceRef } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+import { chipThinningFigures } from '../../lib/calc/chip-thinning-figures';
+
+/**
+ * Derivation: chip thinning, from the tooth's arc.
+ *
+ * The page types no figure (D110, D112). Every number below is a string from
+ * `chipThinningFigures()`, worked by the feeds and speeds engine and pinned in
+ * `tests/calc/chip-thinning-figures.test.ts` against what M.A. Ford and
+ * Sandvik Coromant printed. The only numbers in this file are inputs and the
+ * makers' own figures.
+ */
+
+const F = chipThinningFigures();
+const FORD_CHECKED = '2026-10-15';
+const CHIP_CHECKED = '2026-10-06';
+
+const SOURCES = [
+  {
+    label:
+      'M.A. Ford — TuffCut GP General Purpose End Mill Recommended Cutting Data, Profile Milling (catalogue p. 360): the chip thinning factors by radial engagement',
+    url: 'https://www.maford.com/SiteContent/Documents///GP%20Endmill%20Technical%20data%20Inch.pdf',
+    retrieved: FORD_CHECKED,
+  },
+  {
+    label:
+      'Sandvik Coromant — Milling formulas and definitions: the maximum chip thickness hex for ae above and below Dcap/2, and Dcap = Dc + 2 × ap / tan κr',
+    url: 'https://www.sandvik.coromant.com/en-us/knowledge/machining-formulas-definitions/milling-formulas-definitions',
+    retrieved: CHIP_CHECKED,
+  },
+  {
+    label:
+      'Sandvik Coromant — Entering angle and chip thickness in milling: the feed for a 0.1, 0.15 and 0.2 mm chip at 90°, 75°, 65°, 45° and 10°',
+    url: 'https://www.sandvik.coromant.com/en-us/knowledge/milling/entering-angle-and-chip-thickness',
+    retrieved: CHIP_CHECKED,
+  },
+  {
+    label:
+      'Kennametal Inc, US Patent 12,202,058 B2 (inventor Frank Endres) — the average chip thickness hm, and the √(ae/d) approximation it calls one',
+    url: 'https://patents.google.com/patent/US12202058B2/en',
+    retrieved: CHIP_CHECKED,
+  },
+  {
+    label:
+      'Sandvik Coromant — CoroMill 345 cutter 345-063C6-13M: Dc 63.00 mm, entering angle 45°, maximum depth 6.00 mm',
+    url: 'https://www.sandvik.coromant.com/en-us/product-details?c=345-063C6-13M',
+    retrieved: CHIP_CHECKED,
+  },
+].map((s) => sourceRef.parse(s));
+
+const row = (percent: number) => {
+  const r = F.rows.find((x) => x.percent === percent);
+  if (r === undefined) throw new Error(`chip-thinning: no ${percent} % row`);
+  return r;
+};
+const r5 = row(5);
+const r10 = row(10);
+const r20 = row(20);
+const k45 = F.kappa.find((k) => k.kappa === 45);
+const k10 = F.kappa.find((k) => k.kappa === 10);
+if (k45 === undefined || k10 === undefined) {
+  throw new Error('chip-thinning: an entering angle the page names is missing');
+}
+
+const FAQ = [
+  {
+    q: 'What is the chip thinning formula?',
+    a: `When the width of cut ae is less than half the cutter diameter D, the thickest chip a tooth cuts is hex = fz × 2 × √(ae × (D − ae)) ÷ D. At half the diameter or more it is fz. The feed that cuts a chip as thick as the data sheet's fz is fz divided by that ratio. Sandvik Coromant prints the same formula.`,
+  },
+  {
+    q: 'How much does chip thinning change the feed at 10% engagement?',
+    a: `At 10% of the diameter the chip is exactly ${r10.thinning} of the feed per tooth, because 2 × √(0.1 × 0.9) = 0.6. The feed that restores it is ${r10.factor} times the data sheet's. On a ${F.diameter} mm end mill with a data sheet fz of ${F.sheet.fz} mm, the chip is ${F.sheet.hex} mm and the restoring feed ${F.sheet.restore} mm.`,
+  },
+  {
+    q: 'Why does M.A. Ford print 1.8 at 10% when the formula gives 1.67?',
+    a: `Ford's chart does not say how its factors were set. Rounded to one decimal, the geometry gives Ford's own figure at 5, 20, 30 and 50%, and ${r10.factorOne} at 10%, where Ford prints ${r10.maFord}. Ford's figure is its recommendation for its own end mills; this page reports both and does not choose.`,
+  },
+  {
+    q: 'What is the average chip thickness hm used for?',
+    a: `For the cutting force, and so the power: Kienzle's kc = kc1.1 × hm^(−mc). In a full slot hm is 2/π of fz, ${F.slot.mean}. The common shortcut hm ≈ fz × √(ae/D) gives fz there, ${F.slot.approxOver}% too thick, and with an mc of ${F.slot.mc} a power ${F.slot.powerShort}% too low.`,
+  },
+  {
+    q: 'Does the entering angle thin the chip too?',
+    a: `Yes, by sin κr, because the chip is measured across the cutting edge. A 45° face mill cuts a chip ${k45.oursFactor} times thinner than its feed, and a 10° high-feed cutter ${k10.oursFactor} times thinner. Sandvik prints those factors as ${k45.factor} and ${k10.factor}.`,
+  },
+];
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Chip thinning, from the tooth’s arc',
+    url: `${SITE.url}/machining/chip-thinning`,
+    description:
+      'The radial chip thinning formula derived from the arc a milling tooth cuts, the average chip thickness and the entering angle, worked against M.A. Ford’s chip thinning factors and Sandvik Coromant’s entering-angle table.',
+    author: { '@id': `${SITE.url}/about#person` },
+    publisher: { '@id': `${SITE.url}#organization` },
+    dateModified: FORD_CHECKED,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Machining',
+        item: `${SITE.url}/machining`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Chip thinning',
+        item: `${SITE.url}/machining/chip-thinning`,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
+
+const h2 = 'font-display text-ink text-2xl font-semibold';
+const formula =
+  'border-line bg-sunken rounded-panel font-numeric overflow-x-auto border p-3 text-sm leading-relaxed';
+const th = 'px-2 py-1 text-left font-mono text-xs uppercase tracking-wide text-ink-mute';
+const thNum =
+  'px-2 py-1 text-right font-mono text-xs uppercase tracking-wide text-ink-mute';
+const td = 'border-line border-t px-2 py-1 whitespace-nowrap';
+const tdNum = 'border-line border-t px-2 py-1 text-right font-numeric whitespace-nowrap';
+---
+
+<BaseLayout
+  title="Chip thinning: the formula, derived from the tooth's arc"
+  description={`hex = fz × 2√(ae(D − ae)) ÷ D. Why a cut ${r10.percent}% of the diameter wide cuts a chip ${r10.thinning} of its feed, the average chip and the entering angle, worked against M.A. Ford's and Sandvik's printed figures.`}
+  vertical="machining"
+  structuredData={structuredData}
+>
+  <div class="mx-auto max-w-3xl px-4 py-10">
+    <nav class="text-ink-mute font-mono text-xs">
+      <a class="hover:text-brand underline-offset-2 hover:underline" href="/machining"
+        >Machining</a
+      > / Chip thinning
+    </nav>
+
+    <p class="text-ink-mute mt-3 font-mono text-xs tracking-widest uppercase">
+      Derivation
+    </p>
+    <h1 class="font-display text-ink mt-2 text-4xl leading-tight font-semibold">
+      Chip thinning, from the tooth's arc
+    </h1>
+    <p class="text-ink-soft mt-4 max-w-prose text-lg">
+      A data sheet's feed per tooth is the chip it means a tooth to cut. In a narrow side
+      cut the tooth never reaches the point where it would cut that chip. This page works
+      out how thin the chip really is from the arc the tooth sweeps, then checks the
+      answer against M.A. Ford's chip thinning factors and Sandvik Coromant's
+      entering-angle table.
+    </p>
+
+    <section
+      class="border-line-strong bg-surface shadow-panel rounded-panel mt-8 border p-5"
+      aria-label="The short version"
+    >
+      <p class="text-ink-mute font-mono text-xs tracking-widest uppercase">
+        The short version
+      </p>
+      <p class="font-numeric text-ink mt-3 text-lg">
+        hex = fz × 2 × √(ae × (D − ae)) ÷ D
+      </p>
+      <p class="text-ink-soft mt-3 text-sm">
+        For a width of cut ae under half the cutter diameter D; at half or more, hex = fz.
+        At {r10.percent}% of the diameter the chip is exactly{' '}
+        <span class="font-numeric text-ink">{r10.thinning}</span> of the feed per tooth, and
+        the feed that cuts the data sheet's chip is{' '}
+        <span class="font-numeric text-ink">{r10.factor}</span> times the sheet's. An entering
+        angle κr below 90° thins it again, by sin κr.
+      </p>
+    </section>
+
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class={h2}>Where the chip comes from</h2>
+      <p>
+        Between one tooth and the next the cutter moves forward by the feed per tooth, fz.
+        The metal the next tooth removes is the strip between the two cuts, and its
+        thickness depends on where the tooth points. A tooth pointing straight ahead,
+        along the feed, takes the whole fz. A tooth pointing sideways, square to the feed,
+        takes nothing. In between, the chip is fz × sin φ, where φ is how far the tooth
+        has turned from the sideways position.
+      </p>
+      <p>
+        In a full slot the tooth sweeps right past straight ahead, so it meets the full
+        fz. In a side cut of width ae it starts at the finished wall, pointing sideways,
+        and leaves the work when it is ae in from that wall. With the cutter's radius R =
+        D/2, that point satisfies R − ae = R × cos φ, so
+      </p>
+      <p class={formula}>cos φ = 1 − 2 × ae ÷ D</p>
+      <p>
+        If ae is less than R, the tooth leaves before it points straight ahead, and the
+        thickest chip it cuts is the one at that exit:
+      </p>
+      <p class={formula}>
+        hex = fz × sin φ = fz × √(1 − (1 − 2 × ae ÷ D)²) = fz × 2 × √(ae × (D − ae)) ÷ D
+      </p>
+      <p>
+        That is the formula Sandvik Coromant prints for side milling with ae under half
+        the diameter. Milling the other way round, climb instead of conventional, the
+        tooth enters at the thick end and leaves at the wall; it sweeps the same arc, so
+        the thickest chip is the same.
+      </p>
+    </section>
+
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class={h2}>Worked on a {F.diameter} mm end mill</h2>
+      <p>
+        The chip as a share of the feed, the factor that restores it (fz ÷ hex), and the
+        factor M.A. Ford prints for its general purpose end mills at the same widths:
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-sunken">
+            <tr>
+              <th class={th}>ae</th>
+              <th class={thNum}>hex ÷ fz</th>
+              <th class={thNum}>Factor</th>
+              <th class={thNum}>Ford prints</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              F.rows.map((r) => (
+                <tr>
+                  <td class={td}>
+                    {r.ae} mm
+                    <br />
+                    {r.percent}%
+                  </td>
+                  <td class={tdNum}>{r.thinning}</td>
+                  <td class={tdNum}>{r.factor}</td>
+                  <td class={tdNum}>{r.maFord}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Two of the rows come out exact. At {r10.percent}%, 2 × √(0.1 × 0.9) = 0.6; at{' '}
+        {r20.percent}%, 2 × √(0.2 × 0.8) = 0.8. So a data sheet's {F.sheet.fz} mm per tooth,
+        run {r10.ae} mm wide, cuts a {F.sheet.hex} mm chip, and the feed that cuts the sheet's
+        chip is {F.sheet.restore} mm.
+      </p>
+
+      <h2 class={h2}>M.A. Ford's factors</h2>
+      <p>
+        Ford's chart says to multiply fz by its factor for the width of cut. Rounded to
+        Ford's one decimal, the geometry gives Ford's own figure at {r5.percent}, {
+          r20.percent
+        }, 30 and 50%. The {r20.percent}% row is exactly {r20.factor}, halfway between two
+        tenths, and Ford prints {r20.maFord}, the even one.
+      </p>
+      <p>
+        At {r10.percent}% they part: the geometry gives {r10.factor}, which is{' '}
+        {r10.factorOne} to one decimal, and Ford prints {r10.maFord}. Ford's chart does
+        not say how it set its factors, so its {r10.maFord} is a recommendation for its own
+        end mills rather than this formula, and this page does not choose between them. Ford
+        also says to add chip thinning only when roughing or semi-finishing, and to use the
+        plain feed when finishing.
+      </p>
+    </section>
+
+    <section class="text-ink-soft mt-12 max-w-prose space-y-4">
+      <h2 class={h2}>The average chip</h2>
+      <p>
+        The chip grows from nothing to hex over the arc, so its average, hm, is thinner.
+        Averaging fz × sin φ over the arc gives
+      </p>
+      <p class={formula}>hm = fz × (ae ÷ D) × 2 ÷ arccos(1 − 2 × ae ÷ D)</p>
+      <p>
+        with the angle in radians. Kennametal's US patent 12,202,058 prints the same
+        expression with 114.6 and the angle in degrees; 114.6 is 360/π rounded. In a full
+        slot hm is 2/π of fz, <span class="font-numeric text-ink">{F.slot.mean}</span>.
+      </p>
+      <p>
+        The average is what the cutting force takes: Kienzle's kc = kc1.1 × hm^(−mc). The
+        patent calls the shortcut hm ≈ fz × √(ae/D) an approximation, and in a full slot
+        the shortcut gives fz, {F.slot.approxOver}% too thick. A chip that is too thick
+        gives a kc that is too low, and with an mc of {F.slot.mc} the power comes out{' '}
+        {F.slot.powerShort}% short. This site's feeds and speeds calculator used the
+        shortcut until it was replaced with the exact average (D103).
+      </p>
+
+      <h2 class={h2}>The entering angle</h2>
+      <p>
+        The chip is measured square to the cutting edge. On a face mill whose edge meets
+        the work at an entering angle κr, the same feed is spread along a longer edge, and
+        the chip is thinner by sin κr. Sandvik Coromant prints the feed that cuts a 0.1 mm
+        chip at five angles, with the factor. Worked here, with Sandvik's printed figure
+        under each:
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-sunken">
+            <tr>
+              <th class={th}>κr</th>
+              <th class={thNum}>fz for 0.1 mm</th>
+              <th class={thNum}>Factor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              F.kappa.map((k) => (
+                <tr>
+                  <td class={td}>{k.kappa}°</td>
+                  <td class={tdNum}>
+                    {k.ours}
+                    <br />
+                    <span class="text-ink-mute">Sandvik {k.feed}</span>
+                  </td>
+                  <td class={tdNum}>
+                    {k.oursFactor}
+                    <br />
+                    <span class="text-ink-mute">Sandvik {k.factor}</span>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Every printed figure is 0.1 ÷ sin κr and 1 ÷ sin κr, rounded. On an angled cutter
+        the diameter in the radial formula is the one the edge cuts at, not the one in the
+        catalogue: Sandvik's Dcap = Dc + 2 × ap ÷ tan κr. Sandvik's own CoroMill 345,{' '}
+        {F.coromill.dc} mm at 45° and {F.coromill.ap} mm deep, cuts at {F.coromill.dcap} mm.
+      </p>
+
+      <h2 class={h2}>What the formula leaves out</h2>
+      <p>
+        It treats each tooth as sweeping a circle. The real path also moves forward with
+        the feed while the tooth turns; the formula is the model both Sandvik's hex and
+        Kennametal's hm are built on.
+      </p>
+      <p>
+        It is for a straight edge. Sandvik prints separate formulas for round inserts, and
+        a ball nose cuts at a diameter that changes with depth.
+      </p>
+      <p>
+        Restoring the chip raises the table feed by the same factor, and the removal rate
+        with it. A data sheet's feed for an angled cutter may already allow for its
+        entering angle, so check which chip the sheet means before raising anything. This
+        site's feeds and speeds calculator shows the restoring feed and never applies it.
+      </p>
+    </section>
+
+    <section class="mt-12">
+      <h2 class={h2}>Common questions</h2>
+      <div class="mt-4 space-y-3">
+        {
+          FAQ.map((item) => (
+            <details class="border-line bg-surface rounded-panel border p-4">
+              <summary class="text-ink cursor-pointer font-semibold">{item.q}</summary>
+              <p class="text-ink-soft mt-2 max-w-prose text-sm">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Sources ─────────────────────────────────────────────────────── -->
+    <section class="mt-12">
+      <h2 class={h2}>Sources</h2>
+      <ul class="mt-3 space-y-2 text-sm">
+        {
+          SOURCES.map((s) => (
+            <li>
+              <a
+                class="text-brand underline underline-offset-2"
+                href={s.url}
+                rel="noopener"
+                target="_blank"
+              >
+                {s.label}
+              </a>
+              <span class="text-ink-mute">
+                {' '}
+                — retrieved {s.retrieved.toISOString().slice(0, 10)}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="text-ink-mute mt-3 max-w-prose text-sm">
+        M.A. Ford's and Sandvik's figures are theirs, as printed. Every other figure on
+        this page is computed by the same code as the feeds and speeds calculator, and the
+        tests hold each one to the makers' printed figures.
+      </p>
+    </section>
+
+    <p class="border-line text-ink-mute mt-10 border-t pt-4 text-sm">
+      These are calculated figures. Check a feed against the tool maker's own data for the
+      tool and the material before cutting a part.
+    </p>
+
+    <RelatedTools
+      vertical="machining"
+      hubNote="the other shop-floor tools, each showing its working"
+      links={[
+        {
+          href: '/machining/feeds-and-speeds-calculator',
+          label: 'Feeds and speeds calculator',
+          note: 'the chip, the restoring feed and the power for your own cut',
+        },
+        {
+          href: '/machining/percentage-of-thread',
+          label: 'Percentage of thread, derived',
+          note: 'the other formula worked against makers’ printed tables',
+        },
+      ]}
+    />
+  </div>
+</BaseLayout>
