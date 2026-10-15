@@ -148,9 +148,23 @@ export interface PositionZoneFigures {
   };
 }
 
+/** An inch figure as a shop writes it, without the leading zero: ".0141". */
+function shop(text: string): string {
+  return text.startsWith('0.') ? text.slice(1) : text;
+}
+
+/**
+ * A typed inch input as a shop writes it: four places at most, three at
+ * least, no leading zero. .005, .0045, .010.
+ */
+function short(inch: number): string {
+  const text = shop(formatSteps(Math.round(inch * 10_000)));
+  return text.endsWith('0') && text.length > 4 ? text.slice(0, -1) : text;
+}
+
 export function positionZoneFigures(): PositionZoneFigures {
   const exact = 2 * Math.SQRT2 * PLUS_MINUS;
-  const four = (inch: number) => formatSteps(Math.round(inch * 10_000));
+  const four = (inch: number) => shop(formatSteps(Math.round(inch * 10_000)));
   const gdt = positionIn(0.003, 0.002);
   return {
     moreArea: fixed((Math.PI / 2 - 1) * 100, 2),
@@ -161,27 +175,27 @@ export function positionZoneFigures(): PositionZoneFigures {
     twoRoot2: fixed(2 * Math.SQRT2, 4),
     inscribedPlusMinus: fixed(1 / (2 * Math.SQRT2), 4),
     drawing: {
-      plusMinus: four(PLUS_MINUS),
-      exact: fixed(exact, 6),
+      plusMinus: short(PLUS_MINUS),
+      exact: shop(fixed(exact, 6)),
       above: four(ABOVE),
       below: four(BELOW),
-      inscribed: four(INSCRIBED),
-      backToSquare: fixed(INSCRIBED / (2 * Math.SQRT2), 6),
+      inscribed: short(INSCRIBED),
+      backToSquare: shop(fixed(INSCRIBED / (2 * Math.SQRT2), 6)),
     },
     parts: PARTS.map((p) => ({
       name: p.name,
-      dx: four(p.dx),
-      dy: four(p.dy),
-      position: positionIn(p.dx, p.dy),
+      dx: short(p.dx),
+      dy: short(p.dy),
+      position: shop(positionIn(p.dx, p.dy)),
       square: insideSquare(p.dx, p.dy, PLUS_MINUS),
       above: insideCircle(p.dx, p.dy, ABOVE),
       below: insideCircle(p.dx, p.dy, BELOW),
       inscribed: insideCircle(p.dx, p.dy, INSCRIBED),
     })),
     gdtBasics: {
-      position: gdt,
-      threePlaces: fixed(2 * Math.hypot(0.003, 0.002), 3),
-      tolerance: four(0.008),
+      position: shop(gdt),
+      threePlaces: shop(fixed(2 * Math.hypot(0.003, 0.002), 3)),
+      tolerance: short(0.008),
       within: insideCircle(0.003, 0.002, 0.008),
     },
   };

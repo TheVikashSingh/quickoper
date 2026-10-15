@@ -232,21 +232,19 @@ const tdNum =
           F.drawing.plusMinus
         } = Ø{F.drawing.exact} in. A drawing printed to four places cannot say that: Ø{
           F.drawing.above
-        } contains the whole square, and Ø{F.drawing.below} cuts its corners. Four holes, judged
-        against the square, both of those circles and the circle inside the square, Ø{
-          F.drawing.inscribed
-        }:
+        } contains the whole square, and Ø{F.drawing.below} cuts its corners. Four holes, each
+        given as dx and dy over its position, judged against the square, both of those circles
+        and the circle inside the square, Ø{F.drawing.inscribed}:
       </p>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-sunken">
             <tr>
-              <th class={th}>dx, dy</th>
-              <th class={thNum}>Ø</th>
-              <th class={thNum}>±{F.drawing.plusMinus.slice(1)}</th>
-              <th class={thNum}>Ø{F.drawing.above.slice(1)}</th>
-              <th class={thNum}>Ø{F.drawing.below.slice(1)}</th>
-              <th class={thNum}>Ø{F.drawing.inscribed.slice(1)}</th>
+              <th class={th}>Hole</th>
+              <th class={thNum}>±{F.drawing.plusMinus}</th>
+              <th class={thNum}>Ø{F.drawing.above}</th>
+              <th class={thNum}>Ø{F.drawing.below}</th>
+              <th class={thNum}>Ø{F.drawing.inscribed}</th>
             </tr>
           </thead>
           <tbody>
@@ -257,8 +255,9 @@ const tdNum =
                     {p.dx}
                     <br />
                     {p.dy}
+                    <br />
+                    <span class="text-ink-mute">Ø{p.position}</span>
                   </td>
-                  <td class={tdNum}>{p.position}</td>
                   <td class={tdNum}>{mark(p.square)}</td>
                   <td class={tdNum}>{mark(p.above)}</td>
                   <td class={tdNum}>{mark(p.below)}</td>

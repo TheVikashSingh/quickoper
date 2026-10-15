@@ -46,12 +46,12 @@ describe('the zones (DERIVED; 57% PRINTED by GD&T Basics and Xometry)', () => {
 describe('±.005 in as a diameter (DERIVED)', () => {
   it('is 2√2 × .005 = .014142, between the four-place .0141 and .0142', () => {
     expect(F.drawing).toEqual({
-      plusMinus: '0.0050',
-      exact: '0.014142',
-      above: '0.0142',
-      below: '0.0141',
-      inscribed: '0.0100',
-      backToSquare: '0.003536',
+      plusMinus: '.005',
+      exact: '.014142',
+      above: '.0142',
+      below: '.0141',
+      inscribed: '.010',
+      backToSquare: '.003536',
     });
     expect(Number(F.drawing.below)).toBeLessThan(Number(F.drawing.exact));
     expect(Number(F.drawing.above)).toBeGreaterThan(Number(F.drawing.exact));
@@ -69,10 +69,10 @@ describe('±.005 in as a diameter (DERIVED)', () => {
         p.inscribed,
       ]),
     ).toEqual([
-      ['0.0030', '0.0020', '0.0072', true, true, true, true],
-      ['0.0050', '0.0050', '0.0141', true, true, false, false],
-      ['0.0070', '0.0000', '0.0140', false, true, true, false],
-      ['0.0045', '0.0045', '0.0127', true, true, true, false],
+      ['.003', '.002', '.0072', true, true, true, true],
+      ['.005', '.005', '.0141', true, true, false, false],
+      ['.007', '.000', '.0140', false, true, true, false],
+      ['.0045', '.0045', '.0127', true, true, true, false],
     ]);
   });
 
@@ -90,9 +90,9 @@ describe('±.005 in as a diameter (DERIVED)', () => {
 describe('GD&T Basics’ worked hole (PRINTED)', () => {
   it('.003 and .002 off is Ø.0072, .007 to three places, within .008', () => {
     expect(F.gdtBasics).toEqual({
-      position: '0.0072',
-      threePlaces: '0.007',
-      tolerance: '0.0080',
+      position: '.0072',
+      threePlaces: '.007',
+      tolerance: '.008',
       within: true,
     });
   });
